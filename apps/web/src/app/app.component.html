@@ -1,0 +1,301 @@
+<main
+  id="workspace"
+  [class.pixel-mode]="store.settings()?.layout === 'office-pixel'"
+  [class.focus-mode]="map.focused()"
+  [class.map-page]="router.url === '/squad' || router.url === '/handoffs'"
+  [class.ops-chat-on]="room.opened() && router.url === '/squad'"
+  [class.ops-chat-dock]="room.opened() && !room.minimized() && router.url === '/squad'"
+  [style.--oc-w]="room.width() + 'px'"
+  [class.home-mode]="router.url !== '/squad' && router.url !== '/handoffs'"
+  [class.reduce-motion]="store.settings()?.motion === false"
+>
+  <luma-map
+    #map
+    [background]="router.url !== '/squad' && router.url !== '/handoffs'"
+    [handoffs]="router.url === '/handoffs'"
+    (historyRequested)="dialogs.handoffHistory.set(true)"
+  />
+  <div class="map-vignette" aria-hidden="true"></div>
+  <div class="map-grain" aria-hidden="true"></div>
+  <div class="corner-check top-left" aria-hidden="true"></div>
+  <div class="corner-check bottom-right" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" routerLink="/dashboard" (click)="guardNav($event)">
+      <img src="/assets/mark.svg" alt="" />
+      <span>
+        LUMA
+        <span class="brand-slash">/</span>
+        HIVE
+        <small>{{ 'app.subtitle' | t }}</small>
+      </span>
+    </a>
+    <nav class="mode-nav">
+      <button class="nav-key" (click)="navStep(-1)" aria-label="Aba anterior (Q)">Q</button>
+      @for (view of views; track view.path) {
+        <a
+          [attr.href]="view.path"
+          [class.active]="router.url === view.path"
+          (click)="navigate($event, view.path)"
+        >
+          {{ view.key | t }}
+        </a>
+      }
+      <button class="nav-key" (click)="navStep(1)" aria-label="Próxima aba (E)">E</button>
+    </nav>
+    <div class="system-meta">
+      <luma-usage />
+      <button
+        class="mode-indicator"
+        [class.connected]="!!providers.health()[activeProvider()]?.version"
+        (click)="dialogs.open('settings', undefined, activeProvider())"
+        [attr.aria-label]="'Status do ' + activeProvider() + ' CLI'"
+      >
+        <i></i>
+        {{ activeProvider().toUpperCase() }} CLI / {{ cliVersion() }} /
+        {{ store.settings()?.providers?.[activeProvider()]?.permission?.toUpperCase() }}
+      </button>
+      <button
+        class="icon-button"
+        [disabled]="!store.workspace()"
+        (click)="dialogs.open('settings')"
+        [attr.aria-label]="'app.settings' | t"
+      >
+        <luma-icon name="settings" />
+      </button>
+    </div>
+  </header>
+  @if (store.loading()) {
+    <div class="loading">{{ 'app.loading' | t }}</div>
+  } @else if (store.workspace()) {
+    <router-outlet />
+  }
+  <footer class="bottom-hud hud">
+    <div class="control-legend">
+      <div class="legend-strip">
+        <button (click)="dialogs.open('help')">
+          <kbd class="mouse-key">M</kbd>
+          ARRASTAR MAPA
+        </button>
+        <button (click)="map.zoom(1.15)">
+          <kbd>+</kbd>
+          <kbd>−</kbd>
+          ZOOM
+        </button>
+        <button (click)="map.home()">
+          <kbd>0</kbd>
+          CENTRALIZAR
+        </button>
+        <i class="legend-sep"></i>
+        <button (click)="dialogs.open('agent')">
+          <kbd>A</kbd>
+          NOVO AGENTE
+        </button>
+        <button (click)="map.openSection('opsBriefing')">
+          <kbd>B</kbd>
+          BRIEFING
+        </button>
+        <button (click)="map.openSection('opsFeatures')">
+          <kbd>F</kbd>
+          FEATURES
+        </button>
+        <button (click)="dialogs.open('help')"><kbd>?</kbd></button>
+      </div>
+      <div class="workspace-note">{{ store.pending() ? 'SALVANDO…' : '' }}</div>
+    </div>
+    <button
+      id="transmissionStrip"
+      class="transmission-strip"
+      (click)="dialogs.open('console', undefined, 'logs')"
+    >
+      <luma-icon name="radio" />
+      <div class="grow">
+        <strong>REGISTRO DE TRANSMISSÕES</strong>
+        <span>{{ store.project()?.logs?.at(-1)?.message || 'Nenhum evento registrado.' }}</span>
+      </div>
+    </button>
+    <div class="operation-progress">
+      <div class="progress-caption">
+        <span>PROGRESSO DA OPERAÇÃO</span>
+        <strong>{{ progress() }}%</strong>
+      </div>
+      <div class="progress-rail"><span [style.width.%]="progress()"></span></div>
+      <div class="progress-steps">
+        @for (feature of store.project()?.features?.slice(0, 8); track feature.id) {
+          <button
+            [class]="'progress-step ' + feature.status"
+            [title]="feature.title + ' / ' + feature.status"
+            (click)="
+              dialogs.open(
+                ['done', 'review', 'running'].includes(feature.status) ? 'review' : 'feature',
+                feature.id
+              )
+            "
+          >
+            <luma-icon
+              [name]="
+                feature.status === 'done'
+                  ? 'check'
+                  : feature.status === 'review'
+                    ? 'eye'
+                    : feature.scope === 'backend'
+                      ? 'code'
+                      : 'file'
+              "
+            />
+          </button>
+        }
+      </div>
+      <div class="progress-meta">
+        {{ pad(store.project()?.features?.filter(doneFeature)?.length || 0) }} /
+        {{ pad(store.project()?.features?.length || 0) }} CONCLUÍDAS
+      </div>
+    </div>
+  </footer>
+</main>
+@if (!store.loading() && !store.workspace()) {
+  <div class="overlay">
+    <section
+      class="modal db-setup-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="db-setup-heading"
+    >
+      <header class="modal-header">
+        <div>
+          <div class="eyebrow">PRIMEIRA EXECUÇÃO</div>
+          <h2 id="db-setup-heading">
+            NENHUM
+            <span class="word-tag">BANCO</span>
+            ENCONTRADO
+          </h2>
+        </div>
+      </header>
+      <div class="modal-body">
+        <p class="op-new-ask">
+          Nenhum banco de dados foi encontrado. Para usar o SQUAD/CODE, inicie um novo; ele será
+          criado em:
+        </p>
+        <code class="db-setup-path">{{ store.path() }}</code>
+        <div class="db-setup-status">
+          <span class="db-check ok">
+            <luma-icon name="check" />
+            Bridge conectado
+          </span>
+          @for (runtime of setupProviders; track runtime) {
+            <span
+              class="db-check"
+              [class.ok]="
+                !!providers.health()[runtime]?.executable &&
+                !providers.health()[runtime]?.runtimeError
+              "
+            >
+              <luma-icon
+                [name]="
+                  providers.health()[runtime]?.executable &&
+                  !providers.health()[runtime]?.runtimeError
+                    ? 'check'
+                    : 'info'
+                "
+              />
+              {{ runtime.toUpperCase() }} CLI
+              @if (providers.busy()[runtime] && !providers.health()[runtime]) {
+                / verificando…
+              } @else if (
+                providers.health()[runtime]?.executable &&
+                !providers.health()[runtime]?.runtimeError
+              ) {
+                / {{ providers.health()[runtime]?.version || 'encontrado' }}
+              } @else {
+                / não encontrado
+              }
+            </span>
+          }
+          <p class="hint">
+            Executáveis detectados no Windows. Sem CLI o app funciona, mas as execuções ficam só na
+            simulação.
+            <button type="button" class="btn ghost sm" (click)="testRuntimes()">
+              Testar de novo
+            </button>
+          </p>
+        </div>
+        <form (ngSubmit)="store.create(operationName)" class="db-setup-fresh" novalidate>
+          <div class="field">
+            <label for="dbSetupName">NOME DA PRIMEIRA OPERAÇÃO</label>
+            <input
+              id="dbSetupName"
+              name="name"
+              [(ngModel)]="operationName"
+              maxlength="70"
+              placeholder="Ex.: Loja da Ana"
+              autocomplete="off"
+              autofocus
+            />
+          </div>
+          <button class="btn primary" type="submit" [disabled]="!operationName.trim()">
+            <luma-icon name="plus" />
+            Começar do zero
+          </button>
+          <p class="hint">
+            Cria os agentes e a squad padrão e uma operação vazia para você preencher o briefing.
+          </p>
+        </form>
+        <div class="db-setup-or">ou</div>
+        <div class="op-choices">
+          <button type="button" class="op-choice" (click)="store.create('Atlas Commerce', true)">
+            <luma-icon name="layers" />
+            <strong>Carregar exemplo</strong>
+            <small>
+              Atlas Commerce: um e-commerce com squad, sprints e features prontos para explorar.
+            </small>
+          </button>
+          <label class="op-choice">
+            <luma-icon name="upload" />
+            <strong>Importar backup</strong>
+            <small>
+              Um .json exportado em Configurações &gt; Workspace, de outra máquina ou instalação.
+            </small>
+            <input type="file" accept=".json,application/json" (change)="import($event)" hidden />
+          </label>
+          @if (localBackup(); as copy) {
+            <button type="button" class="op-choice" (click)="restoreLocal()">
+              <luma-icon name="database" />
+              <strong>Recuperar a cópia deste navegador</strong>
+              <small>
+                {{ copy.projects?.length || 1 }} operação, {{ copy.agents?.length || 6 }} agentes ·
+                atividade recente.
+              </small>
+            </button>
+          }
+        </div>
+      </div>
+      <footer class="modal-footer">
+        <span class="footer-note">Nada é gravado em disco até você escolher.</span>
+      </footer>
+    </section>
+  </div>
+}
+<luma-dialog-host />
+@if (store.workspace()) {
+  <luma-operation-room />
+}
+<div id="toastRoot" aria-live="polite">
+  @if (store.error()) {
+    <div class="toast error" role="alert">
+      <div>
+        <strong>{{ 'error.title' | t }}</strong>
+        <p>{{ store.conflict() ? ('error.conflict' | t) : store.error() }}</p>
+        @if (store.conflict()) {
+          <button class="btn sm" (click)="exportLocal()">{{ 'action.export' | t }}</button>
+          <button class="btn sm" (click)="store.reload()">{{ 'error.reload' | t }}</button>
+        }
+      </div>
+      <button (click)="store.error.set('')" [attr.aria-label]="'action.close' | t">×</button>
+    </div>
+  }
+  @if (dialogs.notification()) {
+    <div class="toast">
+      <luma-icon name="check" />
+      <span>{{ dialogs.notification() }}</span>
+    </div>
+  }
+</div>

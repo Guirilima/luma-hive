@@ -1,0 +1,68 @@
+<ng-template #body>
+  @if (feature(); as f) {
+    <div class="between" style="margin-bottom: 20px">
+      <span class="tag">{{ f.key }} / {{ scope(f.scope) }}</span>
+      <span [class]="'status-label ' + f.status">{{ status(f.status) }}</span>
+    </div>
+    <h3 style="font-size: 20px; font-weight: 450; margin-bottom: 18px">{{ f.title }}</h3>
+    <div class="eyebrow" style="margin-bottom: 8px">CRITÉRIOS DE ACEITAÇÃO</div>
+    <p class="prose" style="margin-bottom: 25px">{{ f.criteria }}</p>
+    <div class="eyebrow" style="margin-bottom: 18px">ENTREGAS DOS ESPECIALISTAS</div>
+    @for (o of f.outputs; track $index) {
+      <article class="review-output">
+        <h3>
+          {{ store.agent(o.agentId)?.name || 'AGENTE REMOVIDO' }} /
+          {{
+            o.simulated
+              ? 'REGISTRO SIMULADO'
+              : o.error
+                ? 'FALHA NA EXECUÇÃO'
+                : store.providerLabel(o.agentId) + ' CLI'
+          }}
+        </h3>
+        <time>
+          {{ clock(o.at) }}
+          @if (o.costUsd != null) {
+            / US$ {{ o.costUsd?.toFixed(4) }}
+          }
+          @if (o.durationMs) {
+            / {{ Math.round(o.durationMs / 1000) }}s
+          }
+          @if (o.sessionId) {
+            / sessão {{ o.sessionId.slice(0, 8) }}
+          }
+        </time>
+        <p>{{ o.text }}</p>
+      </article>
+    } @empty {
+      <p class="prose">Nenhum registro de entrega disponível ainda.</p>
+    }
+    <div class="notice warning">
+      <luma-icon name="info" />
+      {{
+        real(f)
+          ? 'Registros do CLI: revise os arquivos alterados no repositório antes de aprovar. Aprovar libera as features dependentes.'
+          : 'Estes registros são simulados. Aprovar altera apenas o estado demonstrativo da feature; não valida código real.'
+      }}
+    </div>
+    @if (f.status === 'review') {
+      <div class="ops-detail-actions">
+        <button class="btn ghost" (click)="review(false)">
+          <luma-icon name="edit" />
+          Solicitar ajustes
+        </button>
+        <button class="btn primary" (click)="review(true)">
+          <luma-icon name="check" />
+          {{ real(f) ? 'Aprovar entrega' : 'Aprovar entrega / demo' }}
+        </button>
+      </div>
+    }
+  }
+</ng-template>
+@if (inline()) {
+  <ng-container [ngTemplateOutlet]="body" />
+} @else {
+  <luma-modal title="REVISÃO DE ENTREGA" (closed)="close()">
+    <ng-container [ngTemplateOutlet]="body" />
+  </luma-modal>
+}

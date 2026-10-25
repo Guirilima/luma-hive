@@ -1,0 +1,45 @@
+<luma-modal
+  title="SPAWN <span class=word-tag>INDIVIDUAL</span>"
+  [subtitle]="
+    (store.settings()?.mode === 'live'
+      ? store.agent(agentId)?.provider?.toUpperCase() + ' CLI / '
+      : 'SESSÃO SIMULADA / ') + store.agent(agentId)?.name
+  "
+  modalClass="narrow"
+  (closed)="dialogs.close()"
+>
+  <form id="spawnForm" (ngSubmit)="start()">
+    <div class="field">
+      <label for="spawnFeature">FEATURE PARA {{ store.agent(agentId)?.name }}</label>
+      <select id="spawnFeature" name="featureId" [(ngModel)]="featureId">
+        @for (feature of features(); track feature.id) {
+          <option [value]="feature.id">{{ feature.key }} / {{ feature.title }}</option>
+        }
+      </select>
+    </div>
+    <div class="notice warning">
+      <luma-icon name="info" />
+      <span>
+        A rota desta feature será substituída por uma sessão individual de
+        {{ store.agent(agentId)?.name }}. Depois, a entrega vai para revisão humana.
+        {{
+          store.settings()?.mode === 'live'
+            ? 'O CLI roda na pasta da operação.'
+            : 'Não há execução real de IA.'
+        }}
+      </span>
+    </div>
+  </form>
+  <footer class="modal-footer" modal-footer>
+    <button class="btn ghost" (click)="dialogs.close()">Cancelar</button>
+    <button
+      class="btn primary"
+      type="submit"
+      form="spawnForm"
+      [disabled]="!featureId || store.projectLocked()"
+    >
+      <luma-icon name="play" />
+      {{ store.settings()?.mode === 'live' ? 'Spawn / CLI' : 'Iniciar spawn / demo' }}
+    </button>
+  </footer>
+</luma-modal>

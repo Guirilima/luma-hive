@@ -1,0 +1,402 @@
+<luma-modal
+  title="CONFIGURAÇÕES DO <span class=word-tag>WORKSPACE</span>"
+  [subtitle]="
+    store.settings()?.mode === 'live'
+      ? 'EXECUÇÃO REAL / CODEX, DEVIN E ANTIGRAVITY'
+      : 'LOCAL-FIRST / RUNTIME DESCONECTADO'
+  "
+  (closed)="cancel()"
+>
+  <nav class="editor-nav" aria-label="Seções das configurações">
+    @for (item of tabs; track item) {
+      <button
+        type="button"
+        class="editor-tab"
+        [class.active]="tab() === item"
+        (click)="tab.set(item)"
+      >
+        {{ tabLabel(item) }}
+      </button>
+    }
+  </nav>
+  <div class="editor-pane" [class.hidden]="tab() !== 'workspace'" data-pane="workspace">
+    @for (item of toggles; track item.key) {
+      <div class="settings-row">
+        <div>
+          <h3>{{ item.title }}</h3>
+          <p>{{ item.description }}</p>
+        </div>
+        <button
+          class="toggle"
+          role="switch"
+          [attr.aria-label]="item.aria"
+          [attr.aria-checked]="toggleValue(item.key)"
+          (click)="toggleSetting(item.key)"
+        ></button>
+      </div>
+    }
+    <div class="settings-row">
+      <div>
+        <h3>Idioma</h3>
+        <p>Idioma da interface do workspace.</p>
+      </div>
+      <select [ngModel]="draft.locale" (ngModelChange)="setLocale($event)" aria-label="Idioma">
+        <option value="pt-BR">Português (Brasil)</option>
+        <option value="en">English</option>
+        <option value="es">Español</option>
+      </select>
+    </div>
+    <div class="settings-row">
+      <div>
+        <h3>Exportar workspace</h3>
+        <p>
+          Backup JSON com agentes, retratos, prompts, projetos, features, histórico e configurações
+          do runtime.
+        </p>
+      </div>
+      <button class="btn" (click)="export()">
+        <luma-icon name="download" />
+        Exportar
+      </button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <h3>Importar backup</h3>
+        <p>
+          Restaura um backup JSON após confirmação. Substitui os dados atuais, que ficam nas versões
+          salvas.
+        </p>
+      </div>
+      <button class="btn" (click)="importInput.click()" [disabled]="store.projectLocked()">
+        <luma-icon name="upload" />
+        Importar
+      </button>
+      <input
+        #importInput
+        type="file"
+        accept="application/json,.json"
+        (change)="import($event)"
+        hidden
+      />
+    </div>
+    <div class="settings-row">
+      <div>
+        <h3>Reiniciar workspace</h3>
+        <p>Remove alterações deste workspace e restaura o projeto Atlas Commerce.</p>
+      </div>
+      <button class="btn danger" (click)="reset()" [disabled]="store.projectLocked()">
+        <luma-icon name="trash" />
+        Reiniciar
+      </button>
+    </div>
+    <div class="settings-row ws-versions-row">
+      <div>
+        <h3>Versões salvas</h3>
+        <p>O banco guarda versões do workspace antes de importações e restaurações.</p>
+        <div class="ws-versions">
+          @for (version of snapshots(); track version.id) {
+            <div class="ws-version">
+              <div>
+                <strong>{{ i18n.date(version.createdAt) }}</strong>
+                <span>{{ version.label }}</span>
+              </div>
+              <button
+                class="btn sm"
+                (click)="restore(version.id)"
+                [disabled]="store.projectLocked()"
+              >
+                <luma-icon name="upload" />
+                Restaurar
+              </button>
+            </div>
+          } @empty {
+            <span class="hint">Nenhuma versão ainda.</span>
+          }
+        </div>
+      </div>
+    </div>
+    <div class="notice" style="margin-bottom: 0">
+      <luma-icon name="lock" />
+      <span>
+        O workspace, a sala da operação, as conversas e o histórico de execuções ficam no banco
+        SQLite local
+        <code>{{ store.path() }}</code>
+        . Não coloque credenciais nos prompts ou no briefing.
+      </span>
+    </div>
+  </div>
+  <div class="editor-pane" [class.hidden]="tab() !== 'execution'" data-pane="execution">
+    <form id="executionForm" (ngSubmit)="save()">
+      <div class="notice" style="margin-top: 0">
+        <luma-icon name="info" />
+        <span>
+          Estas configurações valem para todos os agentes, Codex, Devin e Antigravity. Escolha o
+          provedor no perfil de cada agente.
+        </span>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="rtMode">EXECUÇÃO DOS AGENTES</label>
+          <select id="rtMode" name="mode" [(ngModel)]="draft.mode">
+            <option value="live">Execução real (Codex, Devin e Antigravity)</option>
+            <option value="demo">Simulação local (demo)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="rtTimeout">TEMPO LIMITE POR ETAPA (S)</label>
+          <input
+            id="rtTimeout"
+            name="timeoutSec"
+            type="number"
+            min="10"
+            max="7200"
+            step="10"
+            [(ngModel)]="draft.timeoutSec"
+          />
+        </div>
+        <div class="field">
+          <label for="rtConc">EXECUÇÕES SIMULTÂNEAS NO BRIDGE</label>
+          <input
+            id="rtConc"
+            name="concurrency"
+            type="number"
+            min="1"
+            max="8"
+            [(ngModel)]="draft.concurrency"
+          />
+        </div>
+        <div class="field">
+          <label for="execStepMs">INTERVALO ENTRE ETAPAS</label>
+          <select id="execStepMs" name="stepMs" [(ngModel)]="draft.stepMs">
+            <option [ngValue]="600">Rápida / 0,6 s</option>
+            <option [ngValue]="1000">Ágil / 1 s</option>
+            <option [ngValue]="1800">Normal / 1,8 s</option>
+            <option [ngValue]="3200">Lenta / 3,2 s</option>
+          </select>
+          <span class="hint">
+            Pausa entre etapas. Na simulação, define a duração de cada etapa.
+          </span>
+        </div>
+        <div class="field full">
+          <span class="label">PASTA DOS PROJETOS</span>
+          <div class="hint" style="margin-top: 10px; word-break: break-all">
+            Cada operação trabalha na sua própria pasta dentro de
+            <code>{{ providers.health().codex?.projectsDir || 'projects/' }}</code>
+            , criada na primeira execução. É lá que os agentes leem e escrevem os arquivos. Esta
+            operação:
+            <code>projects/{{ store.project()?.folder }}</code>
+            .
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+  @for (cli of providerKeys; track cli) {
+    <div class="editor-pane" [class.hidden]="tab() !== cli" [attr.data-pane]="cli">
+      <div class="notice" [class.warning]="!providers.health()[cli]?.version" style="margin-top: 0">
+        <luma-icon [name]="providers.health()[cli]?.version ? 'check' : 'info'" />
+        <span>
+          @if (providers.health()[cli]?.version) {
+            Bridge conectado ao
+            <strong>{{ cli.toUpperCase() }} CLI {{ providers.health()[cli]?.version }}</strong>
+            <br />
+            <small>{{ providers.health()[cli]?.executable }}</small>
+          } @else {
+            O bridge respondeu, mas o CLI não foi encontrado:
+            {{ providers.errors()[cli] || 'Verificando conexão…' }}
+          }
+        </span>
+      </div>
+      <form [id]="cli + 'Form'" (ngSubmit)="save()">
+        <div class="form-grid">
+          <div class="field">
+            <label [for]="cli + 'Path'">EXECUTÁVEL DO {{ cli.toUpperCase() }}</label>
+            <input
+              [id]="cli + 'Path'"
+              [name]="cli + 'Path'"
+              [(ngModel)]="draft.providers[cli].path"
+              maxlength="400"
+              [placeholder]="
+                cli === 'antigravity'
+                  ? 'agy.exe (detectado automaticamente)'
+                  : cli + ' (padrão do bridge)'
+              "
+              autocomplete="off"
+            />
+            <span class="hint">
+              @if (cli === 'devin') {
+                Nome no PATH ou caminho completo — ex.: o devin.exe que vem com o Devin Desktop.
+                Vazio = padrão do bridge.
+              } @else if (cli === 'antigravity') {
+                Use o CLI agy.exe; Antigravity.exe é o aplicativo de desktop.
+              } @else {
+                Nome no PATH ou caminho completo. Vazio = padrão do bridge.
+              }
+            </span>
+          </div>
+          <div class="field">
+            <label [for]="cli + 'Permission'">
+              {{ cli === 'antigravity' ? 'MODO DE EXECUÇÃO' : 'MODO DE PERMISSÃO' }}
+            </label>
+            <select
+              [id]="cli + 'Permission'"
+              [name]="cli + 'Permission'"
+              [(ngModel)]="draft.providers[cli].permission"
+            >
+              @for (permission of permissions[cli]; track permission) {
+                <option [value]="permission">{{ permissionLabel(permission) }}</option>
+              }
+            </select>
+            @if (cli === 'devin') {
+              <span class="hint">
+                Modo nativo do Devin CLI (--permission-mode) usado pelos agentes Devin.
+              </span>
+            } @else if (cli === 'antigravity') {
+              <span class="hint">
+                read-only e plan disponibilizam apenas ferramentas de leitura. Ações que exigem
+                aprovação são negadas na execução sem interação.
+              </span>
+            }
+          </div>
+          @if (cli === 'codex') {
+            <div class="field">
+              <label for="rtModel">MODELO (SOBRESCREVE AGENTES CODEX)</label>
+              <input
+                id="rtModel"
+                name="model"
+                [(ngModel)]="draft.providers.codex.model"
+                list="rtModels"
+                maxlength="80"
+                placeholder="vazio = modelo de cada agente"
+              />
+              <datalist id="rtModels">
+                @for (model of providers.catalogs().codex || []; track model.id) {
+                  <option [value]="model.id"></option>
+                }
+              </datalist>
+            </div>
+            <div class="field">
+              <label for="rtEffort">ESFORÇO (SOBRESCREVE AGENTES CODEX)</label>
+              <select id="rtEffort" name="effort" [(ngModel)]="draft.providers.codex.effort">
+                <option value="">Vazio = esforço de cada agente</option>
+                @for (effort of efforts; track effort) {
+                  <option [value]="effort">{{ effort.toUpperCase() }}</option>
+                }
+              </select>
+            </div>
+            <div class="field full">
+              <label for="rtDirs">DIRETÓRIOS ADICIONAIS (--add-dir)</label>
+              <input
+                id="rtDirs"
+                name="addDirs"
+                [(ngModel)]="directories"
+                maxlength="2000"
+                placeholder="Separados por vírgula"
+              />
+            </div>
+          } @else {
+            <div class="field full">
+              <span class="label">CATÁLOGO DE MODELOS</span>
+              @if (cli === 'devin') {
+                <div class="hint" style="margin-top: 10px">
+                  {{ (providers.catalogs()[cli] || []).length }} modelos carregados do Devin CLI.
+                  {{ providers.errors()[cli] }}
+                </div>
+              } @else {
+                <p class="hint">
+                  {{ (providers.catalogs()[cli] || []).length }} modelos carregados do CLI.
+                  {{ providers.errors()[cli] }}
+                </p>
+              }
+              <button
+                type="button"
+                class="btn ghost sm"
+                (click)="providers.load(cli, draft.providers[cli].path, true)"
+              >
+                Atualizar modelos
+              </button>
+              <span class="hint">
+                @if (cli === 'devin') {
+                  Os modelos aparecem no campo MODELO do perfil de cada agente com provedor Devin
+                  CLI.
+                } @else {
+                  Selecione provedor, modelo e esforço compatível no perfil do agente.
+                }
+              </span>
+            </div>
+          }
+        </div>
+        <div class="notice">
+          <luma-icon name="info" />
+          <span>{{ providerDescription(cli) }}</span>
+        </div>
+        @if (cli === 'codex') {
+          <div class="cmd-preview">
+            <div class="cmd-preview-head">
+              <span class="eyebrow">PREVIEW DA CHAMADA NO TERMINAL</span>
+              <div class="flex wrap">
+                <select
+                  id="cmdAgent"
+                  name="previewAgent"
+                  aria-label="Agente do preview"
+                  [(ngModel)]="previewAgent"
+                >
+                  @for (a of store.team(); track a.id) {
+                    <option [value]="a.id">{{ a.name }} / {{ roleShort(a.role) }}</option>
+                  }
+                </select>
+                <select
+                  id="cmdShell"
+                  name="previewShell"
+                  aria-label="Shell do preview"
+                  [(ngModel)]="previewShell"
+                >
+                  <option value="powershell">PowerShell</option>
+                  <option value="bash">Bash</option>
+                </select>
+                <button type="button" class="btn ghost sm" (click)="copyCommand(cli)">
+                  <luma-icon name="copy" />
+                  Copiar
+                </button>
+              </div>
+            </div>
+            <pre id="cmdPreview" class="cmd-lines">{{ commandPreview(cli) }}</pre>
+            <span class="hint" id="cmdNote">
+              Prévia da chamada e de suas opções. O prompt da etapa e os perfis são preparados pelo
+              bridge na execução.
+            </span>
+          </div>
+        }
+      </form>
+    </div>
+  }
+  <div class="editor-pane" [class.hidden]="tab() !== 'config'" data-pane="settingsjson">
+    <div class="notice">
+      O Codex CLI usa a autenticação existente e ~/.codex/config.toml. Modelo, esforço, sandbox e
+      diretórios escolhidos nesta tela valem apenas para a execução. O app não altera suas
+      credenciais ou configurações pessoais. Os especialistas ficam em
+      projects/&lt;operação&gt;/.codex/agents/.
+    </div>
+  </div>
+  @if (tab() !== 'workspace' && tab() !== 'config') {
+    <footer class="modal-footer" modal-footer>
+      @if (tab() !== 'execution') {
+        <button class="btn ghost" (click)="check()">
+          <luma-icon name="radio" />
+          Testar conexão
+        </button>
+        <span class="grow"></span>
+      }
+      <button class="btn ghost" (click)="cancel()">Cancelar</button>
+      <button
+        class="btn primary"
+        type="submit"
+        [attr.form]="tab() === 'execution' ? 'executionForm' : provider() + 'Form'"
+        [disabled]="store.projectLocked()"
+      >
+        <luma-icon name="check" />
+        {{ tab() === 'execution' ? 'Salvar execução' : 'Salvar configurações' }}
+      </button>
+    </footer>
+  }
+</luma-modal>

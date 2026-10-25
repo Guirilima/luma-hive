@@ -1,0 +1,131 @@
+@for (dialog of dialogs.current() ? [dialogs.current()!] : []; track dialog) {
+  @switch (dialog.kind) {
+    @case ('operation-picker') {
+      <luma-modal
+        title="VER &lt;span class=word-tag&gt;SQUAD&lt;/span&gt;"
+        subtitle="ESCOLHA A OPERAÇÃO"
+        modalClass="narrow"
+        (closed)="dialogs.close()"
+      >
+        <p class="op-new-ask">De qual operação você quer ver a squad?</p>
+        <div class="op-pick-list">
+          @for (p of store.workspace()!.projects; track p.id) {
+            <button
+              type="button"
+              class="ops-item"
+              [class.active]="p.id === store.project()?.id"
+              [attr.aria-pressed]="p.id === store.project()?.id"
+              (click)="selectOperation(p.id)"
+            >
+              <span class="between">
+                <span class="eyebrow">{{ p.code }}</span>
+                @if (p.id === store.project()?.id) {
+                  <span class="tag accent">ATIVA</span>
+                }
+              </span>
+              <strong>{{ p.name }}</strong>
+              <small>{{ squadName(p.squadId) }} · {{ p.agentIds.length }} AGENTES</small>
+              <span class="mini-faces">
+                @for (id of p.agentIds.slice(0, 8); track id) {
+                  @if (store.agent(id); as a) {
+                    <img [src]="portrait(a)" alt="" [title]="a.name" />
+                  }
+                }
+              </span>
+            </button>
+          }
+        </div>
+        <footer class="modal-footer" modal-footer>
+          <span class="grow"></span>
+          <button type="button" class="btn ghost" (click)="dialogs.close()">Cancelar</button>
+        </footer>
+      </luma-modal>
+    }
+    @case ('agent') {
+      <ng-container><luma-agent-editor /></ng-container>
+    }
+    @case ('catalog') {
+      <luma-catalog />
+    }
+
+    @case ('project') {
+      <luma-project-editor />
+    }
+    @case ('feature') {
+      <luma-feature-editor />
+    }
+    @case ('review') {
+      <luma-review />
+    }
+    @case ('doc') {
+      <luma-document-editor />
+    }
+    @case ('settings') {
+      <luma-settings />
+    }
+    @case ('chat') {
+      <luma-chat />
+    }
+    @case ('console') {
+      <luma-console />
+    }
+    @case ('handoff') {
+      <luma-handoff-editor />
+    }
+    @case ('meeting') {
+      <luma-meeting />
+    }
+    @case ('spawn') {
+      <luma-spawn />
+    }
+    @case ('help') {
+      <luma-modal
+        title="CONTROLES DA &lt;span class=word-tag&gt;REDE&lt;/span&gt;"
+        subtitle="GAME-MENU UI / WORKSPACE DE DESENVOLVIMENTO"
+        (closed)="dialogs.close()"
+      >
+        <div class="shortcut-grid">
+          @for (shortcut of shortcuts; track shortcut[0]) {
+            <div class="shortcut-row">
+              <kbd>{{ shortcut[0] }}</kbd>
+              <span>{{ shortcut[1] }}</span>
+            </div>
+          }
+        </div>
+        <div class="notice">
+          <luma-icon name="info" />
+          Clique em um agente para selecioná-lo. Clique duas vezes para conversar e use Editar para
+          abrir o estúdio. O mapa é uma cidade procedural fictícia: seus marcadores representam
+          especialistas, não localizações reais.
+        </div>
+        <div class="notice purple">
+          <luma-icon name="flow" />
+          Para experimentar o fluxo completo: Briefing &gt; Features &gt; Distribuir &gt; Aplicar
+          plano &gt; Iniciar demo &gt; Revisão humana.
+        </div>
+      </luma-modal>
+    }
+  }
+}
+
+@if (dialogs.confirmation(); as confirmation) {
+  <luma-modal
+    [title]="confirmation.title"
+    modalClass="narrow"
+    subtitle="CONFIRMAÇÃO DO OPERADOR"
+    (closed)="dialogs.answer(false)"
+  >
+    <p class="confirm-copy">{{ confirmation.message }}</p>
+    <footer class="modal-footer" modal-footer>
+      <button class="btn" (click)="dialogs.answer(false)">Cancelar</button>
+      <button
+        class="btn"
+        [class.danger]="confirmation.danger"
+        [class.primary]="!confirmation.danger"
+        (click)="dialogs.answer(true)"
+      >
+        {{ confirmation.label }}
+      </button>
+    </footer>
+  </luma-modal>
+}

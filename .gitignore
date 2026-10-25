@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.angular/
+data/
+/projects/
+previews/
+*.log
+.env
+.env.*
+!.env.example
+test-results/
+playwright-report/
+
+# Local browser comparison script with machine-specific paths
+/test-parity.mjs

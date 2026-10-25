@@ -1,0 +1,694 @@
+<luma-modal
+  [title]="
+    isNew()
+      ? 'RECRUTAR &lt;span class=word-tag&gt;AGENTE&lt;/span&gt;'
+      : 'ESTÚDIO DO &lt;span class=word-tag&gt;AGENTE&lt;/span&gt;'
+  "
+  subtitle="LUMA HIVE / IDENTIDADE & CAPACIDADES"
+  (closed)="close()"
+>
+  <form id="agentForm" (ngSubmit)="save()">
+    <div class="editor-layout">
+      <div class="editor-side">
+        <div class="editor-photo">
+          <img id="editorPortrait" [src]="portrait(draft)" alt="Retrato do agente" />
+          <span class="photo-code">IDENTITY // {{ rolesInfo[draft.role]?.short }}</span>
+          <span class="photo-stage">
+            STAGE // {{ ('stage.' + draft.productionStage | t).toUpperCase() }}
+          </span>
+        </div>
+        <p class="editor-side-note">
+          POSIÇÃO NO MAPA
+          <br />
+          Q {{ draft.hex.q }} / R {{ draft.hex.r }}
+          <br />
+          <br />
+          MESA {{ draft.desk || 'AUTOMÁTICA' }}
+          <br />
+          {{ deskRoom() }}
+          <br />
+          <br />
+          ID: {{ draft.id.slice(-12) }}
+        </p>
+      </div>
+      <div>
+        <nav class="editor-nav" aria-label="Abas do estúdio">
+          @for (item of panes; track item.key) {
+            <button
+              type="button"
+              class="editor-tab"
+              [class.active]="tab() === item.key"
+              (click)="tab.set(item.key)"
+            >
+              {{ item.label }}
+            </button>
+          }
+        </nav>
+        <div class="editor-pane" [class.hidden]="tab() !== 'identity'" data-pane="general">
+          <div class="form-grid">
+            <div class="field full">
+              <label for="agentName">CODINOME</label>
+              <div class="input-action">
+                <input
+                  id="agentName"
+                  name="name"
+                  [(ngModel)]="draft.name"
+                  maxlength="32"
+                  autocomplete="off"
+                  style="text-transform: uppercase"
+                />
+                <button
+                  type="button"
+                  class="dice-button"
+                  (click)="rollName()"
+                  title="Codinome aleatório"
+                  aria-label="Gerar codinome aleatório"
+                >
+                  <luma-icon name="dice" />
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="agentRole">ESPECIALIDADE</label>
+              <select
+                id="agentRole"
+                name="role"
+                [(ngModel)]="draft.role"
+                (ngModelChange)="roleChanged()"
+              >
+                @for (role of roles; track role) {
+                  <option [value]="role">{{ rolesInfo[role].label }}</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label for="agentSpecialty">TÍTULO DA ESPECIALIDADE</label>
+              <input
+                id="agentSpecialty"
+                name="specialty"
+                [(ngModel)]="draft.specialty"
+                (ngModelChange)="syncConventions()"
+                maxlength="40"
+                [placeholder]="rolesInfo[draft.role]?.label || ''"
+              />
+              <span class="hint">
+                Opcional. Ex.: Tech Lead de Pagamentos, SRE de Kubernetes, Engenheiro de
+                Performance. Obrigatório em Especialista personalizado.
+              </span>
+            </div>
+            <div class="field full">
+              <label for="agentLink">CONECTADO A</label>
+              <select
+                id="agentLink"
+                name="linkId"
+                [(ngModel)]="draft.linkId"
+                [disabled]="draft.id === store.project()?.commanderId"
+              >
+                <option value="">
+                  {{
+                    draft.id === store.project()?.commanderId
+                      ? 'Centro do squad'
+                      : 'Comandante da operação'
+                  }}
+                </option>
+                @for (a of store.team(); track a.id) {
+                  @if (a.id !== draft.id) {
+                    <option [value]="a.id">{{ a.name }} / {{ rolesInfo[a.role]?.label }}</option>
+                  }
+                }
+              </select>
+              <span class="hint">
+                O comandante fica no centro e recebe as conexões dos demais agentes.
+              </span>
+            </div>
+            <div class="field full">
+              <label for="agentDesk">MESA NO ESCRITÓRIO</label>
+              <select id="agentDesk" name="desk" [(ngModel)]="draft.desk">
+                <option value="">Mesa livre automática</option>
+                @for (slot of desks; track slot.id) {
+                  <option [value]="slot.id">{{ slot.id }}</option>
+                }
+              </select>
+              <span class="hint">
+                Posição do agente na vista de escritório. Também dá para arrastar o agente no mapa
+                ou dar duplo clique numa mesa vazia.
+              </span>
+            </div>
+            <div class="field full">
+              <span class="label">APARÊNCIA NA MESA DO SQUAD</span>
+              <div class="look-cards">
+                <button
+                  type="button"
+                  class="look-card"
+                  (click)="look.set('photo')"
+                  aria-haspopup="dialog"
+                >
+                  <img [src]="portrait(draft)" alt="" />
+                  <span class="grow">
+                    <strong>FOTO</strong>
+                    <small>{{ draft.image ? 'Galeria' : 'Automático' }}</small>
+                  </span>
+                  <luma-icon name="edit" />
+                </button>
+                <button
+                  type="button"
+                  class="look-card"
+                  (click)="look.set('icon')"
+                  aria-haspopup="dialog"
+                >
+                  <span class="look-diamond">
+                    <span class="node-diamond"></span>
+                    <span class="node-icon">
+                      <luma-icon [name]="draft.icon || rolesInfo[draft.role].icon" />
+                    </span>
+                  </span>
+                  <span class="grow">
+                    <strong>ÍCONE</strong>
+                    <small>
+                      {{ !draft.icon ? 'Automático' : iconLabels[draft.icon] || draft.icon }}
+                    </small>
+                  </span>
+                  <luma-icon name="edit" />
+                </button>
+              </div>
+              <span class="hint">
+                Clique na foto ou no ícone para abrir a galeria. Automático usa o padrão da
+                especialidade.
+              </span>
+            </div>
+            <div class="field">
+              <label for="agentProvider">PROVEDOR</label>
+              <select
+                id="agentProvider"
+                name="provider"
+                [(ngModel)]="draft.provider"
+                (ngModelChange)="providerChanged($event)"
+              >
+                <option value="codex">Codex CLI</option>
+                <option value="devin">Devin CLI</option>
+                <option value="antigravity">Antigravity CLI</option>
+              </select>
+              <span class="hint">
+                Conexão e permissões ficam na aba do provedor em Configurações.
+              </span>
+            </div>
+            <div class="field">
+              <label for="agentModel">MODELO</label>
+              <select
+                id="agentModel"
+                name="model"
+                [(ngModel)]="draft.model"
+                (ngModelChange)="modelChanged()"
+              >
+                <option value="inherit">PADRÃO {{ draft.provider.toUpperCase() }}</option>
+                @for (model of providers.catalogs()[draft.provider] || []; track model.id) {
+                  <option [value]="model.id">{{ model.label }}</option>
+                }
+                @if (customModel()) {
+                  <option [value]="draft.model">{{ draft.model }} (personalizado)</option>
+                }
+              </select>
+              <span class="hint">
+                Usa o modelo configurado no CLI. {{ providers.errors()[draft.provider] }}
+              </span>
+              <button type="button" class="btn ghost sm" (click)="providers.check(draft.provider)">
+                Atualizar modelos
+              </button>
+            </div>
+            <div class="field">
+              <label for="agentStage">ESTÁGIO DE PRODUÇÃO</label>
+              <select id="agentStage" name="productionStage" [(ngModel)]="draft.productionStage">
+                @for (stage of stages; track stage) {
+                  <option [value]="stage">{{ 'stage.' + stage | t }}</option>
+                }
+              </select>
+            </div>
+            <div class="field full effort-field">
+              <span class="label">NÍVEL DE ESFORÇO</span>
+              <div class="effort-pills" role="radiogroup" aria-label="Nível de esforço">
+                @for (effort of efforts; track effort) {
+                  <label class="effort-pill">
+                    <input
+                      type="radio"
+                      name="effort"
+                      [value]="effort"
+                      [(ngModel)]="draft.effort"
+                      [disabled]="!providers.efforts(draft.provider, draft.model).includes(effort)"
+                    />
+                    <span>{{ effort ? effort.toUpperCase() : 'PADRÃO' }}</span>
+                  </label>
+                }
+              </div>
+              <span class="hint">Usa o nível padrão do modelo. Padrão: o do modelo da sessão.</span>
+            </div>
+
+            <div class="field full">
+              <label for="agentDescription">RESPONSABILIDADE / DESCRIÇÃO</label>
+              <textarea
+                id="agentDescription"
+                name="description"
+                [(ngModel)]="draft.description"
+                maxlength="400"
+              ></textarea>
+            </div>
+            <div class="field full">
+              <label for="agentSoul">SOUL / PERSONALIDADE</label>
+              <textarea
+                id="agentSoul"
+                name="soul"
+                [(ngModel)]="draft.soul"
+                maxlength="1200"
+              ></textarea>
+              <span class="label soul-hello">
+                MENSAGENS INICIAIS
+                <small>uma é sorteada ao começar cada conversa</small>
+              </span>
+              <div class="hello-list">
+                @for (hello of helloLines(); track $index) {
+                  <div class="hello-row">
+                    <span class="hello-num">{{ $index + 1 }}</span>
+                    <input
+                      name="hello"
+                      [ngModel]="hello"
+                      (ngModelChange)="setHello($index, $event)"
+                      [ngModelOptions]="{ standalone: true }"
+                      maxlength="300"
+                      [attr.aria-label]="'Mensagem inicial ' + ($index + 1)"
+                    />
+                    <button
+                      type="button"
+                      class="icon-button small"
+                      (click)="removeHello($index)"
+                      aria-label="Remover variação"
+                    >
+                      <luma-icon name="trash" />
+                    </button>
+                  </div>
+                }
+              </div>
+              <button
+                type="button"
+                class="btn ghost sm hello-add"
+                (click)="addHello()"
+                [disabled]="helloLines().length >= 8"
+              >
+                <luma-icon name="plus" />
+                Adicionar variação
+              </button>
+              <span class="hint">
+                Molda o jeito de conversar e de iniciar as conversas e vai na exportação. Todo
+                agente fica sempre de prontidão.
+              </span>
+            </div>
+            <div class="field full">
+              <label for="agentNext">PREFERÊNCIA DE HANDOFF</label>
+              <select id="agentNext" name="nextId" [(ngModel)]="draft.nextId">
+                <option value="">Comandante decide</option>
+                @for (a of store.agents(); track a.id) {
+                  @if (a.id !== draft.id) {
+                    <option [value]="a.id">{{ a.name }} / {{ rolesInfo[a.role]?.label }}</option>
+                  }
+                }
+              </select>
+              <span class="hint">
+                Adiciona o destino ao plano quando ele pertence ao squad e ainda não faz parte da
+                rota.
+              </span>
+            </div>
+            <div class="field full">
+              <div class="notice" style="margin-bottom: 0">
+                <luma-icon name="board" />
+                A produção do agente também aparece no Kanban de agentes. Use este campo para
+                indicar se ele ainda está em descoberta, definindo identidade, refinando prompts, em
+                validação ou pronto para uso.
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="editor-pane" [class.hidden]="tab() !== 'instructions'" data-pane="prompt">
+          <div class="field">
+            <label for="agentPrompt">SYSTEM PROMPT / INSTRUÇÕES DO AGENTE</label>
+            <textarea
+              id="agentPrompt"
+              class="code"
+              name="prompt"
+              [(ngModel)]="draft.prompt"
+              maxlength="20000"
+            ></textarea>
+            <span class="hint">
+              Defina papel, limites, entregáveis e contexto para o próximo especialista. Com o
+              bridge ativo, estas instruções são anexadas ao system prompt do CLI.
+            </span>
+          </div>
+          <button
+            type="button"
+            class="btn ghost sm"
+            (click)="resetPrompt()"
+            style="margin-top: 10px"
+          >
+            <luma-icon name="file" />
+            Usar instruções da especialidade
+          </button>
+        </div>
+        <div class="editor-pane" [class.hidden]="tab() !== 'tools'" data-pane="tools">
+          <p class="hint">
+            Estas seleções descrevem a especialidade do agente. O CLI usa ferramentas nativas; a
+            restrição efetiva de escrita vem do sandbox nas configurações. Colegas sem Edit, Write
+            ou Bash usam read-only.
+          </p>
+          <div class="eyebrow" style="margin: 15px 0">FERRAMENTAS SOLICITADAS</div>
+          <div class="check-grid">
+            @for (tool of tools; track tool) {
+              <label class="check-card">
+                <input
+                  type="checkbox"
+                  [checked]="draft.tools.includes(tool)"
+                  (change)="toggleTool(tool)"
+                />
+                <span>
+                  <strong>{{ tool }}</strong>
+                  <small>{{ toolInfo[tool] }}</small>
+                </span>
+              </label>
+            }
+          </div>
+          <div class="notice warning">
+            <luma-icon name="lock" />
+            <span>
+              O modo de permissão global continua valendo: em modo headless, qualquer ação que
+              exigiria aprovação é negada.
+            </span>
+          </div>
+        </div>
+        <div class="editor-pane" [class.hidden]="tab() !== 'advanced'" data-pane="advanced">
+          <div class="conv-head">
+            <div>
+              <div class="eyebrow">DIRETRIZES DO AGENTE</div>
+              <p class="hint">
+                Convenções e boas práticas em Markdown que o agente segue sempre que é executado:
+                nomenclatura, formatação, padrões de projeto, testes e entregas. São anexadas às
+                instruções enviadas ao CLI em toda etapa.
+              </p>
+            </div>
+            <span class="tag accent">{{ familyLabel() }}</span>
+          </div>
+          <div class="field conv-tpl-field">
+            <label for="convTemplateSelect">TEMPLATE BASE</label>
+            <div class="conv-tpl-row">
+              <select
+                id="convTemplateSelect"
+                name="template"
+                [ngModel]="templateSelection()"
+                (ngModelChange)="selectTemplate($event)"
+              >
+                @if (templateSelection() === '__custom') {
+                  <option value="__custom">
+                    {{
+                      draft.conventions.base.trim() ? 'Personalizado (editado)' : 'Sem guia base'
+                    }}
+                  </option>
+                }
+                @for (template of templates(); track template.key) {
+                  <option [value]="template.key">{{ template.name }}</option>
+                }
+              </select>
+              @if (templateSelection().startsWith('lib:')) {
+                <button
+                  type="button"
+                  class="icon-button small"
+                  (click)="deleteTemplate()"
+                  aria-label="Excluir template da biblioteca"
+                >
+                  <luma-icon name="trash" />
+                </button>
+              }
+            </div>
+          </div>
+          @if (canUndoConventions()) {
+            <div class="conv-undo">
+              <luma-icon name="check" />
+              <span>Template aplicado.</span>
+              <button type="button" class="link-button" (click)="undoConventions()">
+                DESFAZER
+              </button>
+            </div>
+          }
+          <div class="field">
+            <label for="convBase">GUIA BASE (MARKDOWN)</label>
+            <textarea
+              id="convBase"
+              class="code conv-base"
+              name="convBase"
+              [(ngModel)]="draft.conventions.base"
+              maxlength="20000"
+              spellcheck="false"
+            ></textarea>
+          </div>
+          <div class="conv-save">
+            <input
+              name="templateName"
+              [(ngModel)]="templateName"
+              maxlength="60"
+              placeholder="Nome do template na biblioteca"
+              aria-label="Nome do template"
+            />
+            <button type="button" class="btn ghost sm" (click)="saveTemplate()">
+              <luma-icon name="upload" />
+              Salvar como template
+            </button>
+          </div>
+          <div class="conv-sub-head">
+            <div>
+              <div class="eyebrow">SUBSETS</div>
+              <span class="hint">
+                Blocos de regras extras anexados depois do guia base. Cada bloco pode ser editado,
+                salvo na biblioteca ou removido.
+              </span>
+            </div>
+            <button
+              type="button"
+              class="btn ghost sm"
+              (click)="subsetPicker.update(toggle)"
+              [attr.aria-expanded]="subsetPicker()"
+            >
+              <luma-icon name="search" />
+              Adicionar subset
+            </button>
+          </div>
+          @if (subsetPicker()) {
+            <luma-convention-picker
+              [family]="draft.conventions.family"
+              [library]="store.workspace()!.conventionLibrary.subsets"
+              [used]="usedSubsets()"
+              (selected)="pickSubset($event)"
+              (deleted)="deleteLibrarySubset($event)"
+              (closed)="closeSubsetPicker()"
+            />
+          }
+          <div class="conv-subsets">
+            @for (subset of draft.conventions.subsets; track subset.id) {
+              <div class="conv-subset">
+                <div class="conv-subset-head">
+                  <span class="conv-subset-icon"><luma-icon name="file" /></span>
+                  <input
+                    [name]="'subsetName' + $index"
+                    [(ngModel)]="subset.name"
+                    maxlength="60"
+                    aria-label="Nome do subset"
+                  />
+                  <button
+                    type="button"
+                    class="icon-button small"
+                    (click)="saveSubset($index)"
+                    aria-label="Salvar subset na biblioteca"
+                  >
+                    <luma-icon name="upload" />
+                  </button>
+                  <button
+                    type="button"
+                    class="icon-button small"
+                    (click)="draft.conventions.subsets.splice($index, 1)"
+                    aria-label="Remover subset"
+                  >
+                    <luma-icon name="trash" />
+                  </button>
+                </div>
+                <textarea
+                  class="code conv-sub-content"
+                  [name]="'subset' + $index"
+                  [(ngModel)]="subset.content"
+                  maxlength="8000"
+                  spellcheck="false"
+                ></textarea>
+              </div>
+            }
+          </div>
+          <details class="conv-preview">
+            <summary>
+              PRÉ-VISUALIZAÇÃO FINAL
+              <span>{{ finalConventions().length }} caracteres</span>
+            </summary>
+            <div class="conv-md" [innerHTML]="render(finalConventions())"></div>
+          </details>
+        </div>
+        <div class="editor-pane" [class.hidden]="tab() !== 'squads'" data-pane="projects">
+          <div class="eyebrow" style="margin-bottom: 15px">POSIÇÕES NAS SQUADS</div>
+          <div class="check-grid">
+            @for (q of memberships(); track q.id) {
+              <div class="check-card">
+                <span class="sq-chip"><luma-icon name="squad" /></span>
+                <span>
+                  <strong>{{ q.name }}</strong>
+                  <small>{{ membership(q) }}</small>
+                </span>
+              </div>
+            } @empty {
+              <p class="hint">Este agente ainda não ocupa nenhuma posição em squads.</p>
+            }
+          </div>
+          <div class="notice">
+            <luma-icon name="link" />
+            As squads são montadas no Squad Studio, na árvore de comando (comandante, ADR, PRD e
+            operadores).
+            <button
+              type="button"
+              class="link-button"
+              (click)="dialogs.open('squad', store.project()?.squadId)"
+            >
+              Abrir Squad Studio
+              <luma-icon name="chevron" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    @if (look()) {
+      <div class="look-picker">
+        <div class="look-picker-backdrop" (click)="look.set(null)"></div>
+        <div
+          class="look-picker-panel"
+          role="dialog"
+          [attr.aria-label]="look() === 'photo' ? 'ESCOLHER FOTO' : 'ESCOLHER ÍCONE'"
+        >
+          <header class="look-picker-head">
+            <span class="eyebrow">
+              {{ look() === 'photo' ? 'ESCOLHER FOTO' : 'ESCOLHER ÍCONE' }}
+            </span>
+            <button
+              type="button"
+              class="icon-button small"
+              (click)="look.set(null)"
+              aria-label="Fechar galeria"
+            >
+              <luma-icon name="close" />
+            </button>
+          </header>
+          @if (look() === 'photo') {
+            <div class="portrait-grid look-grid">
+              <button
+                type="button"
+                class="portrait-choice"
+                [class.selected]="!draft.image"
+                (click)="draft.image = ''; look.set(null)"
+              >
+                <img [src]="autoPortrait()" alt="Automático" />
+                <span>AUTO</span>
+              </button>
+              @for (photo of photos; track photo[0]) {
+                <button
+                  type="button"
+                  class="portrait-choice"
+                  [class.selected]="draft.image === photo[1]"
+                  (click)="draft.image = photo[1]; look.set(null)"
+                  [title]="photoLabel(photo[0])"
+                >
+                  <img [src]="photo[1]" [alt]="photoLabel(photo[0])" loading="lazy" />
+                  <span>{{ photoShort(photo[0]) }}</span>
+                </button>
+              }
+            </div>
+            <label class="btn ghost sm">
+              Importar foto
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                (change)="upload($event)"
+                hidden
+              />
+            </label>
+          } @else {
+            <div class="icon-group-label">GERAL</div>
+            <div class="icon-picker look-grid">
+              <button
+                type="button"
+                class="icon-choice auto"
+                [class.selected]="!draft.icon"
+                (click)="draft.icon = ''; look.set(null)"
+                aria-label="Automático"
+              >
+                <luma-icon [name]="rolesInfo[draft.role].icon" />
+                <small>AUTO</small>
+              </button>
+              @for (icon of generalIcons; track icon) {
+                <button
+                  type="button"
+                  class="icon-choice"
+                  [class.selected]="draft.icon === icon"
+                  (click)="draft.icon = icon; syncConventions(); look.set(null)"
+                  [title]="iconLabels[icon]"
+                  [attr.aria-label]="iconLabels[icon]"
+                >
+                  <luma-icon [name]="icon" />
+                </button>
+              }
+            </div>
+            <div class="icon-group-label">TECNOLOGIAS</div>
+            <div class="icon-picker look-grid">
+              @for (icon of techIcons; track icon) {
+                <button
+                  type="button"
+                  class="icon-choice"
+                  [class.selected]="draft.icon === icon"
+                  (click)="draft.icon = icon; look.set(null)"
+                  [title]="iconLabels[icon]"
+                  [attr.aria-label]="iconLabels[icon]"
+                >
+                  <luma-icon [name]="icon" />
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </form>
+  <footer class="modal-footer" modal-footer>
+    @if (!isNew()) {
+      <button class="btn danger square" (click)="remove()" aria-label="Excluir agente">
+        <luma-icon name="trash" />
+      </button>
+      <button class="btn ghost" (click)="duplicate()">
+        <luma-icon name="copy" />
+        Duplicar
+      </button>
+      <button class="btn ghost" (click)="exportAgent()">
+        <luma-icon name="download" />
+        .md
+      </button>
+      @if (canReset()) {
+        <button class="btn ghost" (click)="reset()">
+          <luma-icon name="rotate-left" />
+          Restaurar default
+        </button>
+      }
+      <span class="grow"></span>
+    } @else {
+      <span class="footer-note">LOCAL / SEM EXECUÇÃO</span>
+    }
+    <button class="btn ghost" (click)="close()">Cancelar</button>
+    <button class="btn primary" type="submit" form="agentForm">
+      <luma-icon name="check" />
+      Salvar agente
+    </button>
+  </footer>
+</luma-modal>

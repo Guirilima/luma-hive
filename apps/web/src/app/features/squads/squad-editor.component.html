@@ -1,0 +1,395 @@
+<section id="squadsView" class="home-view squads-view" aria-label="Squad Studio">
+  <div class="home-inner ops-inner">
+    <header class="home-head">
+      <div>
+        <div class="eyebrow">LUMA HIVE / CADEIA DE COMANDO</div>
+        <h1>
+          SQUAD
+          <span>STUDIO.</span>
+        </h1>
+        <p>
+          Toda squad tem 1 comandante, 2 reconhecedores (ADR e PRD) e operadores especialistas.
+          Clique em uma posição da árvore para escolher o agente.
+        </p>
+      </div>
+      <div class="flex wrap home-actions">
+        <button class="btn primary" (click)="newSquad()">
+          <luma-icon name="squad" />
+          Nova squad
+        </button>
+      </div>
+    </header>
+    <div class="ops-layout">
+      <aside class="ops-list" id="sqList" aria-label="Squads">
+        <div class="ops-list-head">
+          <span>SQUADS</span>
+          <span>{{ pad(store.workspace()!.squads.length) }}</span>
+        </div>
+        @for (q of store.workspace()!.squads; track q.id) {
+          <button
+            class="ops-item squad-card"
+            [class.active]="q.id === draft.id"
+            (click)="selectSquad(q.id)"
+          >
+            <luma-squad-card [squad]="q" />
+          </button>
+        }
+        <button class="ops-item new" (click)="newSquad()">
+          <luma-icon name="plus" />
+          <strong>NOVA SQUAD</strong>
+        </button>
+      </aside>
+      <div class="ops-main">
+        <div id="sqHead">
+          <form id="squadForm" class="sq-name-form" (ngSubmit)="save()">
+            <label for="squadName" class="eyebrow">
+              {{ existing ? 'NOME DA SQUAD' : 'NOVA SQUAD / NOME OBRIGATÓRIO' }}
+            </label>
+            <input
+              id="squadName"
+              name="name"
+              [(ngModel)]="draft.name"
+              maxlength="60"
+              placeholder="Ex.: SQUAD ALPHA"
+              autocomplete="off"
+            />
+          </form>
+        </div>
+        <div class="sq-status">
+          <div class="ops-badges">
+            @if (dialogs.pendingOperation()) {
+              <span class="tag accent">
+                PARA A OPERAÇÃO {{ dialogs.pendingOperation().toUpperCase() }}
+              </span>
+            }
+            <span class="tag" [class.accent]="complete()" [class.sq-warn]="!complete()">
+              {{ complete() ? 'SQUAD COMPLETA' : 'FALTA: ' + missing().join(', ').toUpperCase() }}
+            </span>
+            @if (dirty() && existing) {
+              <span class="tag sq-dirty">ALTERAÇÕES NÃO SALVAS</span>
+            }
+            @for (p of operations(); track p.id) {
+              <span class="tag">{{ p.code }} / {{ p.name }}</span>
+            }
+          </div>
+          <div class="flex wrap">
+            @if (!existing) {
+              <button class="btn" (click)="cancelNew()">Cancelar</button>
+            } @else {
+              @if (dirty()) {
+                <button class="btn" (click)="selectSquad(draft.id)">Descartar</button>
+              }
+              <button class="btn danger" (click)="remove()">
+                <luma-icon name="trash" />
+                Excluir
+              </button>
+            }
+            <button class="btn primary" type="submit" form="squadForm">
+              <luma-icon name="check" />
+              {{
+                existing
+                  ? 'Salvar squad'
+                  : dialogs.pendingOperation()
+                    ? 'Criar squad e operação'
+                    : 'Criar squad'
+              }}
+            </button>
+          </div>
+        </div>
+        <section class="ops-section sq-stage" id="sqTree" aria-label="Hierarquia da squad">
+          <button
+            class="sq-view-toggle"
+            [class.on]="photos()"
+            (click)="togglePhotos()"
+            [attr.aria-pressed]="photos()"
+            [attr.aria-label]="
+              photos() ? 'Mostrar ícones dos agentes' : 'Mostrar fotos dos agentes'
+            "
+            title="Mostrar fotos / ícones"
+          >
+            <luma-icon [name]="photos() ? 'layers' : 'eye'" />
+          </button>
+          <div class="sq-tree">
+            <div class="sq-band sq-band-cmd">
+              <div class="sq-band-label">
+                <span>01 / COMANDO</span>
+                <small>RECEBE O BRIEFING, TOMA DECISÕES E DELEGA</small>
+              </div>
+              <div class="sq-row">
+                <button
+                  type="button"
+                  class="sq-node sq-commander"
+                  [class.filled]="!!draft.commanderId"
+                  [class.empty]="!draft.commanderId"
+                  (click)="openPick('commander')"
+                >
+                  <span class="sq-ring" [class.photo]="photos()">
+                    @if (agent(draft.commanderId); as member) {
+                      @if (photos()) {
+                        <img [src]="portrait(member)" alt="" />
+                      } @else {
+                        <luma-icon [name]="member.icon" />
+                      }
+                    } @else {
+                      <luma-icon name="lock" />
+                    }
+                  </span>
+                  <span class="sq-node-label">
+                    <strong>{{ agent(draft.commanderId)?.name || 'VAZIO' }}</strong>
+                    <small>{{ 'squad.commander' | t }}</small>
+                  </span>
+                </button>
+              </div>
+            </div>
+            <div class="sq-band">
+              <div class="sq-band-label">
+                <span>02 / INTELIGÊNCIA</span>
+                <small>TRANSFORMA REQUISITOS E CONTEXTO EM PLANO DE MISSÃO</small>
+              </div>
+              <div class="sq-row">
+                <div class="sq-bus">
+                  @for (slot of ['adr', 'prd']; track slot) {
+                    <button
+                      type="button"
+                      [class]="'sq-node sq-' + slot"
+                      [class.filled]="!!slotAgent(slot)"
+                      [class.empty]="!slotAgent(slot)"
+                      (click)="openPick($any(slot))"
+                    >
+                      <span class="sq-ring" [class.photo]="photos()">
+                        @if (slotAgent(slot); as member) {
+                          @if (photos()) {
+                            <img [src]="portrait(member)" alt="" />
+                          } @else {
+                            <luma-icon [name]="member.icon" />
+                          }
+                        } @else {
+                          <luma-icon name="lock" />
+                        }
+                      </span>
+                      <span class="sq-node-label">
+                        <strong>{{ slotAgent(slot)?.name || 'VAZIO' }}</strong>
+                        <small>{{ 'squad.' + slot | t }}</small>
+                      </span>
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+            <div class="sq-band">
+              <div class="sq-band-label">
+                <span>03 / OPERADORES</span>
+                <small>
+                  EXECUTA TECNICAMENTE A MISSÃO · {{ pad(draft.operatorIds.length) }} OPERADOR(ES)
+                </small>
+              </div>
+              <div class="sq-row">
+                <div class="sq-bus">
+                  @for (id of draft.operatorIds; track id) {
+                    @if (agent(id); as member) {
+                      <button
+                        type="button"
+                        class="sq-node sq-op filled"
+                        (click)="openPick('op', $index)"
+                      >
+                        <span class="sq-ring" [class.photo]="photos()">
+                          @if (photos()) {
+                            <img [src]="portrait(member)" alt="" />
+                          } @else {
+                            <luma-icon [name]="member.icon" />
+                          }
+                        </span>
+                        <span class="sq-node-label">
+                          <strong>{{ member.name }}</strong>
+                          <small>{{ 'role.' + member.role | t }}</small>
+                        </span>
+                      </button>
+                    }
+                  }
+                  <button type="button" class="sq-node sq-op add" (click)="openPick('op')">
+                    <span class="sq-ring"><luma-icon name="plus" /></span>
+                    <span class="sq-node-label">
+                      <strong>{{ 'action.add' | t }}</strong>
+                      <small>{{ 'squad.operators' | t }}</small>
+                    </span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</section>
+@if (pick(); as position) {
+  <div class="sq-pop-backdrop" (click)="closePick()"></div>
+  <section
+    class="sq-dock sq-pop"
+    id="sqDock"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Selecionar agente"
+    (keydown)="pickKeys($event)"
+  >
+    <div class="sq-dock-head">
+      @if (position.slot === 'op' && category) {
+        <button class="sq-back" (click)="backCategory()" aria-label="Voltar para as especialidades">
+          <luma-icon name="back" />
+          Especialidades
+        </button>
+      }
+      <span class="eyebrow">
+        SELECIONAR /
+        {{ pickerTitle() }}
+      </span>
+      <span class="sq-count">
+        {{ pad(pickerIndex() + 1) }} /
+        {{ pad(categoryMode() ? categories.length : choices().length) }}
+      </span>
+      <button class="icon-button small" (click)="closePick()" aria-label="Fechar seletor">
+        <luma-icon name="close" />
+      </button>
+    </div>
+    <div class="sq-strip-wrap">
+      <button class="sq-arrow" (click)="moveCursor(-1)" aria-label="Anterior">
+        <luma-icon name="back" />
+      </button>
+      <div
+        class="sq-strip"
+        [class.cats]="categoryMode()"
+        tabindex="0"
+        role="listbox"
+        aria-label="Opções para a posição"
+      >
+        <div class="sq-strip-track" [style.transform]="stripTransform()">
+          @if (categoryMode()) {
+            @for (item of categories; track item.key) {
+              <button
+                type="button"
+                class="sq-item category"
+                [class.active]="pickerIndex() === $index"
+                [class.near]="Math.abs(pickerIndex() - $index) === 1"
+                [class.far]="Math.abs(pickerIndex() - $index) > 1"
+                (click)="clickCategory(item.key)"
+              >
+                @if (currentCategory() === item.key) {
+                  <em class="sq-cat-now">ATUAL</em>
+                }
+                <span class="sq-cat-medal"><luma-icon [name]="categoryIcon(item.key)" /></span>
+                <strong>{{ item.label.toUpperCase() }}</strong>
+                <small>
+                  {{ categoryCount(item.key) }}
+                  {{ categoryCount(item.key) === 1 ? 'AGENTE' : 'AGENTES' }} NESTA CATEGORIA
+                </small>
+                <span class="sq-cat-chips">
+                  @for (chip of categoryChips(item.key).slice(0, 4); track $index) {
+                    <i>{{ chip }}</i>
+                  }
+                  @if (categoryChips(item.key).length > 4) {
+                    <i>+{{ categoryChips(item.key).length - 4 }}</i>
+                  }
+                </span>
+              </button>
+            }
+          } @else {
+            @for (item of choices(); track item.id) {
+              <button
+                class="sq-item"
+                [class.existing]="!!store.agent(item.id)"
+                [class.preset]="item.id !== '__custom__' && !store.agent(item.id)"
+                [class.custom]="item.id === '__custom__'"
+                [class.active]="choice()?.name === item.name"
+                [class.near]="Math.abs(pickerIndex() - $index) === 1"
+                [class.far]="Math.abs(pickerIndex() - $index) > 1"
+                [class.taken]="taken(item.id)"
+                (click)="clickChoice(item)"
+                [attr.aria-label]="item.name"
+              >
+                <span class="sq-item-photo">
+                  @if (item.id === '__custom__') {
+                    <luma-icon name="sparkle" />
+                  } @else {
+                    <img [src]="portrait(item)" alt="" />
+                  }
+                </span>
+                <small>{{ item.name }}</small>
+              </button>
+            }
+          }
+        </div>
+      </div>
+      <button class="sq-arrow" (click)="moveCursor(1)" aria-label="Próximo">
+        <luma-icon name="arrow" />
+      </button>
+    </div>
+    <div class="sq-detail">
+      <div class="sq-detail-icon">
+        @if (categoryMode()) {
+          <luma-icon [name]="categoryIcon(selectedCategory()?.key || '')" />
+        } @else if (choice(); as item) {
+          @if (item.id === '__custom__') {
+            <luma-icon name="sparkle" />
+          } @else {
+            <img [src]="portrait(item)" alt="" />
+          }
+        }
+      </div>
+      <div class="sq-detail-text">
+        <span class="sq-detail-tag eyebrow">
+          {{ categoryMode() ? 'CATEGORIA' : choiceTag() }}
+        </span>
+        <h3 class="sq-type">
+          {{ categoryMode() ? selectedCategory().label.toUpperCase() : choice()?.name }}
+        </h3>
+        <span class="sq-detail-role">
+          {{
+            categoryMode()
+              ? categoryCount(selectedCategory().key) + ' AGENTES NESTA CATEGORIA'
+              : choiceRole()
+          }}
+        </span>
+        <p class="sq-detail-desc">
+          {{ categoryMode() ? categoryDescription() : choice()?.description }}
+        </p>
+        @if (!categoryMode() && choice()?.id !== '__custom__') {
+          <div class="sq-detail-prompt">
+            <span class="eyebrow">
+              INSTRUÇÕES DO AGENTE
+              @if (conventionLabel()) {
+                · CONVENÇÕES: {{ conventionLabel().toUpperCase() }}
+              }
+            </span>
+            <p class="sq-prompt-text">
+              {{ choice()?.prompt }}
+            </p>
+            <button class="link-button" (click)="openDetails()">
+              VER MAIS
+              <luma-icon name="chevron" />
+            </button>
+          </div>
+        }
+      </div>
+      <div class="sq-detail-actions">
+        <button
+          class="btn primary"
+          (click)="confirmPick()"
+          [disabled]="!categoryMode() && (!choice() || taken(choice()!.id))"
+        >
+          <luma-icon name="check" />
+          {{ confirmLabel() }}
+        </button>
+        @if (position.slot === 'op' && position.index >= 0) {
+          <button
+            class="btn danger"
+            (click)="draft.operatorIds.splice(position.index, 1); closePick()"
+          >
+            <luma-icon name="trash" />
+            Remover
+          </button>
+        }
+      </div>
+    </div>
+    <p class="hint">Use ← → para navegar, Enter para escolher e Esc para fechar.</p>
+  </section>
+}

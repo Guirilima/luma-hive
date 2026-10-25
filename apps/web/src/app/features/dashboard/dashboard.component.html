@@ -1,0 +1,293 @@
+<section id="homeView" class="home-view">
+  <div class="home-inner">
+    <!-- Header: PAINEL GERAL. -->
+    <header class="home-head">
+      <div>
+        <div class="eyebrow">LUMA HIVE / {{ today() }}</div>
+        <h1>
+          PAINEL
+          <span>GERAL.</span>
+        </h1>
+        <p>
+          {{ store.workspace()?.projects?.length || 0 }} operação(ões),
+          {{ store.agents().length }} agentes
+          @if (reviewCount() > 0) {
+            ,
+            <strong>{{ reviewCount() }} entrega(s) aguardando sua aprovação</strong>
+          }
+          .
+        </p>
+      </div>
+      <div class="flex wrap home-actions">
+        <button class="btn ghost" (click)="dialogs.open('agent')">
+          <luma-icon name="plus" />
+          Novo agente
+        </button>
+        <button class="btn ghost" (click)="dialogs.open('project')">
+          <luma-icon name="project" />
+          Nova operação
+        </button>
+        <button class="btn primary" (click)="router.navigateByUrl('/squad')">
+          <luma-icon name="arrow" />
+          Abrir rede do squad
+        </button>
+      </div>
+    </header>
+
+    <!-- Seção OPERAÇÕES -->
+    <section class="home-section home-projects-wrap">
+      <div class="home-section-head">
+        <span>OPERAÇÕES</span>
+        <span>{{ pad(store.workspace()?.projects?.length || 0) }}</span>
+      </div>
+      <div class="home-projects">
+        @for (project of store.workspace()?.projects; track project.id) {
+          <article class="home-project" [class.current]="project.id === store.project()?.id">
+            <div class="between">
+              <span class="eyebrow">{{ project.code }}</span>
+              @if (project.id === store.project()?.id) {
+                <span class="tag accent">ATIVO</span>
+              }
+            </div>
+            <h3>{{ project.name }}</h3>
+            <p>{{ project.briefing.slice(0, 110) || 'Briefing pendente.' }}</p>
+            <div class="home-progress">
+              <div class="progress-rail">
+                <span [style.width.%]="progress(project)"></span>
+              </div>
+              <strong>{{ progress(project) }}%</strong>
+            </div>
+            <dl class="home-stats">
+              <div>
+                <dt>A FAZER</dt>
+                <dd>{{ pad(aFazer(project)) }}</dd>
+              </div>
+              <div>
+                <dt>PRONTAS</dt>
+                <dd>{{ pad(prontas(project)) }}</dd>
+              </div>
+              <div>
+                <dt>RODANDO</dt>
+                <dd>{{ pad(rodando(project)) }}</dd>
+              </div>
+              <div [class.attention]="revisao(project) > 0">
+                <dt>REVISÃO</dt>
+                <dd>{{ pad(revisao(project)) }}</dd>
+              </div>
+              <div>
+                <dt>FEITAS</dt>
+                <dd>{{ pad(feitas(project)) }}</dd>
+              </div>
+            </dl>
+            <div class="between home-project-foot">
+              <div class="mini-faces">
+                @for (agent of squadAgents(project); track agent.id) {
+                  <img [src]="portrait(agent)" [alt]="agent.name" [title]="agent.name" />
+                }
+              </div>
+              <div class="flex">
+                <button
+                  class="btn sm"
+                  [class.white]="project.id === store.project()?.id"
+                  (click)="openProject(project.id)"
+                >
+                  <luma-icon name="arrow" />
+                  Abrir projeto
+                </button>
+                <button
+                  class="btn sm"
+                  (click)="openTeams(project.id)"
+                  title="Agent Teams: reunião online para co-escrever documentos"
+                >
+                  <luma-icon name="video" />
+                  Abrir times
+                </button>
+              </div>
+            </div>
+          </article>
+        }
+        <button class="home-project new" (click)="dialogs.open('project')">
+          <luma-icon name="plus" />
+          <strong>Nova operação</strong>
+          <small>Nome do projeto e squad.</small>
+        </button>
+      </div>
+    </section>
+
+    <!-- Seção SQUADS -->
+    <section class="home-section home-squads-wrap">
+      <div class="home-section-head">
+        <span>SQUADS</span>
+        <span class="flex">
+          {{ pad(store.workspace()?.squads?.length || 0) }}
+          <button class="link-button" (click)="dialogs.open('squad', store.project()?.squadId)">
+            SQUAD STUDIO
+            <luma-icon name="chevron" />
+          </button>
+        </span>
+      </div>
+      <div class="home-squads">
+        @for (squad of store.workspace()?.squads; track squad.id) {
+          <button class="home-squad squad-card" (click)="dialogs.open('squad', squad.id)">
+            <luma-squad-card [squad]="squad" />
+          </button>
+        }
+        <button class="home-squad new" (click)="dialogs.open('squad', undefined, 'new')">
+          <luma-icon name="plus" />
+          <strong>Nova squad</strong>
+          <small>Comandante, ADR, PRD e operadores.</small>
+        </button>
+      </div>
+    </section>
+
+    <!-- Grid inferior: OPERAÇÃO ATIVA + ATIVIDADE RECENTE -->
+    <div class="home-grid">
+      <!-- Coluna esquerda -->
+      <section class="home-section">
+        <div class="home-section-head">
+          <span>OPERAÇÃO ATIVA</span>
+          @if (
+            execution.busy() ||
+            execution.planning() ||
+            (execution.planOrigin() === 'execution' && !!execution.plan())
+          ) {
+            <i class="dot"></i>
+          }
+        </div>
+
+        @if (execution.busy() || execution.planning()) {
+          <div class="home-run live">
+            <luma-icon name="radio" />
+            <div class="grow">
+              <span class="eyebrow">
+                {{
+                  execution.planning()
+                    ? 'COMANDANTE PLANEJANDO'
+                    : execution.plan()
+                      ? 'PLANO AGUARDA APROVAÇÃO'
+                      : execution.paused()
+                        ? 'PAUSADA'
+                        : 'EXECUTANDO'
+                }}
+                /
+                {{ store.settings()?.mode === 'live' ? store.providerLabel() + ' CLI' : 'DEMO' }}
+              </span>
+              <strong>
+                {{
+                  execution.planning()
+                    ? 'O comandante está montando o plano'
+                    : execution.plan()
+                      ? 'Aprove o plano no chat da operação'
+                      : execution.label() || 'Selecionando próxima feature'
+                }}
+              </strong>
+              <span>{{ store.project()?.name }}</span>
+            </div>
+            <div class="flex wrap">
+              <button class="btn ghost sm" (click)="execution.room.open()">
+                <luma-icon name="chat" />
+                Chat
+              </button>
+              <button class="btn ghost sm" (click)="dialogs.open('console')">
+                <luma-icon name="terminal" />
+                Console
+              </button>
+              <button class="btn sm" (click)="execution.startCurrent()">
+                <luma-icon [name]="execution.busy() && !execution.paused() ? 'pause' : 'play'" />
+                {{
+                  execution.plan() ? 'Executar plano' : execution.paused() ? 'Continuar' : 'Pausar'
+                }}
+              </button>
+              <button class="btn danger sm" (click)="execution.stop()">
+                <luma-icon name="stop" />
+                Encerrar
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div class="home-run idle">
+            <luma-icon name="clock" />
+            <div class="grow">
+              <strong>Nenhuma operação em andamento</strong>
+              <span>
+                {{ store.project()?.name }} / {{ currentSprint()?.name || 'sprint' }}:
+                {{ idleNote() }}
+              </span>
+            </div>
+            <button
+              class="btn sm"
+              [class.primary]="ready()"
+              [class.ghost]="!ready()"
+              (click)="runAction()"
+            >
+              <luma-icon [name]="ready() ? 'play' : canPlan() ? 'flow' : 'layers'" />
+              {{
+                ready()
+                  ? (store.settings()?.mode === 'live' ? 'Executar ' : 'Simular ') +
+                    (currentSprint()?.name || 'sprint')
+                  : canPlan()
+                    ? 'Planejar ' + (currentSprint()?.name || 'sprint')
+                    : 'Ver sprints'
+              }}
+            </button>
+          </div>
+        }
+
+        <!-- AGUARDANDO REVISÃO -->
+        <div class="home-section-head" style="margin-top: 22px">
+          <span>AGUARDANDO REVISÃO</span>
+          <span>{{ pad(reviewCount()) }}</span>
+        </div>
+        <div class="home-list">
+          @for (item of reviews(); track item.feature.id) {
+            <button class="home-review" (click)="review(item.projectId, item.feature.id)">
+              <span class="tag accent">{{ item.feature.key }}</span>
+              <span class="grow">
+                <strong>{{ item.feature.title }}</strong>
+                <small>{{ projectName(item.projectId) }}</small>
+              </span>
+              <span class="tag">
+                {{ store.settings()?.mode === 'live' ? store.providerLabel() : 'DEMO' }}
+              </span>
+              <luma-icon name="chevron" />
+            </button>
+          } @empty {
+            <div class="home-empty">
+              <luma-icon name="check" />
+              Nenhuma entrega aguardando aprovação.
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Coluna direita: ATIVIDADE RECENTE -->
+      <section class="home-section">
+        <div class="home-section-head">
+          <span>ATIVIDADE RECENTE</span>
+          <button class="link-button" (click)="dialogs.open('console', undefined, 'logs')">
+            VER TRANSMISSÕES →
+          </button>
+        </div>
+        <div class="home-list home-activity-list">
+          @for (item of activity(); track item.l.id) {
+            <div class="home-activity">
+              <time>{{ clock(item.l.at) }}</time>
+              <span class="home-activity-body">
+                <strong>{{ item.p.code }} / {{ agentName(item.l.agentId) }}</strong>
+                <span>{{ item.l.message }}</span>
+              </span>
+              <span class="tag" [class.accent]="!item.l.simulated">
+                {{ item.l.simulated ? 'DEMO' : store.providerLabel(item.l.agentId) }}
+              </span>
+            </div>
+          } @empty {
+            <div class="home-empty">
+              <luma-icon name="radio" />
+              Canal em silêncio.
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

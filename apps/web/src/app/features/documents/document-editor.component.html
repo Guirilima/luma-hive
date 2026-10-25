@@ -1,0 +1,71 @@
+<luma-modal title="project.documents" (closed)="dialogs.close()">
+  <form (ngSubmit)="save()">
+    @if (isAdr) {
+      <div class="form-grid">
+        <label class="field">
+          {{ 'feature.title' | t }}
+          <input name="title" [(ngModel)]="adr.title" required />
+        </label>
+        <label class="field">
+          Status
+          <select name="status" [(ngModel)]="adr.status">
+            @for (
+              status of ['Proposto', 'Aceito', 'Rejeitado', 'Depreciado', 'Substituído'];
+              track status
+            ) {
+              <option [value]="status">{{ status }}</option>
+            }
+          </select>
+        </label>
+        <label class="field">
+          {{ 'handoff.date' | t }}
+          <input type="date" name="date" [(ngModel)]="adr.date" />
+        </label>
+      </div>
+    } @else {
+      <h3>{{ 'project.' + field | t }}</h3>
+    }
+    <luma-markdown-editor
+      [(value)]="content"
+      [label]="isAdr ? 'project.adrs' : 'project.' + field"
+      [rows]="16"
+      [disabled]="working()"
+    />
+    <div class="form-grid generation-controls">
+      <select name="agent" [(ngModel)]="agentId" [attr.aria-label]="'agent.name' | t">
+        @for (agent of store.team(); track agent.id) {
+          <option [value]="agent.id">{{ agent.name }}</option>
+        }
+      </select>
+      <button
+        type="button"
+        class="btn"
+        (click)="generate()"
+        [disabled]="working() || execution.busy()"
+      >
+        {{ 'chat.generateDoc' | t }}
+      </button>
+    </div>
+    @if (response()) {
+      <div class="review-output">
+        <pre>{{ response() }}</pre>
+        <button type="button" class="btn" (click)="content = response(); response.set('')">
+          {{ 'chat.apply' | t }}
+        </button>
+      </div>
+    }
+    <footer class="form-footer">
+      @if (isAdr && existingAdr) {
+        <button class="btn danger" type="button" (click)="remove()">
+          {{ 'action.delete' | t }}
+        </button>
+      }
+      <button class="btn" type="button" (click)="export()">{{ 'action.export' | t }}</button>
+      <span class="grow"></span>
+      <button class="btn" type="button" (click)="dialogs.close()">{{ 'action.cancel' | t }}</button>
+      <button class="btn primary" [disabled]="working() || execution.busy()">
+        {{ 'action.save' | t }}
+      </button>
+    </footer>
+  </form>
+</luma-modal>

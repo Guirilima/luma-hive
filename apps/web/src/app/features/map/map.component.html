@@ -1,0 +1,615 @@
+<div
+  id="mapViewport"
+  class="map-surface"
+  [attr.data-view]="store.settings()?.layout === 'city-3d' ? 'city' : 'office'"
+  [class.focused]="focused()"
+  [class.handoffs-map]="handoffs()"
+  [class.office-layout]="store.settings()?.layout === 'office-3d'"
+  [class.map-moving]="!!movingId()"
+  [class.pixel-layout]="store.settings()?.layout === 'office-pixel'"
+  (click)="mapClick($event)"
+  (dblclick)="createAt($event)"
+  (wheel)="wheel($event)"
+  (pointerdown)="down($event)"
+  (pointermove)="move($event)"
+  (pointerup)="up($event)"
+  (contextmenu)="$event.preventDefault()"
+  (pointercancel)="drag = null"
+>
+  @for (layout of [store.settings()?.layout]; track layout) {
+    <canvas id="cityCanvas" #canvas [attr.data-layout]="layout" aria-hidden="true"></canvas>
+  }
+  @if (transition()) {
+    <img class="map-transition" [src]="transition()" alt="" />
+  }
+  <div id="mapNodes" class="map-markers">
+    @if (store.settings()?.layout === 'office-pixel') {
+      @for (marker of markers(); track marker.id) {
+        @if (store.agent(marker.id); as a) {
+          <button
+            type="button"
+            class="pixel-agent pixel-marker"
+            [class.selected]="store.selectedId() === a.id"
+            [class.working]="execution.busyAgents().includes(a.id)"
+            [style.left.px]="marker.x - 21"
+            [style.top.px]="marker.y - 62"
+            [style.transform]="'scale(' + marker.scale + ')'"
+            [style.--pixel-label-scale]="Math.max(1, Math.min(2, 0.85 / (marker.scale || 1)))"
+            [style.--pixel-label-row]="(marker.labelRow || 0) + 'px'"
+            (click)="select(a.id)"
+            (dblclick)="dialogs.open('chat', a.id)"
+            (pointerdown)="agentDown($event, a.id)"
+            [attr.aria-label]="a.name"
+          >
+            <span class="pixel-agent-name">{{ a.name }}</span>
+            <span class="pixel-agent-status">
+              {{
+                execution.busyAgents().includes(a.id)
+                  ? 'TRABALHANDO'
+                  : marker.walking
+                    ? 'EM TRÂNSITO'
+                    : 'DISPONÍVEL'
+              }}
+            </span>
+          </button>
+        }
+      }
+    } @else {
+      @for (marker of markers(); track marker.id) {
+        @if (store.agent(marker.id); as agent) {
+          <button
+            class="map-node"
+            [class.selected]="!dismissed() && store.selectedId() === agent.id"
+            [class.walking]="marker.walking"
+            [class.working]="execution.busyAgents().includes(agent.id)"
+            [style.left.px]="marker.x"
+            [style.top.px]="marker.y"
+            (pointerdown)="agentDown($event, agent.id)"
+            (click)="select(agent.id)"
+            (dblclick)="dialogs.open('chat', agent.id)"
+            [attr.aria-label]="agent.name"
+            [attr.aria-pressed]="!dismissed() && store.selectedId() === agent.id"
+          >
+            <span class="node-diamond"></span>
+            <span class="node-icon">
+              <luma-icon [name]="agent.icon || roles[agent.role].icon" />
+            </span>
+            @if (marker.badge) {
+              <span class="life-badge">{{ 'life.' + marker.badge | t }}</span>
+            }
+            <span class="node-index">N.{{ pad($index + 1) }}</span>
+            <span class="node-caption">
+              <strong>{{ agent.name }}</strong>
+              <small>
+                {{
+                  store.selectedId() === agent.id
+                    ? roleLabel(agent)
+                    : roles[agent.role].short +
+                      ' / ' +
+                      (execution.busyAgents().includes(agent.id) ? 'EXECUTANDO' : 'READY')
+                }}
+              </small>
+            </span>
+          </button>
+        }
+      }
+    }
+    @for (card of cards(); track card.id) {
+      @if (store.agent(card.id); as agent) {
+        <span
+          class="card-leader"
+          [class.selected]="!dismissed() && store.selectedId() === agent.id"
+          [style.left.px]="card.leaderX"
+          [style.top.px]="card.leaderY"
+          [style.width.px]="card.leaderWidth"
+          [style.transform]="card.leaderAngle"
+        ></span>
+        <button
+          class="agent-card"
+          [class.selected]="!dismissed() && store.selectedId() === agent.id"
+          [style.left.px]="card.cardX"
+          [style.top.px]="card.cardY"
+          (pointerdown)="agentDown($event, agent.id)"
+          (click)="select(agent.id)"
+          (dblclick)="dialogs.open('chat', agent.id)"
+        >
+          <img [src]="portrait(agent)" alt="" />
+          <span class="agent-card-text">
+            <strong>{{ agent.name }}</strong>
+            <small>{{ roleLabel(agent) }}</small>
+          </span>
+        </button>
+      }
+    }
+    @for (marker of markers(); track marker.id) {
+      @if (
+        store.settings()?.layout !== 'office-pixel' && actionsFor() === marker.id && !movingId()
+      ) {
+        <div class="node-actions" [style.left.px]="marker.x" [style.top.px]="marker.y">
+          <button
+            class="node-bubble chat"
+            (click)="dialogs.open('chat', marker.id)"
+            [title]="'agent.chat' | t"
+          >
+            <luma-icon name="phone" />
+            <span>CONVERSAR</span>
+          </button>
+          <button class="node-bubble move" (click)="beginMove(marker.id)" [title]="'map.move' | t">
+            <luma-icon name="move" />
+            <span>DESLOCAR</span>
+          </button>
+          <button
+            class="node-bubble edit"
+            (click)="dialogs.open('agent', marker.id)"
+            [title]="'action.edit' | t"
+          >
+            <luma-icon name="edit" />
+            <span>EDITAR</span>
+          </button>
+        </div>
+      }
+    }
+  </div>
+  @if (store.settings()?.layout === 'office-3d') {
+    <div class="ops-layer">
+      @for (card of workCards(); track card.id) {
+        @if (store.agent(card.id); as member) {
+          @if (workState(card.id); as work) {
+            <button
+              type="button"
+              class="ops-pop"
+              [class.walking]="card.walking"
+              [attr.data-tone]="work.tone"
+              [attr.data-pop]="member.id"
+              [style.left.px]="card.cardX"
+              [style.top.px]="card.cardY"
+              [attr.aria-label]="
+                member.name + ', ' + roleLabel(member) + ': ' + work.chip + '. ' + work.doing
+              "
+              (click)="select(member.id)"
+            >
+              <img [src]="portrait(member)" alt="" />
+              <span class="ops-who">
+                <strong>{{ member.name }}</strong>
+                <small>{{ roleLabel(member) }}</small>
+                <span class="ops-foot">{{ work.foot }}</span>
+              </span>
+              <em class="ops-chip">{{ work.chip }}</em>
+              <span class="ops-doing">
+                <i><luma-icon [name]="work.icon" /></i>
+                <span>{{ work.doing }}</span>
+              </span>
+              <span class="ops-say">{{ work.say }}</span>
+            </button>
+          }
+        }
+      }
+    </div>
+  }
+  <div class="office-labels">
+    @for (room of roomMarkers(); track room.id) {
+      <button
+        class="office-label"
+        [attr.data-room]="room.id"
+        [class.war]="room.id === 'WAR'"
+        [class.live]="
+          room.id === 'WAR' &&
+          (execution.busy() ||
+            execution.planning() ||
+            (execution.planOrigin() === 'execution' && !!execution.plan()))
+        "
+        [style.left.px]="room.x"
+        [style.top.px]="room.y"
+        (click)="room.id === 'WAR' && dialogs.open('room')"
+      >
+        {{ (room.index + 1).toString().padStart(2, '0') }} / {{ roomLabel(room.key).toUpperCase() }}
+      </button>
+    }
+  </div>
+  @if (store.settings()?.layout === 'office-pixel') {
+    <div class="pixel-heading">
+      <span class="pixel-kicker">SQUAD / OFFICE</span>
+      <strong>ESCRITÓRIO PIXEL</strong>
+      <small class="pixel-summary">
+        13 DEPARTAMENTOS · {{ store.team().length }} AGENTES ·
+        {{
+          execution.busy()
+            ? execution.paused()
+              ? 'OPERAÇÃO PAUSADA'
+              : 'EM OPERAÇÃO'
+            : 'EM PRONTIDÃO'
+        }}
+      </small>
+    </div>
+    <div class="pixel-note" role="status">{{ pixelNote() }}</div>
+    @if (store.selected(); as a) {
+      <div class="pixel-actions">
+        <button type="button" (click)="dialogs.open('chat', a.id)">Conversar</button>
+        <button type="button" (click)="beginMove(a.id)">Visitar sala</button>
+        <button type="button" (click)="dialogs.open('agent', a.id)">Editar agente</button>
+        <select
+          class="pixel-destination"
+          aria-label="Departamento para visitar"
+          (change)="visitDepartment($any($event.target).value); $any($event.target).value = ''"
+        >
+          <option value="">Visitar departamento…</option>
+          @for (r of rooms; track r.id) {
+            <option [value]="r.id">{{ r.name }}</option>
+          }
+        </select>
+      </div>
+    }
+  }
+  @if (movingId()) {
+    <div class="map-move-banner">
+      {{ 'map.moveHint' | t }}
+      <button class="btn sm" (click)="movingId.set('')">{{ 'action.cancel' | t }}</button>
+    </div>
+  }
+</div>
+@if (!background()) {
+  <div class="map-side-controls hud" aria-label="Controles do mapa">
+    @if (!handoffs() && store.settings()?.layout !== 'city-3d') {
+      <button
+        class="pixel-toggle"
+        (click)="
+          setLayout(store.settings()?.layout === 'office-pixel' ? 'office-3d' : 'office-pixel')
+        "
+        [attr.aria-pressed]="store.settings()?.layout === 'office-pixel'"
+        aria-label="Ver escritório pixel art"
+      >
+        <span aria-hidden="true">▦</span>
+        <span class="msc-tip"><b>Ver escritório pixel art</b></span>
+      </button>
+    }
+    <button
+      class="view-toggle"
+      (click)="setLayout(store.settings()?.layout === 'city-3d' ? 'office-3d' : 'city-3d')"
+      [attr.data-view]="store.settings()?.layout === 'city-3d' ? 'city' : 'office'"
+      aria-label="Alternar vista do mapa"
+    >
+      <span class="vt-cube">
+        <span class="vt-face vt-city"><luma-icon name="map-city" /></span>
+        <span class="vt-face vt-office"><luma-icon name="map-office" /></span>
+      </span>
+      <span class="msc-tip">
+        <b>Alternar vista</b>
+        <kbd>V</kbd>
+      </span>
+    </button>
+    <button
+      class="shape-toggle"
+      [class.off]="store.settings()?.layout !== 'city-3d'"
+      [disabled]="store.settings()?.layout !== 'city-3d'"
+      (click)="toggleShape()"
+      [attr.aria-pressed]="store.settings()?.cityShape === 'planet'"
+      aria-label="Dobrar em planeta"
+    >
+      <luma-icon name="map-planet" />
+      <span class="msc-tip">
+        <b>Dobrar em planeta</b>
+        <kbd>P</kbd>
+      </span>
+    </button>
+    <span class="map-control-line"></span>
+    <div class="msc-zoom" role="group" aria-label="Zoom do mapa">
+      <button class="msc-in" (click)="zoom(1.15)" aria-label="Ampliar mapa">
+        <luma-icon name="map-zoom-in" />
+        <span class="msc-tip">
+          <b>Ampliar</b>
+          <kbd>+</kbd>
+        </span>
+      </button>
+      <span id="zoomValue">{{ zoomPercent() }}%</span>
+      <button class="msc-out" (click)="zoom(1 / 1.15)" aria-label="Reduzir mapa">
+        <luma-icon name="map-zoom-out" />
+        <span class="msc-tip">
+          <b>Reduzir</b>
+          <kbd>−</kbd>
+        </span>
+      </button>
+    </div>
+    <button class="msc-center" (click)="home()" aria-label="Centralizar mapa">
+      <luma-icon name="map-center" />
+      <span class="msc-tip">
+        <b>Centralizar</b>
+        <kbd>0</kbd>
+      </span>
+    </button>
+    <button
+      class="msc-rot-l"
+      (click)="rotate(-Math.PI / 4)"
+      aria-label="Girar mapa para a esquerda"
+    >
+      <luma-icon name="map-rot-left" />
+      <span class="msc-tip">
+        <b>Girar à esquerda</b>
+        <kbd>[</kbd>
+      </span>
+    </button>
+    <button class="msc-rot-r" (click)="rotate(Math.PI / 4)" aria-label="Girar mapa para a direita">
+      <luma-icon name="map-rot-right" />
+      <span class="msc-tip">
+        <b>Girar à direita</b>
+        <kbd>]</kbd>
+      </span>
+    </button>
+    <span class="map-control-line"></span>
+    <button class="msc-panels" (click)="toggleFocus()" aria-label="Ocultar painéis">
+      <luma-icon name="map-panels" />
+      <span class="msc-tip">
+        <b>Ocultar painéis</b>
+        <kbd>H</kbd>
+      </span>
+    </button>
+  </div>
+  @if (!focused()) {
+    <aside class="left-hud hud" id="leftHud" aria-label="Projeto e squad">
+      <div class="project-topline">
+        <span>{{ store.project()?.code }} / WORKSPACE</span>
+        <luma-icon name="radio" />
+      </div>
+      @if (handoffs()) {
+        <h1>
+          FLUXO DE
+          <br />
+          <span>HANDOFFS.</span>
+        </h1>
+      }
+      <button
+        class="project-chip"
+        (click)="router.navigateByUrl('/projects')"
+        title="Trocar ou criar projeto"
+      >
+        <luma-icon name="project" />
+        <span class="grow">
+          <strong>{{ store.project()?.name }}</strong>
+          <small>
+            {{ store.team().length }} AGENTES / {{ store.project()?.features?.length }} FEATURES
+          </small>
+        </span>
+        <luma-icon name="chevron" />
+      </button>
+      <div class="squad-head">
+        <span>{{ squadName() }}</span>
+        <span>{{ pad(store.team().length) }}</span>
+      </div>
+      <div class="roster">
+        @for (agent of store.team(); track agent.id) {
+          <button
+            class="roster-item"
+            [class.selected]="store.selectedId() === agent.id && !dismissed()"
+            (click)="select(agent.id)"
+            (dblclick)="dialogs.open('chat', agent.id)"
+            [attr.aria-label]="'Selecionar ' + agent.name"
+            title="Duplo clique para conversar"
+            [attr.aria-pressed]="!dismissed() && store.selectedId() === agent.id"
+          >
+            <img class="roster-avatar" [src]="portrait(agent)" alt="" />
+            <div>
+              <div class="roster-name">{{ agent.name }}</div>
+              <div class="roster-role">{{ roleLabel(agent) }}</div>
+            </div>
+            <div class="roster-end" [class.busy]="execution.busyAgents().includes(agent.id)">
+              @if (execution.busyAgents().includes(agent.id)) {
+                <i class="dot"></i>
+              } @else {
+                <luma-icon [name]="agent.icon || roles[agent.role].icon" />
+              }
+              <span class="role-short">{{ roles[agent.role].short }}</span>
+            </div>
+          </button>
+        }
+      </div>
+      <div class="roster-add">
+        <button (click)="dialogs.open('agent')">
+          <luma-icon name="plus" />
+          NOVO AGENTE
+        </button>
+        <button (click)="openSection('opsBriefing')">
+          <luma-icon name="file" />
+          BRIEFING
+        </button>
+        <button (click)="dialogs.open('squad', store.project()?.squadId)">
+          <luma-icon name="squad" />
+          SQUAD STUDIO
+        </button>
+      </div>
+    </aside>
+    @if (!dismissed()) {
+      @if (store.selected(); as agent) {
+        <aside class="right-hud hud" id="rightHud" aria-label="Agente selecionado">
+          <div class="section-cap">
+            <span>PERFIL DO AGENTE</span>
+            <button
+              class="icon-button small"
+              (click)="dialogs.open('agent', agent.id)"
+              [attr.aria-label]="'Editar ' + agent.name"
+            >
+              <luma-icon name="edit" />
+            </button>
+          </div>
+          <div class="identity">
+            <div class="identity-portrait">
+              <img [src]="portrait(agent)" [alt]="'Retrato de ' + agent.name" />
+            </div>
+            <div class="grow">
+              <div class="identity-name">{{ agent.name }}</div>
+              <span class="identity-role">{{ roleLabel(agent) }}</span>
+              <div class="identity-id">
+                {{ roles[agent.role].short }} // {{ pad(store.agents().indexOf(agent) + 1) }} /
+                AGENT
+              </div>
+            </div>
+          </div>
+          <p class="agent-description">{{ agent.description }}</p>
+          <dl>
+            <div class="data-pair">
+              <dt>MODELO</dt>
+              <dd>
+                {{ agent.provider.toUpperCase() }} /
+                {{
+                  agent.model === 'inherit'
+                    ? 'PADRÃO ' + agent.provider.toUpperCase()
+                    : agent.model.toUpperCase()
+                }}
+              </dd>
+            </div>
+            <div class="data-pair">
+              <dt>ESFORÇO</dt>
+              <dd>{{ agent.effort ? agent.effort.toUpperCase() : 'PADRÃO' }}</dd>
+            </div>
+            <div class="data-pair" [class.active]="execution.busyAgents().includes(agent.id)">
+              <dt>ESTADO</dt>
+              <dd>
+                {{
+                  execution.busyAgents().includes(agent.id)
+                    ? execution.paused()
+                      ? 'OPERAÇÃO PAUSADA'
+                      : 'EXECUTANDO ' + (store.settings()?.mode === 'live' ? 'CLI' : 'DEMO')
+                    : 'EM PRONTIDÃO'
+                }}
+              </dd>
+            </div>
+            <div class="data-pair">
+              <dt>FEATURES ATRIBUÍDAS</dt>
+              <dd>{{ pad(assigned(agent.id).length) }}</dd>
+            </div>
+            <div class="data-pair">
+              <dt>PRODUÇÃO DO AGENTE</dt>
+              <dd>{{ ('stage.' + agent.productionStage | t).toUpperCase() }}</dd>
+            </div>
+          </dl>
+          <div class="tool-tags">
+            @for (tool of agent.tools; track tool) {
+              <span class="tag">{{ tool.toUpperCase() }}</span>
+            }
+          </div>
+          <div class="profile-actions">
+            <button class="action-text" (click)="dialogs.open('squad', store.project()?.squadId)">
+              <luma-icon name="squad" />
+              SQUADS
+            </button>
+            <button
+              class="action-text"
+              (click)="dialogs.open('spawn', agent.id)"
+              aria-label="Spawn individual"
+            >
+              <luma-icon name="play" />
+            </button>
+          </div>
+          <section class="mission-block">
+            <div class="between">
+              <div class="eyebrow">
+                {{
+                  execution.busyAgents().includes(agent.id) ? 'MISSÃO ATUAL' : 'PRÓXIMA ATRIBUIÇÃO'
+                }}
+              </div>
+              <button
+                class="icon-button small"
+                (click)="openSection('opsFeatures')"
+                aria-label="Ver todas as features"
+              >
+                <luma-icon name="board" />
+              </button>
+            </div>
+            @if (assigned(agent.id)[0]; as feature) {
+              <h3 class="mission-title">{{ feature.key }} / {{ feature.title }}</h3>
+              <div class="mission-sub">
+                {{ ('status.' + feature.status | t).toUpperCase() }} // {{ feature.priority }}
+              </div>
+            } @else {
+              <div class="mission-empty">
+                <luma-icon name="clock" />
+                Aguardando distribuição.
+                <br />
+                O comandante define o plano do squad.
+              </div>
+            }
+          </section>
+          @if (handoffs()) {
+            <button
+              class="secondary-action"
+              (click)="dialogs.open('handoff')"
+              [disabled]="execution.busy()"
+            >
+              CONFIGURAR HANDOFF
+              <luma-icon name="flow" />
+            </button>
+            <button class="secondary-action" (click)="historyRequested.emit()">
+              HISTÓRICO / {{ pad(store.project()?.handoffs?.length || 0) }}
+              <luma-icon name="clock" />
+            </button>
+          }
+          <button class="primary-action" (click)="distribute()" [disabled]="store.projectLocked()">
+            DISTRIBUIR FEATURES
+            <luma-icon name="flow" />
+          </button>
+          <button
+            class="secondary-action"
+            [class.run-active]="execution.busy() || execution.planning() || !!execution.plan()"
+            (click)="runCurrent()"
+          >
+            {{
+              execution.planning()
+                ? 'PLANEJANDO'
+                : execution.plan() && execution.planOrigin() === 'execution'
+                  ? 'APROVAR PLANO'
+                  : execution.busy()
+                    ? execution.paused()
+                      ? 'RETORNAR'
+                      : 'PAUSAR'
+                    : 'PLANEJAR ' +
+                      (currentSprint()?.name || 'sprint').toUpperCase() +
+                      ' / ' +
+                      (store.settings()?.mode === 'live'
+                        ? store.providerLabel(execution.currentAgent())
+                        : 'DEMO')
+            }}
+            <luma-icon
+              [name]="
+                execution.planning()
+                  ? 'radio'
+                  : execution.plan() && execution.planOrigin() === 'execution'
+                    ? 'check'
+                    : execution.busy() && !execution.paused()
+                      ? 'pause'
+                      : 'play'
+              "
+            />
+          </button>
+          @if (execution.busy()) {
+            <button class="secondary-action" (click)="execution.stop()">
+              ENCERRAR OPERAÇÃO
+              <luma-icon name="stop" />
+            </button>
+          }
+          @if (execution.busy() || room.messages().length) {
+            <button class="secondary-action" (click)="room.open()">
+              CHAT DA OPERAÇÃO
+              <luma-icon name="chat" />
+            </button>
+          }
+          @if (execution.events().length) {
+            <button class="secondary-action" (click)="dialogs.open('console')">
+              CONSOLE AO VIVO
+              <luma-icon name="terminal" />
+            </button>
+          }
+          @if (store.settings()?.mode === 'demo') {
+            <div class="demo-note">SIMULAÇÃO LOCAL. SEM EXECUÇÃO DE IA.</div>
+          }
+        </aside>
+      }
+    }
+  }
+  @if (focused()) {
+    <button class="restore-hud" style="display: flex" (click)="toggleFocus()">
+      <luma-icon name="eye" />
+      MOSTRAR PAINÉIS
+    </button>
+  }
+  @if (fallback()) {
+    <p class="map-note">{{ 'map.noWebgl' | t }}</p>
+  }
+}

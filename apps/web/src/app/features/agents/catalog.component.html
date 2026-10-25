@@ -1,0 +1,20 @@
+<luma-modal title="agent.catalog" (closed)="dialogs.close()">
+  <div class="modal-toolbar">
+    <input [(ngModel)]="search" [placeholder]="'action.search' | t" />
+    <select [ngModel]="role()" (ngModelChange)="role.set($event)">
+      <option value="">*</option>
+      @for (category of categories; track category.key) {
+        <option [value]="category.key">{{ category.label }}</option>
+      }
+    </select>
+  </div>
+  <div class="preset-grid">
+    @for (preset of items(); track preset.name) {
+      <button class="preset-card" (click)="add(preset)">
+        <img [src]="image(preset)" alt="" loading="lazy" />
+        <strong>{{ preset.name }}</strong>
+        <small>{{ 'role.' + preset.role | t }}</small>
+      </button>
+    }
+  </div>
+</luma-modal>

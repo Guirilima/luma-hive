@@ -1,0 +1,11 @@
+node_modules
+dist
+.angular
+data
+projects
+previews
+package-lock.json
+apps/web/public
+packages/domain/src/catalog.json
+packages/domain/src/portraits.json
+packages/domain/src/pixel-rooms.json

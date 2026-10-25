@@ -1,0 +1,118 @@
+<luma-modal
+  [title]="
+    existing
+      ? 'EDITAR &lt;span class=word-tag&gt;FEATURE&lt;/span&gt;'
+      : 'NOVA &lt;span class=word-tag&gt;FEATURE&lt;/span&gt;'
+  "
+  [subtitle]="
+    store.project()!.code + ' / ' + draft.key + (existing ? ' / ' + existing.status : ' / NOVA')
+  "
+  modalClass="wide feature-editor"
+  (closed)="dialogs.close()"
+>
+  <div class="fe-layout">
+    <form id="featureForm" class="fe-form" (ngSubmit)="save()">
+      <input
+        id="featureTitle"
+        class="fe-title"
+        name="title"
+        [(ngModel)]="draft.title"
+        maxlength="120"
+        placeholder="Título da feature"
+        autocomplete="off"
+        autofocus
+        aria-label="Título da feature"
+      />
+      <div class="fe-meta">
+        <label class="fe-select">
+          <span>ÁREA</span>
+          <select id="featureScope" name="scope" [(ngModel)]="draft.scope">
+            @for (scope of scopes; track scope) {
+              @if (scope !== 'setup' || draft.setup) {
+                <option [value]="scope">{{ scopeLabel(scope) }}</option>
+              }
+            }
+          </select>
+        </label>
+        <label class="fe-select">
+          <span>PRIORIDADE</span>
+          <select id="featurePriority" name="priority" [(ngModel)]="draft.priority">
+            <option value="P0">P0 / Essencial</option>
+            <option value="P1">P1 / Importante</option>
+            <option value="P2">P2 / Incremento</option>
+          </select>
+        </label>
+        <label class="fe-select">
+          <span>SPRINT</span>
+          <select
+            id="featureSprint"
+            name="sprintId"
+            [(ngModel)]="draft.sprintId"
+            [disabled]="draft.setup"
+          >
+            @for (sprint of store.project()!.sprints; track sprint.id) {
+              <option [value]="sprint.id">S{{ pad($index + 1) }} / {{ sprint.name }}</option>
+            }
+          </select>
+        </label>
+      </div>
+      @for (field of fields; track field) {
+        <luma-markdown-editor
+          [(value)]="draft[field]"
+          [label]="fieldLabel(field)"
+          [field]="field"
+        />
+      }
+      <details class="fe-deps">
+        <summary>
+          DEPENDÊNCIAS
+          <small>{{ dependencyNames() || 'nenhuma' }}</small>
+        </summary>
+        <div class="fe-dep-list">
+          @if (draft.setup) {
+            <p class="hint">
+              O setup do projeto é a primeira feature da Sprint 01: não depende de nenhuma outra, e
+              todas as outras dependem dele.
+            </p>
+          } @else {
+            @for (feature of store.project()!.features; track feature.id) {
+              @if (feature.id !== draft.id) {
+                <label class="fe-dep">
+                  <input
+                    type="checkbox"
+                    name="dependencies"
+                    [checked]="draft.dependencies.includes(feature.id)"
+                    [disabled]="feature.setup"
+                    (change)="toggleDep(feature.id)"
+                  />
+                  <span>
+                    <b>{{ feature.key }}</b>
+                    {{ feature.title }}
+                  </span>
+                </label>
+              }
+            }
+          }
+        </div>
+      </details>
+    </form>
+    <luma-feature-conversation
+      [draft]="draft"
+      (fieldRequested)="revealField($event)"
+      [initialMessage]="dialogs.current()?.data?.featurePrompt || ''"
+    />
+  </div>
+  <footer class="modal-footer" modal-footer>
+    @if (existing && !draft.setup) {
+      <button class="btn danger square" (click)="remove()" aria-label="Excluir feature">
+        <luma-icon name="trash" />
+      </button>
+    }
+    <span class="grow"></span>
+    <button class="btn ghost" (click)="dialogs.close()">Cancelar</button>
+    <button class="btn primary" type="submit" form="featureForm" [disabled]="execution.busy()">
+      <luma-icon name="check" />
+      Salvar feature
+    </button>
+  </footer>
+</luma-modal>

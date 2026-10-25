@@ -1,0 +1,56 @@
+@if (showHistory()) {
+  <luma-modal
+    title="REDE DE <span class=word-tag>HANDOFFS</span>"
+    [subtitle]="store.project()!.code + ' / TRANSMISSÕES ENTRE ESPECIALISTAS'"
+    (closed)="showHistory.set(false)"
+  >
+    <div class="modal-toolbar">
+      <p>
+        A tarefa muda de agente, mas o contexto acompanha a entrega. Os registros abaixo pertencem à
+        demonstração local.
+      </p>
+      <button class="btn primary" (click)="showHistory.set(false); dialogs.open('handoff')">
+        <luma-icon name="plus" />
+        Novo handoff
+      </button>
+    </div>
+    @if (handoffs().length) {
+      <div class="timeline">
+        @for (handoff of handoffs(); track handoff.id) {
+          <article class="timeline-row">
+            <time>{{ clock(handoff.at) }}</time>
+            <luma-icon name="flow" />
+            <div>
+              <h3>
+                {{ store.agent(handoff.from)?.name || 'REMOVIDO' }} →
+                {{ store.agent(handoff.to)?.name || 'REMOVIDO' }}
+                <span class="muted">
+                  / {{ store.feature(handoff.featureId)?.key || 'ARQUIVADA' }}
+                </span>
+              </h3>
+              <p>{{ handoff.context.slice(0, 600) }}</p>
+            </div>
+            <span class="tag">
+              {{
+                handoff.manual
+                  ? 'MANUAL'
+                  : handoff.simulated
+                    ? 'DEMO'
+                    : store.providerLabel(handoff.from)
+              }}
+            </span>
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="empty-panel">
+        <luma-icon name="flow" />
+        <h3>Nenhuma transferência ainda</h3>
+        <p>Distribua as features e inicie a demonstração, ou configure um handoff manual.</p>
+        <button class="btn primary" (click)="showHistory.set(false); dialogs.open('handoff')">
+          Configurar handoff
+        </button>
+      </div>
+    }
+  </luma-modal>
+}

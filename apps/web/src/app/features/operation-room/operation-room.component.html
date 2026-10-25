@@ -1,0 +1,357 @@
+@if (room.opened() && router.url === '/squad') {
+  <aside
+    class="ops-chat hud"
+    id="opsChat"
+    [class.min]="room.minimized()"
+    [style.--oc-w]="width() + 'px'"
+    [style.width.px]="room.minimized() ? null : width()"
+    aria-label="Chat da operação"
+  >
+    <header class="oc-head">
+      @if (store.agent(store.project()!.commanderId); as c) {
+        <img class="oc-avatar" [src]="portrait(c)" alt="" />
+      }
+      <div class="oc-title">
+        <strong>{{ store.project()?.code }} · {{ store.project()?.name }}</strong>
+        <span
+          class="room-status"
+          [class.idle]="!execution.busy() && !execution.planning() && !execution.plan()"
+        >
+          <i></i>
+          <span>{{ status() }}</span>
+        </span>
+      </div>
+      @if (store.settings()?.mode === 'demo') {
+        <em class="tag">DEMO</em>
+      }
+      <button
+        class="icon-button oc-min"
+        (click)="room.minimized.set(true)"
+        aria-label="Minimizar o chat"
+        title="Minimizar"
+      >
+        <span></span>
+      </button>
+      @if (!execution.busy() && !execution.planning() && !execution.plan()) {
+        <button
+          class="icon-button"
+          (click)="room.opened.set(false)"
+          aria-label="Fechar o chat"
+          title="Fechar"
+        >
+          <luma-icon name="close" />
+        </button>
+      }
+    </header>
+    <div class="room-crew" aria-label="Squad">
+      <div class="room-crew-head">SQUAD</div>
+      @for (a of store.team(); track a.id) {
+        <div [class]="'room-crew-row ' + crewStatus(a.id).tone">
+          <img class="room-face sm" [src]="portrait(a)" alt="" />
+          <strong>{{ a.name }}</strong>
+          <span>{{ roleLabel(a.id) }}</span>
+          <em>{{ crewStatus(a.id).label }}</em>
+        </div>
+      }
+    </div>
+    <div class="room-feed" id="roomFeed" #feed aria-live="polite">
+      @for (m of room.messages(); track m.id) {
+        @if (m.plan && m.plan.status !== 'awaiting') {
+          <div class="room-row plan">
+            <div [class]="'room-card room-plan ' + m.plan.status">
+              <div class="room-card-head">
+                <luma-icon name="flow" />
+                <strong>PLANO DE EXECUÇÃO</strong>
+                <span>{{ m.plan.label }}</span>
+                <em>
+                  {{
+                    m.plan.source === 'default'
+                      ? 'DISTRIBUIÇÃO PADRÃO DA SQUAD'
+                      : m.simulated
+                        ? 'MONTADO NA DEMONSTRAÇÃO'
+                        : 'MONTADO PELO COMANDANTE'
+                  }}
+                </em>
+              </div>
+              @for (item of m.plan.items; track item.featureId) {
+                @if (store.feature(item.featureId); as f) {
+                  <div class="room-plan-item">
+                    <div class="room-plan-f">
+                      <b>{{ f.key }}</b>
+                      <span>{{ f.title }}</span>
+                      <em class="tag">{{ f.priority }}</em>
+                    </div>
+                    <div class="room-route">
+                      @for (id of item.route; track $index) {
+                        @if ($index) {
+                          <luma-icon name="arrow" />
+                        }
+                        <span class="room-pill">
+                          @if (store.agent(id); as a) {
+                            <img class="room-face sm" [src]="portrait(a)" alt="" />
+                          }
+                          {{ store.agent(id)?.name }}
+                        </span>
+                      }
+                    </div>
+                    @if (item.briefs.length) {
+                      <details>
+                        <summary>Instruções do comandante</summary>
+                        <ul class="room-briefs">
+                          @for (brief of item.briefs; track $index) {
+                            @if (brief) {
+                              <li>
+                                <b>{{ store.agent(item.route[$index])?.name }}</b>
+                                {{ brief }}
+                              </li>
+                            }
+                          }
+                        </ul>
+                      </details>
+                    }
+                  </div>
+                }
+              }
+            </div>
+            <p [class]="'room-card-state ' + m.plan.status">
+              {{
+                m.plan.status === 'approved'
+                  ? 'Plano aprovado. A squad está executando.'
+                  : 'Plano cancelado. Nenhuma feature foi alterada.'
+              }}
+            </p>
+          </div>
+        } @else if (m.kind !== 'plan') {
+          @if (m.kind === 'review') {
+            <div class="room-row review">
+              <div class="room-card room-review">
+                <luma-icon name="check" />
+                <span>
+                  <b>{{ store.feature(m.featureId || '')?.key }}</b>
+                  {{ store.feature(m.featureId || '')?.title }}
+                  {{
+                    store.feature(m.featureId || '')?.status === 'review'
+                      ? 'aguarda a sua revisão.'
+                      : 'saiu da revisão.'
+                  }}
+                </span>
+                @if (store.feature(m.featureId || '')?.status === 'review') {
+                  <button class="btn sm primary" (click)="dialogs.open('review', m.featureId)">
+                    Revisar
+                  </button>
+                } @else {
+                  <em>
+                    {{
+                      store.feature(m.featureId || '')?.status === 'done' ? 'Concluída' : 'A fazer'
+                    }}
+                  </em>
+                }
+              </div>
+            </div>
+          } @else if (m.kind === 'handoff') {
+            <div class="room-row baton">
+              <div class="room-baton">
+                <div class="room-baton-track">
+                  @if (store.agent(m.from || m.agentId || ''); as a) {
+                    <img class="room-face" [src]="portrait(a)" alt="" />
+                  }
+                  <span class="room-baton-run"><i></i></span>
+                  @if (store.agent(m.to || ''); as a) {
+                    <img class="room-face" [src]="portrait(a)" alt="" />
+                  } @else {
+                    <span class="room-face human">VOCÊ</span>
+                  }
+                </div>
+                <div class="room-msg">
+                  <div class="room-meta">
+                    <strong>{{ store.agent(m.from || m.agentId || '')?.name }}</strong>
+                    <span>passou o bastão para</span>
+                    <strong>{{ store.agent(m.to || '')?.name || 'VOCÊ' }}</strong>
+                  </div>
+                  @if (m.text) {
+                    <details class="room-delivery">
+                      <summary>Entrega{{ m.simulated ? ' simulada' : '' }}</summary>
+                      <div class="room-md" [innerHTML]="render(m.text)"></div>
+                    </details>
+                  }
+                </div>
+              </div>
+            </div>
+          } @else if (m.role === 'user') {
+            <div class="room-row say human">
+              <div class="room-msg">
+                <div class="room-meta">
+                  <strong>VOCÊ</strong>
+                  <time>{{ clock(m.at) }}</time>
+                </div>
+                <div class="room-bubble" [innerHTML]="render(m.text)"></div>
+              </div>
+            </div>
+          } @else if (m.agentId) {
+            <div
+              class="room-row say"
+              [class.cmd]="m.agentId === store.project()?.commanderId"
+              [class.error]="m.kind === 'error'"
+            >
+              @if (store.agent(m.agentId); as a) {
+                <img class="room-face" [src]="portrait(a)" alt="" />
+              }
+              <div class="room-msg">
+                <div class="room-meta">
+                  <strong>{{ store.agent(m.agentId)?.name }}</strong>
+                  <span>{{ roleLabel(m.agentId) }}</span>
+                  @if (m.featureId) {
+                    <span class="room-feature">{{ store.feature(m.featureId)?.key }}</span>
+                  }
+                  <time>{{ clock(m.at) }}</time>
+                </div>
+                <div class="room-bubble" [innerHTML]="render(m.text)"></div>
+                @if (m.activities?.length) {
+                  <ul class="room-acts">
+                    @for (e of m.activities; track e.seq) {
+                      <li [class.error]="e.error">
+                        <luma-icon
+                          [name]="
+                            e.type === 'tool-result' ? (e.error ? 'close' : 'check') : 'terminal'
+                          "
+                        />
+                        <span>{{ e.name }} {{ e.text?.slice(0, 200) }}</span>
+                      </li>
+                    }
+                  </ul>
+                }
+              </div>
+            </div>
+          } @else {
+            <div class="room-row system">
+              <p class="room-note">{{ m.text }}</p>
+            </div>
+          }
+        }
+      } @empty {
+        <p class="room-empty">
+          Quando você executar uma sprint ou uma feature, o comandante monta o plano aqui e a squad
+          conversa enquanto trabalha.
+        </p>
+      }
+      @if (execution.planning() || (execution.busy() && execution.interacting())) {
+        <div class="room-row room-typing">
+          @if (
+            store.agent(
+              execution.planning() ? store.project()!.commanderId : execution.currentAgent()
+            );
+            as c
+          ) {
+            <img class="room-face sm" [src]="portrait(c)" alt="" />
+            <span>
+              <b>{{ c.name }}</b>
+              {{ execution.planning() ? 'está montando o plano' : 'está trabalhando' }}
+            </span>
+          }
+          <i class="room-dots">
+            <b></b>
+            <b></b>
+            <b></b>
+          </i>
+        </div>
+      }
+      @if (execution.plan() && execution.planOrigin() === 'execution') {
+        <luma-plan />
+      }
+      @if (execution.interacting() && execution.currentAgent() && (stream() || tools().length)) {
+        <div class="room-row say">
+          @if (store.agent(execution.currentAgent()); as a) {
+            <img class="room-face" [src]="portrait(a)" alt="" />
+          }
+          <div class="room-msg">
+            <div class="room-meta">
+              <strong>{{ store.agent(execution.currentAgent())?.name }}</strong>
+              <span>{{ execution.planning() ? 'está montando o plano' : 'trabalhando' }}</span>
+            </div>
+            @if (stream()) {
+              <div class="room-bubble" [innerHTML]="render(stream())"></div>
+            }
+            @if (tools().length) {
+              <ul class="room-acts">
+                @for (e of tools(); track e.seq) {
+                  <li [class.error]="e.error">
+                    <luma-icon
+                      [name]="e.type === 'tool-result' ? (e.error ? 'close' : 'check') : 'terminal'"
+                    />
+                    <span>{{ e.name }} {{ e.text?.slice(0, 200) }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </div>
+      }
+    </div>
+    <footer class="oc-foot">
+      <div class="flex wrap" id="roomControls">
+        @if (execution.events().length) {
+          <button class="btn ghost sm" (click)="dialogs.open('console')">
+            <luma-icon name="terminal" />
+            Console
+          </button>
+        }
+        @if (execution.plan() && execution.planOrigin() === 'execution') {
+          <button
+            class="btn primary sm"
+            (click)="execution.approvePlan()"
+            [disabled]="!execution.planValidCount() || execution.interacting()"
+          >
+            <luma-icon name="check" />
+            Aprovar plano
+          </button>
+        }
+        @if (execution.planning()) {
+          <button class="btn sm" disabled>
+            <luma-icon name="radio" />
+            Planejando
+          </button>
+        }
+        @if (execution.busy()) {
+          <button class="btn sm" (click)="execution.togglePause()">
+            <luma-icon [name]="execution.paused() ? 'play' : 'pause'" />
+            {{ execution.paused() ? 'Retomar' : 'Pausar' }}
+          </button>
+        }
+        @if (execution.busy() || execution.planning() || execution.plan()) {
+          <button class="btn danger sm" (click)="execution.stop()">
+            <luma-icon name="stop" />
+            Encerrar
+          </button>
+        }
+      </div>
+      <span class="oc-dir">
+        {{
+          store.settings()?.mode === 'live'
+            ? 'EXECUÇÃO REAL / ' + execution.operationDirectory()
+            : 'SIMULAÇÃO LOCAL / NENHUMA IA EXECUTADA'
+        }}
+      </span>
+    </footer>
+    <button
+      class="oc-mini"
+      (click)="room.minimized.set(false)"
+      aria-label="Abrir o chat da operação"
+    >
+      <span class="oc-mini-dot" [class.live]="execution.busy()"></span>
+      <span class="oc-mini-text">
+        <strong>{{ store.project()?.code }} · CHAT DA OPERAÇÃO</strong>
+        <small>{{ room.messages().at(-1)?.text || 'Nenhuma mensagem ainda' }}</small>
+      </span>
+    </button>
+    <div
+      class="oc-split"
+      role="separator"
+      aria-orientation="vertical"
+      tabindex="0"
+      aria-label="Redimensionar o chat"
+      (pointerdown)="resize($event)"
+      (keydown)="resizeKey($event)"
+      (dblclick)="resetWidth()"
+    ></div>
+  </aside>
+}

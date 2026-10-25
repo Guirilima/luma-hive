@@ -1,0 +1,165 @@
+<luma-modal
+  [title]="
+    logsOnly
+      ? 'REGISTRO DE &lt;span class=word-tag&gt;TRANSMISSÕES&lt;/span&gt;'
+      : 'CONSOLE DOS &lt;span class=word-tag&gt;AGENTES&lt;/span&gt;'
+  "
+  [subtitle]="
+    store.project()!.code +
+    (logsOnly ? ' / HISTÓRICO LOCAL' : ' / CODEX + DEVIN + ANTIGRAVITY / BRIDGE')
+  "
+  [modalClass]="logsOnly ? '' : 'wide'"
+  (closed)="dialogs.close()"
+>
+  @if (logsOnly) {
+    <div class="modal-toolbar">
+      <div class="flex wrap">
+        @for (filter of filters; track filter.key) {
+          <button
+            class="btn sm"
+            [class.white]="logFilter() === filter.key"
+            [class.ghost]="logFilter() !== filter.key"
+            (click)="logFilter.set(filter.key)"
+          >
+            {{ filter.label }}
+          </button>
+        }
+      </div>
+      <div class="flex wrap">
+        <button class="btn ghost sm" (click)="dialogs.open('console')">
+          <luma-icon name="terminal" />
+          Console
+        </button>
+        <button class="btn ghost sm" (click)="exportLogs()">
+          <luma-icon name="download" />
+          Exportar log
+        </button>
+      </div>
+    </div>
+    <div id="logRows">
+      @for (log of logs(); track log.id) {
+        <div class="log-grid">
+          <time>{{ clock(log.at) }}</time>
+          <strong>{{ store.agent(log.agentId || '')?.name || 'SISTEMA' }}</strong>
+          <span>{{ log.message }}</span>
+          <span class="tag" [class.accent]="!log.simulated">
+            {{ log.simulated ? 'DEMO' : store.providerLabel(log.agentId) }}
+          </span>
+        </div>
+      } @empty {
+        <div class="empty-panel">
+          <luma-icon name="radio" />
+          <h3>Canal em silêncio</h3>
+          <p>Nenhum evento para este filtro.</p>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="modal-toolbar">
+      <div class="flex wrap" id="consoleTabs">
+        @for (run of sessionRuns(); track run.id) {
+          <button
+            class="btn sm"
+            [class.white]="selectedRun()?.id === run.id"
+            [class.ghost]="selectedRun()?.id !== run.id"
+            (click)="showHistory.set(false); open(run.id)"
+          >
+            {{ store.agent(run.agentId)?.name || 'AGENTE' }} /
+            {{ store.feature(run.featureId || '')?.key || run.kind }}
+          </button>
+        } @empty {
+          <span class="hint">Sem execuções nesta sessão.</span>
+        }
+      </div>
+      <div class="flex wrap">
+        <button class="btn ghost sm" (click)="showHistory.set(true)">
+          <luma-icon name="clock" />
+          Histórico
+        </button>
+        <button class="btn ghost sm" (click)="dialogs.open('console', undefined, 'logs')">
+          <luma-icon name="radio" />
+          Transmissões
+        </button>
+      </div>
+    </div>
+    <div id="consoleRoot">
+      @if (showHistory()) {
+        <div class="console-history">
+          <div class="console-history-head">
+            <strong>HISTÓRICO DE EXECUÇÕES / {{ store.project()?.code }}</strong>
+            <button class="btn ghost sm" (click)="showHistory.set(false)">
+              <luma-icon name="close" />
+              Fechar histórico
+            </button>
+          </div>
+          @for (run of history(); track run.id) {
+            <button class="console-run" (click)="showHistory.set(false); open(run.id)">
+              <span class="tag">{{ run.status.toUpperCase() }}</span>
+              <strong>{{ store.agent(run.agentId)?.name || 'Execução' }}</strong>
+              <span>{{ run.kind }}</span>
+              <time>{{ i18n.date(run.startedAt) }}</time>
+            </button>
+          } @empty {
+            <div class="empty-panel">
+              <luma-icon name="terminal" />
+              <h3>Sem execuções salvas</h3>
+              <p>
+                As execuções desta operação com o bridge aparecem aqui, inclusive as de sessões
+                anteriores.
+              </p>
+            </div>
+          }
+        </div>
+      } @else if (visibleEvents().length) {
+        <div class="console-meta">
+          <span class="tag" [class.accent]="execution.busy()">
+            {{ displayStatus() }}
+          </span>
+          <span>
+            {{ store.agent(selectedRun()?.agentId || execution.currentAgent())?.name || 'AGENTE' }}
+          </span>
+          @if (sessionId()) {
+            <span>SESSÃO {{ sessionId().slice(0, 8) }}</span>
+          }
+        </div>
+        <div class="console-lines" id="consoleLines" #lines>
+          @for (event of consoleLines(); track event.seq) {
+            <div [class]="'console-line ' + lineKind(event)">
+              <time>{{ clock(event.at) }}</time>
+              <pre>{{ lineText(event) }}</pre>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-panel">
+          <luma-icon name="radio" />
+          <h3>Nenhuma execução ainda</h3>
+          <p>
+            Distribua as features e inicie a operação, ou faça um spawn individual com o bridge
+            conectado.
+          </p>
+        </div>
+      }
+    </div>
+  }
+  @if (!logsOnly) {
+    <footer class="modal-footer" modal-footer>
+      <span class="footer-note">
+        {{
+          store.settings()?.mode === 'live'
+            ? 'EXECUÇÃO REAL / ' + execution.operationDirectory()
+            : 'BRIDGE DESCONECTADO'
+        }}
+      </span>
+      <span class="grow"></span>
+      @if (
+        execution.busy() || execution.planning() || execution.interacting() || execution.plan()
+      ) {
+        <button class="btn danger" (click)="execution.stop()">
+          <luma-icon name="stop" />
+          Encerrar operação
+        </button>
+      }
+    </footer>
+  }
+</luma-modal>
