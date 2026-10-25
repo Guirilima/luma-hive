@@ -1,3 +1,6 @@
+import { UiLabelPipe } from '../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../core/i18n/i18n.service';
+import { AppearanceService } from '../../core/appearance/appearance.service';
 import { Router } from '@angular/router';
 import { ROLES } from '@domain/catalog';
 import { resolveAgentSelection } from '@domain/model-selection';
@@ -16,10 +19,11 @@ import { ModalComponent } from '../../shared/modal.component';
 @Component({
   selector: 'luma-settings',
   standalone: true,
-  imports: [IconComponent, FormsModule, ModalComponent],
+  imports: [UiLabelPipe, TranslatePipe, IconComponent, FormsModule, ModalComponent],
   templateUrl: './settings.component.html',
 })
 export class SettingsComponent {
+  readonly appearance = inject(AppearanceService);
   readonly store = inject(WorkspaceStore);
   private readonly router = inject(Router);
   readonly providers = inject(ProviderService);
@@ -33,33 +37,32 @@ export class SettingsComponent {
   readonly toggles = [
     {
       key: 'motion',
-      title: 'Movimento e transmissões',
-      description:
-        'Animações de interface, marcadores ativos e pacotes nas rotas. Respeita a preferência de movimento reduzido do sistema.',
-      aria: 'Ativar movimento',
+      title: 'ui.motion-and-transmissions',
+      description: 'ui.interface-animations-active-markers-and-route-packets-r',
+      aria: 'ui.enable-motion',
     },
     {
       key: 'quality',
-      title: 'Gráficos da cidade em alta qualidade',
-      description:
-        'Sombras suaves, oclusão de ambiente e brilho na cidade hexagonal. Desligue em computadores mais lentos; em quadros lentos a qualidade também cai sozinha.',
-      aria: 'Gráficos da cidade em alta qualidade',
+      title: 'ui.high-quality-city-graphics',
+      description: 'ui.soft-shadows-ambient-occlusion-and-glow-in-the-hexagona',
+      aria: 'ui.high-quality-city-graphics',
     },
     {
       key: 'cityShape',
-      title: 'Cidade em modo planeta',
+      title: 'ui.planet-city-mode',
       description:
-        'A cidade hexagonal vira um planeta 3D: arraste para girar o planeta e ver os agentes do outro lado. Precisa de WebGL.',
-      aria: 'Cidade em modo planeta',
+        'ui.the-hexagonal-city-becomes-a-3d-planet-drag-to-rotate-and-see-agents-on-the-other-side-requires-webgl',
+      aria: 'ui.planet-city-mode',
     },
   ];
   tabLabel(key: string): string {
     return (
       (
-        { workspace: 'WORKSPACE', execution: 'EXECUÇÃO', config: 'CONFIGURAÇÃO CODEX' } as Record<
-          string,
-          string
-        >
+        {
+          workspace: 'WORKSPACE',
+          execution: this.i18n.text('ui.execution'),
+          config: this.i18n.text('ui.codex-configuration'),
+        } as Record<string, string>
       )[key] || key.toUpperCase() + ' CLI'
     );
   }
@@ -67,20 +70,20 @@ export class SettingsComponent {
     return (
       (
         {
-          'workspace-write': 'Permitir alterações na pasta do projeto',
-          'read-only': 'Somente leitura',
-          'accept-edits': 'Aceitar edições',
-          plan: 'Planejar sem editar',
+          'workspace-write': this.i18n.text('ui.allow-changes-in-the-project-folder'),
+          'read-only': this.i18n.text('ui.read-only'),
+          'accept-edits': this.i18n.text('ui.accept-edits'),
+          plan: this.i18n.text('ui.plan-without-editing'),
         } as Record<string, string>
       )[key] || key
     );
   }
   providerDescription(provider: Provider): string {
     return provider === 'codex'
-      ? 'Cada etapa roda codex exec --json com as instruções do agente e a tarefa enviadas por stdin. O Codex CLI usa sua autenticação local. As execuções consomem os limites da sua conta ou créditos de API. Não há teto de custo em USD por etapa.'
+      ? this.i18n.text('ui.each-stage-runs-codex-exec-json-with-agent-instructions')
       : provider === 'devin'
-        ? 'Cada etapa de um agente Devin roda devin -p --prompt-file … na pasta da operação, com o modelo do perfil do agente e a permissão acima. O Devin CLI usa sua autenticação local; o app não altera suas credenciais. Colegas da squad viram subagentes em projects/<operação>/.devin/agents/. O Devin CLI não oferece níveis de esforço nem limite de custo por etapa nesta integração.'
-        : 'Cada etapa roda agy.exe com saída JSON na pasta da operação. A autenticação e as regras de aprovação locais do Antigravity são respeitadas. Colegas usam perfis em .agents/agents/. Tempo limite e simultaneidade vêm da aba Execução.';
+        ? this.i18n.text('ui.each-devin-stage-runs-devin-p-prompt-file-in-the-operat')
+        : this.i18n.text('ui.each-stage-runs-agy-exe-with-json-output-in-the-operati');
   }
   toggleValue(key: string): boolean {
     return key === 'motion'
@@ -106,9 +109,9 @@ export class SettingsComponent {
   async reset(): Promise<void> {
     if (
       await this.dialogs.ask(
-        'Remover as alterações deste workspace e restaurar o exemplo Atlas Commerce?',
-        'REINICIAR WORKSPACE',
-        'Reiniciar',
+        this.i18n.text('ui.remove-changes-in-this-workspace-and-restore-the-atlas-'),
+        this.i18n.text('ui.reset-workspace'),
+        this.i18n.text('settings.reset'),
         true,
       )
     ) {
@@ -232,9 +235,9 @@ export class SettingsComponent {
   async copyCommand(cli: Provider): Promise<void> {
     try {
       await navigator.clipboard.writeText(this.commandPreview(cli));
-      this.dialogs.notify('Comando copiado.');
+      this.dialogs.notify(this.i18n.text('ui.command-copied'));
     } catch {
-      this.dialogs.notify('Selecione o texto da prévia para copiar.');
+      this.dialogs.notify(this.i18n.text('ui.select-the-preview-text-to-copy'));
     }
   }
   provider(): Provider {
@@ -301,9 +304,9 @@ export class SettingsComponent {
       const data = JSON.parse(await file.text());
       if (
         !(await this.dialogs.ask(
-          'Substituir os dados atuais pelo workspace importado? A versão atual fica nas versões salvas.',
-          'RESTAURAR WORKSPACE',
-          'Restaurar backup',
+          this.i18n.text('ui.replace-current-data-with-the-imported-workspace-the-cu'),
+          this.i18n.text('ui.restore-workspace'),
+          this.i18n.text('ui.restore-backup'),
         ))
       )
         return;

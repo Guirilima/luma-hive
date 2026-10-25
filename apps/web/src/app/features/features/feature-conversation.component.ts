@@ -1,3 +1,6 @@
+import { I18nService } from '../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../core/i18n/i18n.service';
+import { PortraitService } from '../../core/appearance/portrait.service';
 import { featureTurn, conversationRound } from '../../core/execution/conversation-prompts';
 import { chatReceipt } from '../../shared/agent-reply';
 import { ChatScrollState } from '../../shared/chat-scroll';
@@ -12,12 +15,12 @@ import { renderMarkdown } from '../../shared/markdown';
 @Component({
   selector: 'luma-feature-conversation',
   standalone: true,
-  imports: [FormsModule],
+  imports: [TranslatePipe, FormsModule],
   host: { style: 'display:contents' },
   template: `
     <aside
       class="fe-chat"
-      [attr.aria-label]="'Conversa com ' + (agent()?.name || 'SEM AGENTE PRD')"
+      [attr.aria-label]="('ui.conversation-with' | t) + (agent()?.name || 'SEM AGENTE PRD')"
     >
       <header class="fe-chat-head">
         @if (agent(); as a) {
@@ -25,20 +28,20 @@ import { renderMarkdown } from '../../shared/markdown';
         }
         <div>
           <div class="fe-chat-id">
-            <strong>{{ agent()?.name || 'SEM AGENTE PRD' }}</strong>
+            <strong>{{ agent()?.name || ('ui.no-prd-agent' | t) }}</strong>
             <span class="fe-model">{{ model() }}</span>
-            <span class="fe-effort">▥ {{ agent()?.effort || 'PADRÃO' }}</span>
+            <span class="fe-effort">▥ {{ agent()?.effort || ('ui.default' | t) }}</span>
           </div>
-          <small>CO-ESCRITA · RECONHECEDOR PRD</small>
+          <small>{{ 'features.co-writing-prd-specialist' | t }}</small>
         </div>
       </header>
       <div class="fe-msgs" id="feMsgs" aria-live="polite" (scroll)="chatScroll.onScroll($event)">
-        <div class="fe-time">Hoje {{ time }}</div>
+        <div class="fe-time">{{ 'ui.today' | t }} {{ time }}</div>
         <div class="fe-row agent">
           <div class="fe-bubble agent">
             {{
               agent()?.hellos?.[0] ||
-                'Oi! Me conta o que precisa ser entregue, que eu ajudo a detalhar.'
+                ('ui.hi-tell-me-what-needs-to-be-delivered-and-i-ll-help-you' | t)
             }}
           </div>
         </div>
@@ -53,7 +56,7 @@ import { renderMarkdown } from '../../shared/markdown';
                 {{ m.text }}
                 @if (m.retry) {
                   <button type="button" class="link-button fe-retry" (click)="retry(m)">
-                    Tentar de novo
+                    {{ 'chat.try-again' | t }}
                   </button>
                 }
               </p>
@@ -63,7 +66,7 @@ import { renderMarkdown } from '../../shared/markdown';
               </div>
               @if (m.retry) {
                 <button type="button" class="link-button fe-retry" (click)="retry(m)">
-                  Tentar novamente
+                  {{ 'chat.retry' | t }}
                 </button>
               }
               @if (m.options?.length && !m.used) {
@@ -94,10 +97,10 @@ import { renderMarkdown } from '../../shared/markdown';
                     }
                     @if (undoByMessage()[m.id]) {
                       <button type="button" class="link-button" (click)="undo(m.id)">
-                        Desfazer
+                        {{ 'documents.undo' | t }}
                       </button>
                     } @else {
-                      <em>desfeito</em>
+                      <em>{{ 'documents.undone' | t }}</em>
                     }
                   </span>
                 </div>
@@ -116,7 +119,9 @@ import { renderMarkdown } from '../../shared/markdown';
                 <i></i>
               }
             </div>
-            <button type="button" class="link-button" (click)="stop()">Parar</button>
+            <button type="button" class="link-button" (click)="stop()">
+              {{ 'chat.stop' | t }}
+            </button>
           </div>
         }
         @if (receipt(); as text) {
@@ -129,7 +134,7 @@ import { renderMarkdown } from '../../shared/markdown';
         [hidden]="!chatScroll.unread()"
         (click)="chatScroll.jump('.fe-layout .fe-msgs')"
       >
-        Nova mensagem ↓
+        {{ 'chat.new-message' | t }}
       </button>
       @if (store.settings()?.mode === 'live' && agent()) {
         <div class="fe-compose">
@@ -145,15 +150,15 @@ import { renderMarkdown } from '../../shared/markdown';
               (keydown.enter)="enter($event)"
               rows="1"
               maxlength="4000"
-              [placeholder]="'Mensagem para ' + agent()?.name"
-              [attr.aria-label]="'Mensagem para ' + agent()?.name"
+              [placeholder]="('ui.message-for' | t) + agent()?.name"
+              [attr.aria-label]="('ui.message-for' | t) + agent()?.name"
             ></textarea>
             <button
               type="button"
               class="fe-send"
               (click)="send()"
               [disabled]="!message.trim()"
-              aria-label="Enviar"
+              [attr.aria-label]="'chat.send' | t"
             >
               <svg viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" /></svg>
             </button>
@@ -162,8 +167,7 @@ import { renderMarkdown } from '../../shared/markdown';
       } @else {
         <div class="fe-compose offline">
           <p class="fe-note">
-            A conversa usa o CLI pelo bridge. Inicie a aplicação com a execução ligada. O formulário
-            funciona normalmente sem ele.
+            {{ 'features.the-conversation-uses-the-cli-through-the-bridge-start-the' | t }}
           </p>
         </div>
       }
@@ -171,6 +175,7 @@ import { renderMarkdown } from '../../shared/markdown';
   `,
 })
 export class FeatureConversationComponent implements OnDestroy {
+  readonly i18n = inject(I18nService);
   readonly initialMessage = input('');
   private booted = false;
   constructor() {
@@ -196,17 +201,17 @@ export class FeatureConversationComponent implements OnDestroy {
     return (
       (
         {
-          title: 'Título',
+          title: this.i18n.text('feature.title'),
           description: 'Escopo',
-          criteria: 'Critérios',
-          tasks: 'Tarefas',
+          criteria: this.i18n.text('ui.criteria'),
+          tasks: this.i18n.text('feature.tasks'),
         } as Record<string, string>
       )[field] || field
     );
   }
   readonly store = inject(WorkspaceStore);
   readonly execution = inject(ExecutionService);
-  readonly portrait = portrait;
+  readonly portrait = inject(PortraitService).source;
   readonly render = renderMarkdown;
   readonly working = signal(false);
   readonly undoByMessage = signal<Record<string, Partial<Feature>>>({});
@@ -224,7 +229,7 @@ export class FeatureConversationComponent implements OnDestroy {
   }
   model(): string {
     const m = this.agent()?.model;
-    return !m || m === 'inherit' ? 'PADRÃO' : m;
+    return !m || m === 'inherit' ? this.i18n.text('ui.default') : m;
   }
   key(): string {
     return this.store.project()!.id + ':feature:' + this.draft().id;

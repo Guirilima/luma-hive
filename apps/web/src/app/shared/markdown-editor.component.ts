@@ -1,3 +1,4 @@
+import { I18nService } from '../core/i18n/i18n.service';
 import {
   Component,
   model,
@@ -36,9 +37,11 @@ import { renderMarkdown } from './markdown';
         <em class="fe-md-count">{{ count() }}</em>
         <div class="fe-md-modes" role="group">
           <button type="button" [class.on]="mode() === 'preview'" (click)="mode.set('preview')">
-            Visualizar
+            {{ 'shell.view' | t }}
           </button>
-          <button type="button" [class.on]="mode() === 'edit'" (click)="edit()">Editar</button>
+          <button type="button" [class.on]="mode() === 'edit'" (click)="edit()">
+            {{ 'action.edit' | t }}
+          </button>
         </div>
       </header>
       <div class="fe-md-body">
@@ -62,7 +65,7 @@ import { renderMarkdown } from './markdown';
           tabindex="0"
           (click)="edit()"
           (keydown.enter)="edit()"
-          [attr.aria-label]="'Editar ' + (label() | t)"
+          [attr.aria-label]="('action.edit' | t) + (label() | t)"
           [innerHTML]="preview()"
         ></div>
         <textarea
@@ -89,6 +92,7 @@ import { renderMarkdown } from './markdown';
   `,
 })
 export class MarkdownEditorComponent {
+  readonly i18n = inject(I18nService);
   private readonly element = inject<ElementRef<HTMLElement>>(ElementRef);
   reveal(): void {
     this.collapsed.set(false);
@@ -122,18 +126,20 @@ export class MarkdownEditorComponent {
       );
     if (!this.value().trim()) {
       const empty: Record<string, string> = {
-        description: 'Clique para escrever o escopo da feature.',
-        criteria: 'Clique para escrever os critérios de aceitação.',
-        tasks: 'Clique para quebrar a feature em tarefas.',
-        briefing: 'Clique para escrever o briefing do projeto.',
-        vision: 'Clique para escrever a visão do produto.',
-        scopeIn: 'Clique para listar o que a operação entrega.',
-        scopeOut: 'Clique para listar o que fica de fora.',
-        glossary: 'Clique para escrever os termos do domínio.',
-        architecture: 'Clique para escrever a visão geral da arquitetura.',
+        description: this.i18n.text('ui.click-to-write-the-feature-scope'),
+        criteria: this.i18n.text('ui.click-to-write-acceptance-criteria'),
+        tasks: this.i18n.text('ui.click-to-break-the-feature-into-tasks'),
+        briefing: this.i18n.text('ui.click-to-write-the-project-briefing'),
+        vision: this.i18n.text('ui.click-to-write-the-product-vision'),
+        scopeIn: this.i18n.text('ui.click-to-list-what-the-operation-delivers'),
+        scopeOut: this.i18n.text('ui.click-to-list-what-is-out-of-scope'),
+        glossary: this.i18n.text('ui.click-to-write-domain-terms'),
+        architecture: this.i18n.text('ui.click-to-write-the-architecture-overview'),
       };
       return (
-        '<p class="fe-md-empty">' + escape(empty[this.field()] || this.definition().empty) + '</p>'
+        '<p class="fe-md-empty">' +
+        escape(this.i18n.label(empty[this.field()] || this.definition().empty)) +
+        '</p>'
       );
     }
     if (!this.listField()) return renderMarkdown(this.value());
@@ -160,11 +166,11 @@ export class MarkdownEditorComponent {
   private initialized = false;
   readonly tools = [
     { name: 'B', title: 'Negrito (Ctrl+B)', before: '**', after: '**' },
-    { name: 'I', title: 'Itálico (Ctrl+I)', before: '*', after: '*' },
-    { name: 'H', title: 'Subtítulo', before: '### ', after: '' },
-    { name: '•', title: 'Lista', before: '- ', after: '' },
+    { name: 'I', title: 'ui.italic-ctrl-i', before: '*', after: '*' },
+    { name: 'H', title: 'ui.subheading', before: '### ', after: '' },
+    { name: '•', title: 'feature.list', before: '- ', after: '' },
     { name: '☐', title: 'Checklist', before: '- [ ] ', after: '' },
-    { name: '</>', title: 'Código', before: '`', after: '`' },
+    { name: '</>', title: 'project.code', before: '`', after: '`' },
   ];
   constructor() {
     effect(() => {
@@ -191,10 +197,14 @@ export class MarkdownEditorComponent {
     const defs: Record<string, [string, string, string]> = {
       description: [
         'featureDescription',
-        'o que deve ser entregue',
-        'Contexto, comportamento esperado e limites da feature.',
+        this.i18n.text('ui.what-must-be-delivered'),
+        this.i18n.text('ui.context-expected-behavior-and-feature-boundaries'),
       ],
-      criteria: ['featureCriteria', 'lista verificável', '- Dado… quando… então…'],
+      criteria: [
+        'featureCriteria',
+        this.i18n.text('ui.verifiable-list'),
+        this.i18n.text('ui.given-when-then'),
+      ],
       tasks: [
         'featureTasks',
         'checklist',
@@ -202,29 +212,33 @@ export class MarkdownEditorComponent {
       ],
       briefing: [
         'docBriefing',
-        'objetivo, usuários, restrições e pronto',
-        'Objetivo, usuários, escopo, restrições e definição de pronto.',
+        this.i18n.text('ui.goal-users-constraints-and-done'),
+        this.i18n.text('projects.goal-users-scope-constraints-and-definition-of-done'),
       ],
       vision: [
         'docVision',
-        'para quem, problema e valor',
-        'Para quem é, que problema resolve, proposta de valor, diferenciais e metas.',
+        this.i18n.text('ui.for-whom-problem-and-value'),
+        this.i18n.text('ui.audience-problem-value-proposition-differentiators-and-'),
       ],
       scopeIn: [
         'docScopeIn',
-        'um item por linha',
+        this.i18n.text('ui.one-item-per-line'),
         'Catálogo com busca e filtros\nCheckout com pagamento em sandbox',
       ],
-      scopeOut: ['docScopeOut', 'um item por linha', 'Pagamentos reais\nAplicativo mobile nativo'],
+      scopeOut: [
+        'docScopeOut',
+        this.i18n.text('ui.one-item-per-line'),
+        'Pagamentos reais\nAplicativo mobile nativo',
+      ],
       glossary: [
         'docGlossary',
-        'termo: definição, um por linha',
-        'SKU: código único que identifica um produto',
+        this.i18n.text('ui.term-definition-one-per-line'),
+        this.i18n.text('ui.sku-unique-code-identifying-a-product'),
       ],
       architecture: [
         'docArchitecture',
-        'visão geral: componentes, dados e integrações',
-        'Componentes, integrações, dados, ambientes e restrições técnicas.',
+        this.i18n.text('ui.overview-components-data-and-integrations'),
+        this.i18n.text('ui.components-integrations-data-environments-and-technical'),
       ],
     };
     const def = defs[f];
@@ -232,7 +246,7 @@ export class MarkdownEditorComponent {
       id: def?.[0] || null,
       hint: def?.[1] || '',
       placeholder: def?.[2] || '',
-      empty: 'Clique para escrever.',
+      empty: this.i18n.text('ui.click-to-write'),
     };
   }
   count(): string {
@@ -257,7 +271,7 @@ export class MarkdownEditorComponent {
       f === 'tasks'
         ? 'tarefa'
         : f === 'criteria'
-          ? 'critério'
+          ? this.i18n.text('ui.criterion')
           : f === 'glossary'
             ? 'termo'
             : 'item';

@@ -1,4 +1,6 @@
-import { Component, input, output, signal } from '@angular/core';
+import { I18nService } from '../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../core/i18n/i18n.service';
+import { inject, Component, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CONVENTION_FAMILIES, CONVENTION_SUBSETS } from '@domain/catalog';
 import ui from '@domain/interface-catalog.json';
@@ -7,7 +9,7 @@ import { IconComponent } from '../../shared/icon.component';
 @Component({
   selector: 'luma-convention-picker',
   standalone: true,
-  imports: [FormsModule, IconComponent],
+  imports: [TranslatePipe, FormsModule, IconComponent],
   host: { style: 'display:contents' },
   template: `
     <div class="conv-picker">
@@ -23,12 +25,12 @@ import { IconComponent } from '../../shared/icon.component';
             [ngModelOptions]="{ standalone: true }"
             (ngModelChange)="cursor.set(0)"
             (keydown)="keys($event)"
-            placeholder="Pesquise por tema: testes, segurança, git, acessibilidade..."
-            aria-label="Pesquisar subsets por tema"
+            [placeholder]="'agents.search-by-topic-testing-security-git-accessibility' | t"
+            [attr.aria-label]="'agents.search-subsets-by-topic' | t"
             aria-controls="convResults"
           />
         </span>
-        <div class="conv-themes" role="group" aria-label="Temas">
+        <div class="conv-themes" role="group" [attr.aria-label]="'agents.topics' | t">
           @for (g of groups; track g.key) {
             <button
               type="button"
@@ -49,11 +51,16 @@ import { IconComponent } from '../../shared/icon.component';
               (click)="setTheme('lib')"
             >
               <luma-icon name="star" />
-              Minha biblioteca
+              {{ 'agents.my-library' | t }}
             </button>
           }
         </div>
-        <div class="conv-results" id="convResults" role="listbox" aria-label="Subsets">
+        <div
+          class="conv-results"
+          id="convResults"
+          role="listbox"
+          [attr.aria-label]="'agents.subsets' | t"
+        >
           @for (group of sections(); track group.key) {
             <div class="conv-rgroup">
               <div class="conv-rhead">
@@ -77,7 +84,11 @@ import { IconComponent } from '../../shared/icon.component';
                     <span class="conv-row-text">
                       <strong>{{ item.name }}</strong>
                       <small>
-                        {{ used().includes(item.src) ? 'Já adicionado a este agente' : item.desc }}
+                        {{
+                          used().includes(item.src)
+                            ? ('ui.already-added-to-this-agent' | t)
+                            : item.desc
+                        }}
                       </small>
                     </span>
                     <luma-icon [name]="used().includes(item.src) ? 'check' : 'plus'" />
@@ -87,7 +98,9 @@ import { IconComponent } from '../../shared/icon.component';
                       class="conv-row-del"
                       type="button"
                       (click)="deleted.emit(item.src.slice(4))"
-                      [attr.aria-label]="'Excluir ' + item.name + ' da biblioteca'"
+                      [attr.aria-label]="
+                        ('action.delete' | t) + item.name + ('ui.from-library' | t)
+                      "
                     >
                       <luma-icon name="trash" />
                     </button>
@@ -96,15 +109,15 @@ import { IconComponent } from '../../shared/icon.component';
               }
             </div>
           } @empty {
-            <p class="hint conv-empty">Nenhum subset encontrado para esse tema.</p>
+            <p class="hint conv-empty">{{ 'agents.no-subsets-found-for-this-topic' | t }}</p>
           }
           <div class="conv-rgroup">
             <div class="conv-row" [class.active]="flat()[cursor()] === 'custom'">
               <button type="button" role="option" (click)="selected.emit('custom')">
                 <span class="conv-row-icon"><luma-icon name="edit" /></span>
                 <span class="conv-row-text">
-                  <strong>Subset em branco</strong>
-                  <small>Escreva suas próprias regras.</small>
+                  <strong>{{ 'agents.blank-subset' | t }}</strong>
+                  <small>{{ 'agents.write-your-own-rules' | t }}</small>
                 </span>
                 <luma-icon name="plus" />
               </button>
@@ -116,6 +129,7 @@ import { IconComponent } from '../../shared/icon.component';
   `,
 })
 export class ConventionPickerComponent {
+  readonly i18n = inject(I18nService);
   readonly family = input('general');
   readonly library = input<ConventionEntry[]>([]);
   readonly used = input<string[]>([]);
@@ -174,7 +188,7 @@ export class ConventionPickerComponent {
     if (!words.length && !theme && suggest.length)
       sections.push({
         key: 'suggest',
-        label: 'Sugeridos para este agente',
+        label: this.i18n.text('ui.suggested-for-this-agent'),
         icon: 'sparkle',
         items: suggest
           .map((key: string) => CONVENTION_SUBSETS.find((s) => s.key === key))
@@ -186,12 +200,15 @@ export class ConventionPickerComponent {
       if (items.length) sections.push({ ...g, items });
     }
     const lib = this.library().filter((s) =>
-      match({ name: s.name, desc: s.content.slice(0, 400), tags: 'minha biblioteca' }, 'lib'),
+      match(
+        { name: s.name, desc: s.content.slice(0, 400), tags: this.i18n.text('ui.my-library') },
+        'lib',
+      ),
     );
     if (lib.length)
       sections.push({
         key: 'lib',
-        label: 'Minha biblioteca',
+        label: this.i18n.text('agents.my-library'),
         icon: 'star',
         items: lib.map((s) => ({
           src: 'lib:' + s.id,

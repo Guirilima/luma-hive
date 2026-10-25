@@ -1,10 +1,11 @@
+import { UiLabelPipe } from '../core/i18n/i18n.service';
 import { Component, ElementRef, AfterViewInit, input, output, inject } from '@angular/core';
 import { IconComponent } from './icon.component';
 import { TranslatePipe } from '../core/i18n/i18n.service';
 @Component({
   selector: 'luma-modal',
   standalone: true,
-  imports: [TranslatePipe, IconComponent],
+  imports: [UiLabelPipe, TranslatePipe, IconComponent],
   templateUrl: './modal.component.html',
 })
 export class ModalComponent implements AfterViewInit {

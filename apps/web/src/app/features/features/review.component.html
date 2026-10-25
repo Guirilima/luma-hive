@@ -5,18 +5,20 @@
       <span [class]="'status-label ' + f.status">{{ status(f.status) }}</span>
     </div>
     <h3 style="font-size: 20px; font-weight: 450; margin-bottom: 18px">{{ f.title }}</h3>
-    <div class="eyebrow" style="margin-bottom: 8px">CRITÉRIOS DE ACEITAÇÃO</div>
+    <div class="eyebrow" style="margin-bottom: 8px">{{ 'features.acceptance-criteria' | t }}</div>
     <p class="prose" style="margin-bottom: 25px">{{ f.criteria }}</p>
-    <div class="eyebrow" style="margin-bottom: 18px">ENTREGAS DOS ESPECIALISTAS</div>
+    <div class="eyebrow" style="margin-bottom: 18px">
+      {{ 'features.specialist-deliveries' | t }}
+    </div>
     @for (o of f.outputs; track $index) {
       <article class="review-output">
         <h3>
-          {{ store.agent(o.agentId)?.name || 'AGENTE REMOVIDO' }} /
+          {{ store.agent(o.agentId)?.name || ('ui.removed-agent' | t) }} /
           {{
             o.simulated
-              ? 'REGISTRO SIMULADO'
+              ? ('ui.simulated-record' | t)
               : o.error
-                ? 'FALHA NA EXECUÇÃO'
+                ? ('ui.execution-failed' | t)
                 : store.providerLabel(o.agentId) + ' CLI'
           }}
         </h3>
@@ -29,31 +31,31 @@
             / {{ Math.round(o.durationMs / 1000) }}s
           }
           @if (o.sessionId) {
-            / sessão {{ o.sessionId.slice(0, 8) }}
+            {{ 'ui.session-272' | t }} {{ o.sessionId.slice(0, 8) }}
           }
         </time>
         <p>{{ o.text }}</p>
       </article>
     } @empty {
-      <p class="prose">Nenhum registro de entrega disponível ainda.</p>
+      <p class="prose">{{ 'features.no-delivery-records-yet' | t }}</p>
     }
     <div class="notice warning">
       <luma-icon name="info" />
       {{
         real(f)
-          ? 'Registros do CLI: revise os arquivos alterados no repositório antes de aprovar. Aprovar libera as features dependentes.'
-          : 'Estes registros são simulados. Aprovar altera apenas o estado demonstrativo da feature; não valida código real.'
+          ? ('ui.cli-records-review-changed-files-in-the-repository-befo' | t)
+          : ('ui.these-records-are-simulated-approval-only-changes-the-d' | t)
       }}
     </div>
     @if (f.status === 'review') {
       <div class="ops-detail-actions">
         <button class="btn ghost" (click)="review(false)">
           <luma-icon name="edit" />
-          Solicitar ajustes
+          {{ 'action.reject' | t }}
         </button>
         <button class="btn primary" (click)="review(true)">
           <luma-icon name="check" />
-          {{ real(f) ? 'Aprovar entrega' : 'Aprovar entrega / demo' }}
+          {{ real(f) ? ('ui.approve-delivery' | t) : ('ui.approve-delivery-demo' | t) }}
         </button>
       </div>
     }
@@ -62,7 +64,7 @@
 @if (inline()) {
   <ng-container [ngTemplateOutlet]="body" />
 } @else {
-  <luma-modal title="REVISÃO DE ENTREGA" (closed)="close()">
+  <luma-modal [title]="'features.delivery-review' | t" (closed)="close()">
     <ng-container [ngTemplateOutlet]="body" />
   </luma-modal>
 }

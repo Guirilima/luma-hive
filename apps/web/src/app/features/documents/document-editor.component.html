@@ -1,4 +1,4 @@
-<luma-modal title="project.documents" (closed)="dialogs.close()">
+<luma-modal [title]="'project.documents' | t" (closed)="dialogs.close()">
   <form (ngSubmit)="save()">
     @if (isAdr) {
       <div class="form-grid">
@@ -7,13 +7,13 @@
           <input name="title" [(ngModel)]="adr.title" required />
         </label>
         <label class="field">
-          Status
+          {{ 'documents.status' | t }}
           <select name="status" [(ngModel)]="adr.status">
             @for (
               status of ['Proposto', 'Aceito', 'Rejeitado', 'Depreciado', 'Substituído'];
               track status
             ) {
-              <option [value]="status">{{ status }}</option>
+              <option [value]="status">{{ status | uiLabel }}</option>
             }
           </select>
         </label>

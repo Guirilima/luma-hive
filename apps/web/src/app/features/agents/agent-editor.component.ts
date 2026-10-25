@@ -1,3 +1,5 @@
+import { UiLabelPipe } from '../../core/i18n/i18n.service';
+import { PortraitService } from '../../core/appearance/portrait.service';
 import ui from '@domain/interface-catalog.json';
 import { ConventionPickerComponent } from './convention-picker.component';
 import { Component, inject, signal } from '@angular/core';
@@ -28,7 +30,14 @@ import { OFFICE_SLOTS, officeSlot } from '../map/renderers/office-layout';
 @Component({
   selector: 'luma-agent-editor',
   standalone: true,
-  imports: [ConventionPickerComponent, FormsModule, TranslatePipe, ModalComponent, IconComponent],
+  imports: [
+    UiLabelPipe,
+    ConventionPickerComponent,
+    FormsModule,
+    TranslatePipe,
+    ModalComponent,
+    IconComponent,
+  ],
   templateUrl: './agent-editor.component.html',
 })
 export class AgentEditorComponent {
@@ -54,16 +63,16 @@ export class AgentEditorComponent {
   subsetQuery = '';
   templateName = '';
   readonly panes = [
-    { key: 'identity', label: 'IDENTIDADE' },
-    { key: 'instructions', label: 'INSTRUÇÕES' },
-    { key: 'tools', label: 'FERRAMENTAS' },
-    { key: 'advanced', label: 'DIRETRIZES' },
-    { key: 'squads', label: 'SQUADS' },
+    { key: 'identity', label: 'ui.identity' },
+    { key: 'instructions', label: 'ui.instructions' },
+    { key: 'tools', label: 'ui.tools' },
+    { key: 'advanced', label: 'ui.guidelines' },
+    { key: 'squads', label: 'dashboard.squads-172' },
   ];
   readonly efforts = ['', 'low', 'medium', 'high', 'xhigh', 'max', 'ultra'] as const;
   readonly toolInfo: Record<string, string> = {
     Read: 'Leitura de arquivos',
-    Glob: 'Busca por arquivos',
+    Glob: 'Glob',
     Grep: 'Busca por conteúdo',
     Edit: 'Edição de arquivos',
     Write: 'Criação de arquivos',
@@ -89,7 +98,7 @@ export class AgentEditorComponent {
       .join('\n');
   }
   autoPortrait(): string {
-    return portrait({ ...this.draft, image: '' });
+    return this.portrait({ ...this.draft, image: '' });
   }
   resetPrompt(): void {
     this.draft.prompt = makeAgent(this.draft.role, this.draft.name).prompt;
@@ -106,11 +115,11 @@ export class AgentEditorComponent {
   }
   membership(q: Squad): string {
     return q.commanderId === this.draft.id
-      ? 'Comandante'
+      ? this.i18n.text('role.commander')
       : q.adrId === this.draft.id
-        ? 'Reconhecedor ADR'
+        ? this.i18n.text('squad.adr')
         : q.prdId === this.draft.id
-          ? 'Reconhecedor PRD'
+          ? this.i18n.text('squad.prd')
           : 'Operador';
   }
   matchingSubsets() {
@@ -164,13 +173,13 @@ export class AgentEditorComponent {
     return (
       (
         {
-          CMD: 'SALA DE COMANDO',
-          REC: 'RECONHECIMENTO',
-          A: 'OPEN SPACE A',
-          B: 'OPEN SPACE B',
-          C: 'OPEN SPACE C',
+          CMD: this.i18n.text('ui.command-room'),
+          REC: this.i18n.text('ui.intelligence'),
+          A: this.i18n.text('ui.open-space-a'),
+          B: this.i18n.text('ui.open-space-b'),
+          C: this.i18n.text('ui.open-space-c'),
           LAB: 'LAB',
-          R: 'SALA DE REUNIÃO',
+          R: this.i18n.text('ui.meeting-room'),
         } as Record<string, string>
       )[code || ''] || ''
     );
@@ -224,7 +233,8 @@ export class AgentEditorComponent {
     }
     this.addSubset(src.replace(/^builtin:/, ''));
   }
-  readonly portrait = portrait;
+  readonly portrait = inject(PortraitService).source;
+  readonly portraitSource = inject(PortraitService).resolve;
   constructor() {
     if (!this.existing) {
       this.draft.productionStage = 'discovery';
@@ -295,13 +305,17 @@ export class AgentEditorComponent {
         (t) => t.id !== key.slice(4),
       );
     });
-    this.dialogs.notify('Template excluído da biblioteca. O texto do agente foi preservado.');
+    this.dialogs.notify(
+      this.i18n.text('ui.template-removed-from-library-agent-text-was-preserved'),
+    );
   }
   deleteLibrarySubset(id: string): void {
     this.store.change((w) => {
       w.conventionLibrary.subsets = w.conventionLibrary.subsets.filter((s) => s.id !== id);
     });
-    this.dialogs.notify('Subset excluído da biblioteca. Os agentes que usam esse texto não mudam.');
+    this.dialogs.notify(
+      this.i18n.text('ui.subset-removed-from-library-agents-using-this-text-are-'),
+    );
   }
   templateSelection(): string {
     const selected = this.templates().find((t) => t.key === this.draft.conventions.template);
@@ -393,13 +407,13 @@ export class AgentEditorComponent {
     });
     this.draft.conventions.template = 'lib:' + entry.id;
     this.templateName = '';
-    this.dialogs.notify('Template salvo na biblioteca.');
+    this.dialogs.notify(this.i18n.text('ui.template-saved-to-library'));
   }
   saveSubset(index: number): void {
     const subset = this.draft.conventions.subsets[index];
     if (!subset) return;
     if (!subset.name.trim() || !subset.content.trim()) {
-      this.store.error.set('Preencha o nome e o conteúdo do subset.');
+      this.store.error.set(this.i18n.text('ui.enter-the-subset-s-name-and-content'));
       return;
     }
     this.store.change((w) => {
@@ -458,7 +472,7 @@ export class AgentEditorComponent {
     );
     if (held.length) {
       this.store.error.set(
-        'Troque o agente dessa posição no Squad Studio antes de mudar a especialidade.',
+        this.i18n.text('ui.replace-the-agent-in-squad-studio-before-changing-its-s'),
       );
       this.tab.set('identity');
       return;
@@ -471,11 +485,11 @@ export class AgentEditorComponent {
             a.id !== this.draft.id && a.name.toUpperCase() === this.draft.name.trim().toUpperCase(),
         )
     ) {
-      this.store.error.set('Esse codinome já está em uso.');
+      this.store.error.set(this.i18n.text('ui.this-codename-is-already-in-use'));
       return;
     }
     if (this.draft.role === 'custom' && !this.draft.specialty.trim()) {
-      this.store.error.set('Informe o título da especialidade.');
+      this.store.error.set(this.i18n.text('ui.enter-the-specialty-title'));
       return;
     }
     if (!this.draft.name.trim() || !this.draft.prompt.trim()) {
@@ -503,7 +517,7 @@ export class AgentEditorComponent {
       const slot = this.dialogs.current()?.data?.squadSlot;
       if (slot) this.dialogs.recruited.set({ id: this.draft.id, squadId: slot.squadId });
       this.store.selectedId.set(this.draft.id);
-      this.dialogs.notify('Agente salvo.');
+      this.dialogs.notify(this.i18n.text('ui.agent-saved'));
       this.dialogs.close();
     }
   }
@@ -521,8 +535,8 @@ export class AgentEditorComponent {
     if (
       await this.dialogs.ask(
         this.i18n.text('agent.deleteConfirm'),
-        'EXCLUIR AGENTE',
-        'Excluir agente',
+        this.i18n.text('ui.delete-agent'),
+        this.i18n.text('agents.delete-agent'),
         true,
       )
     ) {

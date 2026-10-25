@@ -1,3 +1,5 @@
+import { UiLabelPipe } from '../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../core/i18n/i18n.service';
 import { ROLES } from '@domain/catalog';
 import { IconComponent } from '../../shared/icon.component';
 import { Component, inject } from '@angular/core';
@@ -11,7 +13,7 @@ import { ModalComponent } from '../../shared/modal.component';
 @Component({
   selector: 'luma-handoff-editor',
   standalone: true,
-  imports: [IconComponent, FormsModule, ModalComponent],
+  imports: [UiLabelPipe, TranslatePipe, IconComponent, FormsModule, ModalComponent],
   templateUrl: './handoff-editor.component.html',
 })
 export class HandoffEditorComponent {

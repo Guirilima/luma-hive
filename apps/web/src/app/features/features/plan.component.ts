@@ -1,3 +1,5 @@
+import { TranslatePipe } from '../../core/i18n/i18n.service';
+import { PortraitService } from '../../core/appearance/portrait.service';
 import { Component, inject } from '@angular/core';
 import { WorkspaceStore } from '../../core/workspace/workspace.store';
 import { ExecutionService } from '../../core/execution/execution.service';
@@ -7,7 +9,7 @@ import { dependenciesReady } from '@domain/workspace';
 @Component({
   selector: 'luma-plan',
   standalone: true,
-  imports: [IconComponent],
+  imports: [TranslatePipe, IconComponent],
   host: { style: 'display:contents' },
   template: `
     @if (execution.plan(); as plan) {
@@ -15,27 +17,30 @@ import { dependenciesReady } from '@domain/workspace';
         <section class="ops-plan">
           <div class="ops-section-head">
             <div>
-              <span class="eyebrow">PLANO DO COMANDANTE / {{ commander() }}</span>
-              <h3>Distribuição de responsabilidades</h3>
+              <span class="eyebrow">{{ 'ui.commander-s-plan' | t }} {{ commander() }}</span>
+              <h3>{{ 'features.responsibility-distribution' | t }}</h3>
             </div>
-            <span class="footer-note">{{ valid() }} / {{ plan.length }} ROTAS COMPLETAS</span>
+            <span class="footer-note">
+              {{ valid() }} / {{ plan.length }} {{ 'ui.complete-routes' | t }}
+            </span>
           </div>
           <div class="state-bar">
             <luma-icon name="crown" />
             <strong>{{ commander() }}</strong>
-            <span>BRIEFING RECEBIDO / {{ plan.length }} FEATURES ANALISADAS</span>
+            <span>
+              {{ 'ui.briefing-received' | t }} {{ plan.length }} {{ 'ui.features-analyzed' | t }}
+            </span>
           </div>
           <p class="prose" style="margin-bottom:18px;font-size:12px">
-            O comandante propõe esta sequência de especialistas a partir do escopo. A distribuição
-            abaixo é determinística: nenhum modelo de IA foi consultado.
+            {{ 'features.the-commander-proposes-this-specialist-sequence-based-on-s' | t }}
           </p>
           <div style="overflow:auto">
             <table class="plan-table">
               <thead>
                 <tr>
                   <th>FEATURE</th>
-                  <th>PRIORIDADE</th>
-                  <th>ROTA DE EXECUÇÃO / HANDOFF</th>
+                  <th>{{ 'features.priority' | t }}</th>
+                  <th>{{ 'features.execution-route-handoff' | t }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -63,15 +68,17 @@ import { dependenciesReady } from '@domain/workspace';
                         </div>
                         @if (item.missing?.length) {
                           <div class="plan-error">
-                            Falta no squad: {{ item.missing?.join(', ') }}
+                            {{ 'ui.missing-from-squad' | t }} {{ item.missing?.join(', ') }}
                           </div>
                         } @else if (!ready(f.id)) {
                           <div class="plan-error">
                             <luma-icon name="lock" />
-                            Aguarda {{ dependencies(f.id) }}
+                            {{ 'ui.waiting-for' | t }} {{ dependencies(f.id) }}
                           </div>
                         } @else {
-                          <div class="hint" style="margin-top:6px">Pronta para iniciar.</div>
+                          <div class="hint" style="margin-top:6px">
+                            {{ 'features.ready-to-start' | t }}
+                          </div>
                         }
                       </td>
                     </tr>
@@ -82,13 +89,12 @@ import { dependenciesReady } from '@domain/workspace';
           </div>
           <div class="notice">
             <luma-icon name="info" />
-            Aplicar o plano não inicia a simulação. Features com dependências aguardam aprovação das
-            anteriores. Features sem especialistas suficientes permanecem em A fazer.
+            {{ 'features.applying-the-plan-does-not-start-the-simulation-dependenci' | t }}
           </div>
           <div class="ops-detail-actions">
             <button class="btn" (click)="execution.cancelPlan()">
               <luma-icon name="close" />
-              Descartar
+              {{ 'features.discard' | t }}
             </button>
             <button
               class="btn primary"
@@ -96,7 +102,7 @@ import { dependenciesReady } from '@domain/workspace';
               (click)="execution.approvePlan(false)"
             >
               <luma-icon name="check" />
-              Aplicar plano
+              {{ 'features.apply-plan' | t }}
             </button>
           </div>
         </section>
@@ -105,15 +111,15 @@ import { dependenciesReady } from '@domain/workspace';
           <div class="room-card room-plan awaiting">
             <div class="room-card-head">
               <luma-icon name="flow" />
-              <strong>PLANO DE EXECUÇÃO</strong>
+              <strong>{{ 'features.execution-plan' | t }}</strong>
               <span>{{ execution.planLabel() }}</span>
               <em>
                 {{
                   execution.planSource() === 'demo'
-                    ? 'MONTADO NA DEMONSTRAÇÃO'
+                    ? ('ui.built-in-demo' | t)
                     : execution.planSource() === 'default'
-                      ? 'DISTRIBUIÇÃO PADRÃO DA SQUAD'
-                      : 'MONTADO PELO COMANDANTE'
+                      ? ('ui.default-squad-distribution' | t)
+                      : ('ui.built-by-commander' | t)
                 }}
               </em>
             </div>
@@ -125,7 +131,7 @@ import { dependenciesReady } from '@domain/workspace';
                     <span>{{ f.title }}</span>
                     <em class="tag">{{ f.priority }}</em>
                     @if (!ready(f.id)) {
-                      <em class="tag">AGUARDA DEPENDÊNCIAS</em>
+                      <em class="tag">{{ 'features.waiting-for-dependencies' | t }}</em>
                     }
                   </div>
                   <div class="room-route">
@@ -143,7 +149,7 @@ import { dependenciesReady } from '@domain/workspace';
                   </div>
                   @if (item.briefs.length) {
                     <details open>
-                      <summary>Instruções do comandante</summary>
+                      <summary>{{ 'features.commander-s-instructions' | t }}</summary>
                       <ul class="room-briefs">
                         @for (brief of item.briefs; track $index) {
                           <li>
@@ -160,7 +166,7 @@ import { dependenciesReady } from '@domain/workspace';
             <div class="room-card-actions">
               <button class="btn ghost sm" (click)="execution.stop()">
                 <luma-icon name="close" />
-                Cancelar
+                {{ 'action.cancel' | t }}
               </button>
               <button
                 class="btn primary sm"
@@ -168,7 +174,7 @@ import { dependenciesReady } from '@domain/workspace';
                 [disabled]="!valid()"
               >
                 <luma-icon name="play" />
-                Executar plano
+                {{ 'features.execute-plan' | t }}
               </button>
             </div>
           </div>
@@ -180,7 +186,7 @@ import { dependenciesReady } from '@domain/workspace';
 export class PlanComponent {
   readonly store = inject(WorkspaceStore);
   readonly execution = inject(ExecutionService);
-  readonly portrait = portrait;
+  readonly portrait = inject(PortraitService).source;
   valid(): number {
     return this.execution.plan()?.filter((p) => p.route.length && !p.missing?.length).length || 0;
   }

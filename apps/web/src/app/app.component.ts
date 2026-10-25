@@ -1,3 +1,4 @@
+import { AppearanceService } from './core/appearance/appearance.service';
 import { UsageComponent } from './features/usage/usage.component';
 import { Component, inject, signal, computed, HostListener, effect } from '@angular/core';
 import { Router, RouterOutlet, RouterLink } from '@angular/router';
@@ -47,6 +48,7 @@ export class AppComponent {
         ?.provider || 'codex'
     );
   }
+  readonly appearance = inject(AppearanceService);
   readonly room = inject(RoomService);
   readonly doneFeature = (f: { status: string }) => f.status === 'done';
   readonly store = inject(WorkspaceStore);

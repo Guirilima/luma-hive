@@ -1,18 +1,158 @@
-import {Component,inject,signal} from '@angular/core';
-import {FormsModule} from '@angular/forms';
-import {Router} from '@angular/router';
-import {WorkspaceStore} from '../../core/workspace/workspace.store';
-import {DialogService} from '../../core/ui/dialog.service';
-import {ModalComponent} from '../../shared/modal.component';
-import {IconComponent} from '../../shared/icon.component';
-import {SquadCardComponent} from './project-form.component';
-@Component({selector:'luma-project-editor',standalone:true,imports:[FormsModule,ModalComponent,IconComponent,SquadCardComponent],template:`@if(!existing){<luma-modal title="NOVA <span class=word-tag>OPERAÇÃO</span>" [subtitle]="code()+' / '+(step()==='name'?'1 DE 2 · NOME':'2 DE 2 · SQUAD')" modalClass="narrow" (closed)="dialogs.close()">@if(step()==='name'){<form id="opNewForm" (ngSubmit)="next()"><div class="field"><label for="opNewName">NOME DO PROJETO</label><input id="opNewName" name="name" [(ngModel)]="name" maxlength="70" placeholder="Ex.: Atlas Commerce" autocomplete="off" autofocus/></div><p class="hint">Depois você escolhe a squad que vai executar a operação.</p></form>}@else if(step()==='choice'){<p class="op-new-ask">Quem vai executar <strong>{{name}}</strong>?</p><div class="op-choices"><button class="op-choice" [disabled]="!available().length" (click)="step.set('squad')"><luma-icon name="squad"/><strong>Selecionar squad existente</strong><small>{{available().length}} squad(s) completa(s) disponível(is).</small></button><button class="op-choice" (click)="newSquad()"><luma-icon name="plus"/><strong>Criar nova squad</strong><small>Monte comandante, ADR, PRD e operadores no Squad Studio.</small></button></div>}@else{<form id="opNewSquadForm" (ngSubmit)="create()"><p class="op-new-ask">Squad de <strong>{{name}}</strong></p><div class="field full"><span class="label">SQUAD DA OPERAÇÃO</span><div class="squad-pick-grid">@for(q of store.workspace()!.squads;track q.id){<label class="squad-pick" [class.incomplete]="!store.squadComplete(q)"><input type="radio" name="squadId" [value]="q.id" [(ngModel)]="squadId" [disabled]="!store.squadComplete(q)"/><span class="squad-card"><luma-squad-card [squad]="q"/></span></label>}</div><span class="hint">Obrigatório. A operação usa a squad inteira: comandante, reconhecedores e operadores. Squads incompletas não podem ser escolhidas; complete-as no Squad Studio.</span></div></form>}<footer class="modal-footer" modal-footer>@if(step()!=='name'){<button class="btn ghost" (click)="step.set(step()==='squad'?'choice':'name')"><luma-icon name="back"/>Voltar</button>}<button class="btn" (click)="dialogs.close()">Cancelar</button>@if(step()==='name'){<button class="btn primary" type="submit" form="opNewForm"><luma-icon name="arrow"/>Continuar</button>}@else if(step()==='squad'){<button class="btn primary" type="submit" form="opNewSquadForm"><luma-icon name="check"/>Criar operação</button>}</footer></luma-modal>}`})
+import { TranslatePipe } from '../../core/i18n/i18n.service';
+import { Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
+import { WorkspaceStore } from '../../core/workspace/workspace.store';
+import { DialogService } from '../../core/ui/dialog.service';
+import { ModalComponent } from '../../shared/modal.component';
+import { IconComponent } from '../../shared/icon.component';
+import { SquadCardComponent } from './project-form.component';
+@Component({
+  selector: 'luma-project-editor',
+  standalone: true,
+  imports: [TranslatePipe, FormsModule, ModalComponent, IconComponent, SquadCardComponent],
+  template: `
+    @if (!existing) {
+      <luma-modal
+        [title]="'projects.new-operation' | t"
+        [subtitle]="code() + ' / ' + (step() === 'name' ? '1 DE 2 · NOME' : '2 DE 2 · SQUAD')"
+        modalClass="narrow"
+        (closed)="dialogs.close()"
+      >
+        @if (step() === 'name') {
+          <form id="opNewForm" (ngSubmit)="next()">
+            <div class="field">
+              <label for="opNewName">{{ 'projects.project-name' | t }}</label>
+              <input
+                id="opNewName"
+                name="name"
+                [(ngModel)]="name"
+                maxlength="70"
+                [placeholder]="'projects.e-g-atlas-commerce' | t"
+                autocomplete="off"
+                autofocus
+              />
+            </div>
+            <p class="hint">
+              {{ 'projects.next-choose-the-squad-that-will-run-the-operation' | t }}
+            </p>
+          </form>
+        } @else if (step() === 'choice') {
+          <p class="op-new-ask">
+            {{ 'projects.who-will-execute' | t }}
+            <strong>{{ name }}</strong>
+            ?
+          </p>
+          <div class="op-choices">
+            <button class="op-choice" [disabled]="!available().length" (click)="step.set('squad')">
+              <luma-icon name="squad" />
+              <strong>{{ 'projects.select-existing-squad' | t }}</strong>
+              <small>{{ available().length }} {{ 'ui.complete-squad-s-available' | t }}</small>
+            </button>
+            <button class="op-choice" (click)="newSquad()">
+              <luma-icon name="plus" />
+              <strong>{{ 'projects.create-new-squad' | t }}</strong>
+              <small>
+                {{ 'projects.assemble-commander-adr-prd-and-operators-in-squad-studio' | t }}
+              </small>
+            </button>
+          </div>
+        } @else {
+          <form id="opNewSquadForm" (ngSubmit)="create()">
+            <p class="op-new-ask">
+              {{ 'projects.squad-of' | t }}
+              <strong>{{ name }}</strong>
+            </p>
+            <div class="field full">
+              <span class="label">{{ 'projects.operation-squad' | t }}</span>
+              <div class="squad-pick-grid">
+                @for (q of store.workspace()!.squads; track q.id) {
+                  <label class="squad-pick" [class.incomplete]="!store.squadComplete(q)">
+                    <input
+                      type="radio"
+                      name="squadId"
+                      [value]="q.id"
+                      [(ngModel)]="squadId"
+                      [disabled]="!store.squadComplete(q)"
+                    />
+                    <span class="squad-card"><luma-squad-card [squad]="q" /></span>
+                  </label>
+                }
+              </div>
+              <span class="hint">
+                {{ 'projects.required-the-operation-uses-the-entire-squad-commander-ana' | t }}
+              </span>
+            </div>
+          </form>
+        }
+        <footer class="modal-footer" modal-footer>
+          @if (step() !== 'name') {
+            <button class="btn ghost" (click)="step.set(step() === 'squad' ? 'choice' : 'name')">
+              <luma-icon name="back" />
+              {{ 'action.back' | t }}
+            </button>
+          }
+          <button class="btn" (click)="dialogs.close()">{{ 'action.cancel' | t }}</button>
+          @if (step() === 'name') {
+            <button class="btn primary" type="submit" form="opNewForm">
+              <luma-icon name="arrow" />
+              {{ 'run.resume' | t }}
+            </button>
+          } @else if (step() === 'squad') {
+            <button class="btn primary" type="submit" form="opNewSquadForm">
+              <luma-icon name="check" />
+              {{ 'projects.create-operation' | t }}
+            </button>
+          }
+        </footer>
+      </luma-modal>
+    }
+  `,
+})
 export class ProjectEditorComponent {
- readonly store=inject(WorkspaceStore);readonly dialogs=inject(DialogService);readonly router=inject(Router);readonly existing=this.dialogs.current()?.id;readonly step=signal<'name'|'choice'|'squad'>('name');name='';squadId=this.available()[0]?.id||'';
- constructor(){if(this.existing){this.store.switchProject(this.existing);this.dialogs.close();void this.router.navigateByUrl('/projects').then(()=>setTimeout(()=>document.getElementById('projectName')?.focus(),50));}}
- available(){return this.store.workspace()?.squads.filter(q=>this.store.squadComplete(q))||[];}
- code():string{return 'OP-'+String((this.store.workspace()?.projects.length||0)+1).padStart(3,'0');}
- next():void{this.name=this.name.trim().replace(/\s+/g,' ');if(!this.name){document.getElementById('opNewName')?.focus();return;}this.step.set('choice');}
- newSquad():void{this.dialogs.pendingOperation.set(this.name);this.dialogs.open('squad');}
- create():void{if(!this.name||!this.squadId||this.store.projectLocked())return;const p=this.store.newProject(this.name,this.squadId);if(this.store.saveProject(p)){this.dialogs.close();this.store.selectedId.set(p.commanderId);void this.router.navigateByUrl('/projects').then(()=>setTimeout(()=>document.getElementById('projectBriefing')?.focus(),50));}}
+  readonly store = inject(WorkspaceStore);
+  readonly dialogs = inject(DialogService);
+  readonly router = inject(Router);
+  readonly existing = this.dialogs.current()?.id;
+  readonly step = signal<'name' | 'choice' | 'squad'>('name');
+  name = '';
+  squadId = this.available()[0]?.id || '';
+  constructor() {
+    if (this.existing) {
+      this.store.switchProject(this.existing);
+      this.dialogs.close();
+      void this.router
+        .navigateByUrl('/projects')
+        .then(() => setTimeout(() => document.getElementById('projectName')?.focus(), 50));
+    }
+  }
+  available() {
+    return this.store.workspace()?.squads.filter((q) => this.store.squadComplete(q)) || [];
+  }
+  code(): string {
+    return 'OP-' + String((this.store.workspace()?.projects.length || 0) + 1).padStart(3, '0');
+  }
+  next(): void {
+    this.name = this.name.trim().replace(/\s+/g, ' ');
+    if (!this.name) {
+      document.getElementById('opNewName')?.focus();
+      return;
+    }
+    this.step.set('choice');
+  }
+  newSquad(): void {
+    this.dialogs.pendingOperation.set(this.name);
+    this.dialogs.open('squad');
+  }
+  create(): void {
+    if (!this.name || !this.squadId || this.store.projectLocked()) return;
+    const p = this.store.newProject(this.name, this.squadId);
+    if (this.store.saveProject(p)) {
+      this.dialogs.close();
+      this.store.selectedId.set(p.commanderId);
+      void this.router
+        .navigateByUrl('/projects')
+        .then(() => setTimeout(() => document.getElementById('projectBriefing')?.focus(), 50));
+    }
+  }
 }

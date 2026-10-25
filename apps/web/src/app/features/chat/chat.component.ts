@@ -1,3 +1,6 @@
+import { I18nService } from '../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../core/i18n/i18n.service';
+import { PortraitService } from '../../core/appearance/portrait.service';
 import { phoneTurn, conversationRound } from '../../core/execution/conversation-prompts';
 import { agentReply, replyOptions } from '../../shared/agent-reply';
 import { chatReceipt } from '../../shared/agent-reply';
@@ -17,15 +20,16 @@ import { renderMarkdown } from '../../shared/markdown';
 @Component({
   selector: 'luma-chat',
   standalone: true,
-  imports: [FormsModule, IconComponent, ModalComponent],
+  imports: [TranslatePipe, FormsModule, IconComponent, ModalComponent],
   templateUrl: './chat.component.html',
 })
 export class ChatComponent implements OnDestroy {
+  readonly i18n = inject(I18nService);
   readonly store = inject(WorkspaceStore);
   readonly execution = inject(ExecutionService);
   readonly dialogs = inject(DialogService);
   readonly router = inject(Router);
-  readonly portrait = portrait;
+  readonly portrait = inject(PortraitService).source;
   readonly render = renderMarkdown;
   readonly working = signal(false);
   readonly agentId = this.dialogs.current()?.id || this.store.selectedId();
@@ -68,37 +72,37 @@ export class ChatComponent implements OnDestroy {
   model(): string {
     const a = this.agent(),
       global = a ? this.store.settings()?.providers[a.provider].model : '';
-    return global || (!a?.model || a.model === 'inherit' ? 'PADRÃO' : a.model);
+    return global || (!a?.model || a.model === 'inherit' ? this.i18n.text('ui.default') : a.model);
   }
   menu(): ChatChoice[] {
     const role = this.agent()?.role,
       items =
         role === 'commander'
           ? [
-              ['status', 'Status da operação'],
-              ['distribute', 'Distribuir features'],
-              ['run', 'Iniciar operação'],
-              ['reviews', 'Revisões pendentes'],
+              ['status', this.i18n.text('chat.status')],
+              ['distribute', this.i18n.text('projects.distribute-features')],
+              ['run', this.i18n.text('ui.start-operation')],
+              ['reviews', this.i18n.text('ui.pending-reviews')],
             ]
           : role === 'po'
             ? [
-                ['ask', 'Tirar uma dúvida'],
-                ['edit', 'Editar uma feature'],
-                ['create', 'Criar nova feature'],
+                ['ask', this.i18n.text('ui.ask-a-question')],
+                ['edit', this.i18n.text('ui.edit-a-feature')],
+                ['create', this.i18n.text('ui.create-new-feature')],
               ]
             : role === 'architect'
               ? [
-                  ['ask', 'Tirar uma dúvida'],
-                  ['adrs', 'Ver ADRs do projeto'],
-                  ['adr-new', 'Registrar um ADR'],
-                  ['review', 'Revisar uma feature'],
+                  ['ask', this.i18n.text('ui.ask-a-question')],
+                  ['adrs', this.i18n.text('ui.view-project-adrs')],
+                  ['adr-new', this.i18n.text('ui.record-an-adr')],
+                  ['review', this.i18n.text('ui.review-a-feature')],
                 ]
               : [
-                  ['mine', 'Minhas features'],
-                  ['spawn', 'Spawn individual'],
-                  ['ask', 'Tirar uma dúvida técnica'],
+                  ['mine', this.i18n.text('ui.my-features')],
+                  ['spawn', this.i18n.text('run.individual')],
+                  ['ask', this.i18n.text('ui.ask-a-technical-question')],
                 ];
-    return [...items, ...(this.live() ? [['free', 'Falar livremente']] : [])]
+    return [...items, ...(this.live() ? [['free', this.i18n.text('ui.free-conversation')]] : [])]
       .filter(([id]) => this.live() || !['ask', 'free', 'review'].includes(id))
       .map(([id, label]) => ({
         id,
@@ -129,7 +133,7 @@ export class ChatComponent implements OnDestroy {
   }
   private say(
     text: string,
-    options: ChatChoice[] = [{ id: 'menu', label: 'Voltar ao menu' }],
+    options: ChatChoice[] = [{ id: 'menu', label: this.i18n.text('ui.back-to-menu') }],
     list?: ChatChoice[],
   ): void {
     this.append('assistant', text, { agentId: this.agentId, options, list });
@@ -166,16 +170,16 @@ export class ChatComponent implements OnDestroy {
       case 'menu':
         this.creating = false;
         this.focus = null;
-        this.say('Beleza, os atalhos estão aqui de novo.', this.menu());
+        this.say(this.i18n.text('ui.the-shortcuts-are-here-again'), this.menu());
         break;
       case 'status': {
         const names: Record<string, string> = {
-          done: 'concluídas',
-          review: 'em revisão',
-          running: 'em execução',
+          done: this.i18n.text('ui.completed-182'),
+          review: this.i18n.text('ui.in-review'),
+          running: this.i18n.text('ui.running'),
           ready: 'prontas',
           blocked: 'bloqueadas',
-          backlog: 'a fazer',
+          backlog: this.i18n.text('ui.to-do'),
         };
         const counts = Object.entries(names)
           .map(([status, label]) => ({
@@ -185,27 +189,24 @@ export class ChatComponent implements OnDestroy {
           .filter((c) => c.n)
           .map((c) => c.n + ' ' + c.label);
         this.say(p.name + ': ' + counts.join(', ') + '.', [
-          { id: 'distribute', label: 'Distribuir features' },
-          { id: 'run', label: 'Executar sprint atual' },
+          { id: 'distribute', label: this.i18n.text('projects.distribute-features') },
+          { id: 'run', label: this.i18n.text('ui.run-current-sprint') },
           ...(p.features.some((f) => f.status === 'review')
-            ? [{ id: 'reviews', label: 'Revisões pendentes' }]
+            ? [{ id: 'reviews', label: this.i18n.text('ui.pending-reviews') }]
             : []),
-          { id: 'menu', label: 'Voltar ao menu' },
+          { id: 'menu', label: this.i18n.text('ui.back-to-menu') },
         ]);
         break;
       }
       case 'distribute':
         if (!p.briefing.trim()) {
-          this.say(
-            'Preciso do briefing antes de distribuir. Escreva o contexto da operação e me chame de novo.',
-            [
-              { id: 'open-briefing', label: 'Abrir briefing' },
-              { id: 'menu', label: 'Voltar ao menu' },
-            ],
-          );
+          this.say(this.i18n.text('ui.i-need-the-briefing-before-distributing-write-the-opera'), [
+            { id: 'open-briefing', label: this.i18n.text('ui.open-briefing') },
+            { id: 'menu', label: this.i18n.text('ui.back-to-menu') },
+          ]);
           break;
         }
-        await this.go('Vou montar o plano de distribuição.', () => {
+        await this.go(this.i18n.text('ui.i-will-prepare-the-distribution-plan'), () => {
           this.dialogs.close();
           void this.router.navigateByUrl('/projects').then(() => {
             this.execution.distribute();
@@ -215,18 +216,19 @@ export class ChatComponent implements OnDestroy {
         break;
       case 'run':
         if (this.execution.busy()) {
-          this.say(
-            'A operação já está em andamento. Acompanhe pelo mapa e pelo registro de transmissões.',
-          );
+          this.say(this.i18n.text('ui.the-operation-is-already-running-follow-it-on-the-map-a'));
           break;
         }
-        await this.go('Vou montar o plano da sprint atual para você aprovar.', () => {
-          this.dialogs.close();
-          const s = p.sprints.find((s) =>
-            p.features.some((f) => f.sprintId === s.id && f.status !== 'done'),
-          );
-          void this.execution.preparePlan(undefined, s?.id);
-        });
+        await this.go(
+          this.i18n.text('ui.i-will-prepare-the-current-sprint-s-plan-for-your-appro'),
+          () => {
+            this.dialogs.close();
+            const s = p.sprints.find((s) =>
+              p.features.some((f) => f.sprintId === s.id && f.status !== 'done'),
+            );
+            void this.execution.preparePlan(undefined, s?.id);
+          },
+        );
         break;
       case 'edit':
       case 'reviews':
@@ -244,18 +246,18 @@ export class ChatComponent implements OnDestroy {
         this.say(
           features.length
             ? opt.id === 'edit'
-              ? 'Qual feature você quer editar?'
+              ? this.i18n.text('ui.which-feature-would-you-like-to-edit')
               : opt.id === 'reviews'
-                ? 'Estas entregas aguardam sua revisão.'
-                : 'Estas são as features da operação.'
-            : 'Não há features para esta opção agora.',
+                ? this.i18n.text('ui.these-deliveries-await-your-review')
+                : this.i18n.text('ui.these-are-the-operation-s-features')
+            : this.i18n.text('ui.no-features-available-for-this-option-right-now'),
           [
-            { id: 'menu', label: 'Voltar ao menu' },
+            { id: 'menu', label: this.i18n.text('ui.back-to-menu') },
             ...(!features.length && opt.id === 'mine'
-              ? [{ id: 'spawn', label: 'Spawn individual' }]
+              ? [{ id: 'spawn', label: this.i18n.text('run.individual') }]
               : []),
             ...(!features.length && opt.id === 'edit'
-              ? [{ id: 'create', label: 'Criar nova feature' }]
+              ? [{ id: 'create', label: this.i18n.text('ui.create-new-feature') }]
               : []),
           ],
           features.map((f) => ({
@@ -280,7 +282,7 @@ export class ChatComponent implements OnDestroy {
       case 'mine-pick': {
         const f = this.store.feature(opt.arg || '');
         if (!f) {
-          this.say('Não encontrei esse item. Ele pode ter sido removido.');
+          this.say(this.i18n.text('ui.i-could-not-find-this-item-it-may-have-been-removed'));
           break;
         }
         const index = f.route.indexOf(this.agentId),
@@ -302,10 +304,12 @@ export class ChatComponent implements OnDestroy {
             '.\n\n' +
             f.description.slice(0, 320),
           [
-            { id: 'feature-open', arg: f.id, label: 'Abrir feature' },
-            ...(this.live() ? [{ id: 'feature-ask', arg: f.id, label: 'Falar sobre ela' }] : []),
-            { id: 'spawn', label: 'Spawn individual' },
-            { id: 'menu', label: 'Voltar ao menu' },
+            { id: 'feature-open', arg: f.id, label: this.i18n.text('ui.open-feature') },
+            ...(this.live()
+              ? [{ id: 'feature-ask', arg: f.id, label: this.i18n.text('ui.talk-about-it') }]
+              : []),
+            { id: 'spawn', label: this.i18n.text('run.individual') },
+            { id: 'menu', label: this.i18n.text('ui.back-to-menu') },
           ],
         );
         break;
@@ -317,7 +321,7 @@ export class ChatComponent implements OnDestroy {
         );
         break;
       case 'review-open':
-        await this.go('Abrindo a feature para revisão.', () => {
+        await this.go(this.i18n.text('ui.opening-the-feature-for-review'), () => {
           this.dialogs.close();
           void this.router
             .navigateByUrl('/projects')
@@ -326,7 +330,7 @@ export class ChatComponent implements OnDestroy {
         break;
       case 'feature-open':
       case 'feature-pick':
-        await this.go('Abrindo a feature no projeto.', () => {
+        await this.go(this.i18n.text('ui.opening-the-feature-in-the-project'), () => {
           const f = this.store.feature(opt.arg || '');
           if (f)
             this.dialogs.open(
@@ -337,31 +341,30 @@ export class ChatComponent implements OnDestroy {
         break;
       case 'create':
         if (!this.live()) {
-          await this.go('Abrindo o editor para uma nova feature.', () =>
+          await this.go(this.i18n.text('ui.opening-the-new-feature-editor'), () =>
             this.dialogs.open('feature'),
           );
           break;
         }
         this.creating = true;
-        this.say(
-          'Me conta a ideia da feature em uma frase. Eu abro o editor e já começo a escrever com você.',
-          [
-            { id: 'create-blank', label: 'Abrir editor em branco' },
-            { id: 'menu', label: 'Voltar ao menu' },
-          ],
-        );
+        this.say(this.i18n.text('ui.tell-me-the-feature-idea-in-one-sentence-i-will-open-th'), [
+          { id: 'create-blank', label: this.i18n.text('ui.open-blank-editor') },
+          { id: 'menu', label: this.i18n.text('ui.back-to-menu') },
+        ]);
         break;
       case 'create-blank':
-        await this.go('Abrindo o editor em branco.', () => this.dialogs.open('feature'));
+        await this.go(this.i18n.text('ui.opening-the-blank-editor'), () =>
+          this.dialogs.open('feature'),
+        );
         break;
       case 'adrs':
         this.say(
           p.adrs.length
-            ? 'Estas são as decisões registradas. Qual você quer ver?'
-            : 'Ainda não há ADRs registrados neste projeto.',
+            ? this.i18n.text('ui.these-are-the-recorded-decisions-which-would-you-like-t')
+            : this.i18n.text('ui.no-adrs-recorded-in-this-project-yet'),
           [
-            { id: 'adr-new', label: 'Registrar um ADR' },
-            { id: 'menu', label: 'Voltar ao menu' },
+            { id: 'adr-new', label: this.i18n.text('ui.record-an-adr') },
+            { id: 'menu', label: this.i18n.text('ui.back-to-menu') },
           ],
           p.adrs.map((a, i) => ({
             id: 'adr-pick',
@@ -387,21 +390,21 @@ export class ChatComponent implements OnDestroy {
               ').\n\n' +
               a.content.slice(0, 900),
             [
-              { id: 'adr-open', arg: a.id, label: 'Abrir no projeto' },
+              { id: 'adr-open', arg: a.id, label: this.i18n.text('ui.open-in-project') },
               ...(this.live()
-                ? [{ id: 'adr-ask', arg: a.id, label: 'Perguntar sobre este ADR' }]
+                ? [{ id: 'adr-ask', arg: a.id, label: this.i18n.text('ui.ask-about-this-adr') }]
                 : []),
-              { id: 'menu', label: 'Voltar ao menu' },
+              { id: 'menu', label: this.i18n.text('ui.back-to-menu') },
             ],
           );
         break;
       }
       case 'adr-ask':
         this.focus = { adr: opt.arg };
-        this.say('Pode mandar a pergunta sobre esse ADR.');
+        this.say(this.i18n.text('ui.go-ahead-and-ask-about-this-adr'));
         break;
       case 'open-briefing':
-        await this.go('Abrindo o briefing da operação.', () => {
+        await this.go(this.i18n.text('ui.opening-the-operation-briefing'), () => {
           this.dialogs.close();
           void this.router
             .navigateByUrl('/projects')
@@ -412,7 +415,7 @@ export class ChatComponent implements OnDestroy {
         break;
       case 'adr-open':
       case 'adr-new':
-        await this.go('Abrindo as decisões de arquitetura do projeto.', () => {
+        await this.go(this.i18n.text('ui.opening-project-architecture-decisions'), () => {
           this.dialogs.close();
           void this.router.navigateByUrl('/projects').then(() => {
             this.dialogs.projectAction.set({ kind: opt.id === 'adr-new' ? 'newAdr' : 'adrs' });
@@ -420,7 +423,7 @@ export class ChatComponent implements OnDestroy {
         });
         break;
       case 'spawn':
-        await this.go('Abrindo o spawn individual.', () =>
+        await this.go(this.i18n.text('ui.opening-individual-spawn'), () =>
           this.dialogs.open('spawn', this.agentId),
         );
         break;
@@ -429,8 +432,8 @@ export class ChatComponent implements OnDestroy {
         this.focus = null;
         this.say(
           opt.id === 'free'
-            ? 'Manda. Estou ouvindo.'
-            : 'Pode perguntar! Vou considerar o contexto da operação.',
+            ? this.i18n.text('ui.go-ahead-i-m-listening')
+            : this.i18n.text('ui.ask-away-i-will-consider-the-operation-context'),
         );
         setTimeout(
           () => document.querySelector<HTMLTextAreaElement>('.ac-screen textarea')?.focus(),
@@ -449,12 +452,12 @@ export class ChatComponent implements OnDestroy {
     return (
       (
         {
-          done: 'Concluída',
-          review: 'Revisão humana',
-          running: 'Em execução',
-          ready: 'Pronta',
-          backlog: 'A fazer',
-          blocked: 'Bloqueada',
+          done: this.i18n.text('status.done'),
+          review: this.i18n.text('ui.human-review'),
+          running: this.i18n.text('status.running'),
+          ready: this.i18n.text('status.ready'),
+          backlog: this.i18n.text('status.backlog'),
+          blocked: this.i18n.text('status.blocked'),
         } as Record<string, string>
       )[s] || s
     );
@@ -536,7 +539,7 @@ export class ChatComponent implements OnDestroy {
             : '');
         this.append('assistant', reply, {
           agentId: this.agentId,
-          options: [...(options || []), { id: 'menu', label: 'Voltar ao menu' }],
+          options: [...(options || []), { id: 'menu', label: this.i18n.text('ui.back-to-menu') }],
           runId: result.runId,
           simulated: result.simulated,
         });

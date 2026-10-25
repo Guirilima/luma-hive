@@ -1,9 +1,5 @@
 <luma-modal
-  [title]="
-    existing
-      ? 'EDITAR &lt;span class=word-tag&gt;FEATURE&lt;/span&gt;'
-      : 'NOVA &lt;span class=word-tag&gt;FEATURE&lt;/span&gt;'
-  "
+  [title]="existing ? ('ui.edit-feature' | t) : ('ui.new-feature' | t)"
   [subtitle]="
     store.project()!.code + ' / ' + draft.key + (existing ? ' / ' + existing.status : ' / NOVA')
   "
@@ -18,28 +14,28 @@
         name="title"
         [(ngModel)]="draft.title"
         maxlength="120"
-        placeholder="Título da feature"
+        [placeholder]="'features.feature-title' | t"
         autocomplete="off"
         autofocus
-        aria-label="Título da feature"
+        [attr.aria-label]="'features.feature-title' | t"
       />
       <div class="fe-meta">
         <label class="fe-select">
-          <span>ÁREA</span>
+          <span>{{ 'features.area' | t }}</span>
           <select id="featureScope" name="scope" [(ngModel)]="draft.scope">
             @for (scope of scopes; track scope) {
               @if (scope !== 'setup' || draft.setup) {
-                <option [value]="scope">{{ scopeLabel(scope) }}</option>
+                <option [value]="scope">{{ scopeLabel(scope) | uiLabel }}</option>
               }
             }
           </select>
         </label>
         <label class="fe-select">
-          <span>PRIORIDADE</span>
+          <span>{{ 'features.priority' | t }}</span>
           <select id="featurePriority" name="priority" [(ngModel)]="draft.priority">
-            <option value="P0">P0 / Essencial</option>
-            <option value="P1">P1 / Importante</option>
-            <option value="P2">P2 / Incremento</option>
+            <option value="P0">{{ 'features.p0-essential' | t }}</option>
+            <option value="P1">{{ 'features.p1-important' | t }}</option>
+            <option value="P2">{{ 'features.p2-incremental' | t }}</option>
           </select>
         </label>
         <label class="fe-select">
@@ -65,14 +61,13 @@
       }
       <details class="fe-deps">
         <summary>
-          DEPENDÊNCIAS
-          <small>{{ dependencyNames() || 'nenhuma' }}</small>
+          {{ 'features.dependencies' | t }}
+          <small>{{ dependencyNames() || ('ui.none' | t) }}</small>
         </summary>
         <div class="fe-dep-list">
           @if (draft.setup) {
             <p class="hint">
-              O setup do projeto é a primeira feature da Sprint 01: não depende de nenhuma outra, e
-              todas as outras dependem dele.
+              {{ 'features.project-setup-is-the-first-feature-in-sprint-01-it-has-no-' | t }}
             </p>
           } @else {
             @for (feature of store.project()!.features; track feature.id) {
@@ -104,15 +99,19 @@
   </div>
   <footer class="modal-footer" modal-footer>
     @if (existing && !draft.setup) {
-      <button class="btn danger square" (click)="remove()" aria-label="Excluir feature">
+      <button
+        class="btn danger square"
+        (click)="remove()"
+        [attr.aria-label]="'features.delete-feature' | t"
+      >
         <luma-icon name="trash" />
       </button>
     }
     <span class="grow"></span>
-    <button class="btn ghost" (click)="dialogs.close()">Cancelar</button>
+    <button class="btn ghost" (click)="dialogs.close()">{{ 'action.cancel' | t }}</button>
     <button class="btn primary" type="submit" form="featureForm" [disabled]="execution.busy()">
       <luma-icon name="check" />
-      Salvar feature
+      {{ 'features.save-feature' | t }}
     </button>
   </footer>
 </luma-modal>

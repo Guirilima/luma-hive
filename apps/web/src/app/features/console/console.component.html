@@ -1,9 +1,5 @@
 <luma-modal
-  [title]="
-    logsOnly
-      ? 'REGISTRO DE &lt;span class=word-tag&gt;TRANSMISSÕES&lt;/span&gt;'
-      : 'CONSOLE DOS &lt;span class=word-tag&gt;AGENTES&lt;/span&gt;'
-  "
+  [title]="logsOnly ? ('ui.transmission-log' | t) : ('ui.agent-console' | t)"
   [subtitle]="
     store.project()!.code +
     (logsOnly ? ' / HISTÓRICO LOCAL' : ' / CODEX + DEVIN + ANTIGRAVITY / BRIDGE')
@@ -28,11 +24,11 @@
       <div class="flex wrap">
         <button class="btn ghost sm" (click)="dialogs.open('console')">
           <luma-icon name="terminal" />
-          Console
+          {{ 'console.console' | t }}
         </button>
         <button class="btn ghost sm" (click)="exportLogs()">
           <luma-icon name="download" />
-          Exportar log
+          {{ 'console.export-log' | t }}
         </button>
       </div>
     </div>
@@ -40,7 +36,7 @@
       @for (log of logs(); track log.id) {
         <div class="log-grid">
           <time>{{ clock(log.at) }}</time>
-          <strong>{{ store.agent(log.agentId || '')?.name || 'SISTEMA' }}</strong>
+          <strong>{{ store.agent(log.agentId || '')?.name || ('ui.system' | t) }}</strong>
           <span>{{ log.message }}</span>
           <span class="tag" [class.accent]="!log.simulated">
             {{ log.simulated ? 'DEMO' : store.providerLabel(log.agentId) }}
@@ -49,8 +45,8 @@
       } @empty {
         <div class="empty-panel">
           <luma-icon name="radio" />
-          <h3>Canal em silêncio</h3>
-          <p>Nenhum evento para este filtro.</p>
+          <h3>{{ 'console.silent-channel' | t }}</h3>
+          <p>{{ 'console.no-events-match-this-filter' | t }}</p>
         </div>
       }
     </div>
@@ -64,21 +60,21 @@
             [class.ghost]="selectedRun()?.id !== run.id"
             (click)="showHistory.set(false); open(run.id)"
           >
-            {{ store.agent(run.agentId)?.name || 'AGENTE' }} /
+            {{ store.agent(run.agentId)?.name || ('ui.agent' | t) }} /
             {{ store.feature(run.featureId || '')?.key || run.kind }}
           </button>
         } @empty {
-          <span class="hint">Sem execuções nesta sessão.</span>
+          <span class="hint">{{ 'console.no-runs-in-this-session' | t }}</span>
         }
       </div>
       <div class="flex wrap">
         <button class="btn ghost sm" (click)="showHistory.set(true)">
           <luma-icon name="clock" />
-          Histórico
+          {{ 'console.history' | t }}
         </button>
         <button class="btn ghost sm" (click)="dialogs.open('console', undefined, 'logs')">
           <luma-icon name="radio" />
-          Transmissões
+          {{ 'log.title' | t }}
         </button>
       </div>
     </div>
@@ -86,26 +82,25 @@
       @if (showHistory()) {
         <div class="console-history">
           <div class="console-history-head">
-            <strong>HISTÓRICO DE EXECUÇÕES / {{ store.project()?.code }}</strong>
+            <strong>{{ 'ui.run-history' | t }} {{ store.project()?.code }}</strong>
             <button class="btn ghost sm" (click)="showHistory.set(false)">
               <luma-icon name="close" />
-              Fechar histórico
+              {{ 'console.close-history' | t }}
             </button>
           </div>
           @for (run of history(); track run.id) {
             <button class="console-run" (click)="showHistory.set(false); open(run.id)">
               <span class="tag">{{ run.status.toUpperCase() }}</span>
-              <strong>{{ store.agent(run.agentId)?.name || 'Execução' }}</strong>
+              <strong>{{ store.agent(run.agentId)?.name || ('settings.execution' | t) }}</strong>
               <span>{{ run.kind }}</span>
               <time>{{ i18n.date(run.startedAt) }}</time>
             </button>
           } @empty {
             <div class="empty-panel">
               <luma-icon name="terminal" />
-              <h3>Sem execuções salvas</h3>
+              <h3>{{ 'console.no-saved-runs' | t }}</h3>
               <p>
-                As execuções desta operação com o bridge aparecem aqui, inclusive as de sessões
-                anteriores.
+                {{ 'console.this-operation-s-bridge-runs-appear-here-including-those-f' | t }}
               </p>
             </div>
           }
@@ -116,10 +111,13 @@
             {{ displayStatus() }}
           </span>
           <span>
-            {{ store.agent(selectedRun()?.agentId || execution.currentAgent())?.name || 'AGENTE' }}
+            {{
+              store.agent(selectedRun()?.agentId || execution.currentAgent())?.name ||
+                ('ui.agent' | t)
+            }}
           </span>
           @if (sessionId()) {
-            <span>SESSÃO {{ sessionId().slice(0, 8) }}</span>
+            <span>{{ 'ui.session' | t }} {{ sessionId().slice(0, 8) }}</span>
           }
         </div>
         <div class="console-lines" id="consoleLines" #lines>
@@ -133,10 +131,9 @@
       } @else {
         <div class="empty-panel">
           <luma-icon name="radio" />
-          <h3>Nenhuma execução ainda</h3>
+          <h3>{{ 'console.no-runs-yet' | t }}</h3>
           <p>
-            Distribua as features e inicie a operação, ou faça um spawn individual com o bridge
-            conectado.
+            {{ 'console.distribute-features-and-start-the-operation-or-spawn-an-in' | t }}
           </p>
         </div>
       }
@@ -147,8 +144,8 @@
       <span class="footer-note">
         {{
           store.settings()?.mode === 'live'
-            ? 'EXECUÇÃO REAL / ' + execution.operationDirectory()
-            : 'BRIDGE DESCONECTADO'
+            ? ('ui.live-execution' | t) + execution.operationDirectory()
+            : ('ui.bridge-disconnected' | t)
         }}
       </span>
       <span class="grow"></span>
@@ -157,7 +154,7 @@
       ) {
         <button class="btn danger" (click)="execution.stop()">
           <luma-icon name="stop" />
-          Encerrar operação
+          {{ 'console.end-operation' | t }}
         </button>
       }
     </footer>

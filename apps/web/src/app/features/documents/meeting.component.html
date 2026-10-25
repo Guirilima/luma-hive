@@ -15,8 +15,8 @@
               <small>Kickoff · {{ draft.code }} {{ draft.name }}</small>
             </div>
           </div>
-          <span class="at-clock" title="Duração da reunião">{{ clock() }}</span>
-          <nav class="at-agenda" aria-label="Pauta da reunião">
+          <span class="at-clock" [title]="'documents.meeting-duration' | t">{{ clock() }}</span>
+          <nav class="at-agenda" [attr.aria-label]="'documents.meeting-agenda' | t">
             @for (item of agenda; track item.key) {
               <button
                 class="at-chip"
@@ -24,7 +24,7 @@
                 (click)="openDocument(item.key)"
               >
                 <i></i>
-                {{ item.label }}
+                {{ item.label | uiLabel }}
               </button>
             }
           </nav>
@@ -38,7 +38,7 @@
                 (click)="tab.set('chat'); scrollMessages()"
               >
                 <luma-icon name="chat" />
-                Chat
+                {{ 'dashboard.chat' | t }}
               </button>
               <button
                 type="button"
@@ -48,27 +48,31 @@
                 (click)="tab.set('docs')"
               >
                 <luma-icon name="file" />
-                Documentos
+                {{ 'project.documents' | t }}
                 <em>{{ completedDocs() }}/5</em>
               </button>
             </div>
             <button class="btn primary sm" (click)="save()" [disabled]="working()">
               <luma-icon name="check" />
-              Salvar no projeto
+              {{ 'documents.save-to-project' | t }}
             </button>
             <button class="btn sm at-leave" (click)="close()">
               <luma-icon name="leave" />
-              Sair
+              {{ 'meeting.leave' | t }}
             </button>
           </div>
           @if (confirmLeave()) {
             <div class="at-confirm">
-              <span>Sair sem salvar os documentos?</span>
+              <span>{{ 'documents.leave-without-saving-documents' | t }}</span>
               <button class="btn primary sm" (click)="save(true)" [disabled]="working()">
-                Salvar e sair
+                {{ 'meeting.saveLeave' | t }}
               </button>
-              <button class="btn danger sm" (click)="forceLeave()">Sair sem salvar</button>
-              <button class="btn ghost sm" (click)="confirmLeave.set(false)">Continuar</button>
+              <button class="btn danger sm" (click)="forceLeave()">
+                {{ 'meeting.discard' | t }}
+              </button>
+              <button class="btn ghost sm" (click)="confirmLeave.set(false)">
+                {{ 'run.resume' | t }}
+              </button>
             </div>
           }
         </header>
@@ -76,7 +80,7 @@
           class="at-stage"
           id="atStage"
           [attr.data-mode]="sharing() ? 'share' : 'gallery'"
-          aria-label="Participantes"
+          [attr.aria-label]="'meeting.target' | t"
         >
           <div
             class="at-tiles"
@@ -91,7 +95,7 @@
                 [attr.data-state]="agentState(agent.id)"
                 [style.--i]="$index"
                 (click)="mention(agent.name)"
-                [title]="'Marcar @' + agent.name + ' no chat'"
+                [title]="('ui.mention' | t) + agent.name + ('ui.in-chat' | t)"
               >
                 <img class="at-tile-bg" [src]="portrait(agent)" alt="" />
                 <img class="at-tile-face" [src]="portrait(agent)" [alt]="agent.name" />
@@ -104,9 +108,9 @@
                         <i></i>
                         <i></i>
                       </span>
-                      falando
+                      {{ 'documents.speaking' | t }}
                     } @else {
-                      pensando
+                      {{ 'documents.thinking' | t }}
                     }
                   }
                 </span>
@@ -116,7 +120,7 @@
                   <i></i>
                 </span>
                 @if (guests().includes(agent.id)) {
-                  <span class="at-guest-tag">CONVIDADO</span>
+                  <span class="at-guest-tag">{{ 'documents.guest' | t }}</span>
                 }
                 <figcaption class="at-plate">
                   <strong>{{ agent.name }}</strong>
@@ -132,11 +136,11 @@
               <span class="at-you"><luma-icon name="user" /></span>
               <span class="at-tile-state">
                 @if (message.trim()) {
-                  digitando
+                  {{ 'documents.typing' | t }}
                 }
               </span>
               <figcaption class="at-plate">
-                <strong>Você</strong>
+                <strong>{{ 'documents.you' | t }}</strong>
                 <small>{{ draft.code }}</small>
               </figcaption>
             </figure>
@@ -147,13 +151,13 @@
                 <img [src]="portrait(getAgent(speaker() || currentCommander()?.id)!)" alt="" />
                 <span>
                   <b>{{ getAgent(speaker() || currentCommander()?.id)?.name }}</b>
-                  compartilhou
+                  {{ 'documents.shared' | t }}
                 </span>
                 <em>{{ 'project.' + sharing() | t }}</em>
               </header>
               <div class="at-screen-body conv-md" [innerHTML]="render(shareContent())"></div>
               <button class="btn ghost sm at-unshare" (click)="sharing.set(null)">
-                Voltar à galeria
+                {{ 'meeting.gallery' | t }}
               </button>
             </div>
           }
@@ -164,7 +168,7 @@
           tabindex="0"
           aria-orientation="vertical"
           aria-controls="atSide"
-          aria-label="Largura do chat"
+          [attr.aria-label]="'documents.chat-width' | t"
           (pointerdown)="resizeStart($event)"
           (keydown)="resizeKey($event)"
           (dblclick)="resetWidth()"
@@ -173,7 +177,7 @@
           <div
             class="at-pane at-chat fe-chat"
             [hidden]="tab() !== 'chat'"
-            aria-label="Chat da reunião"
+            [attr.aria-label]="'documents.meeting-chat' | t"
           >
             <div
               class="fe-msgs"
@@ -182,7 +186,7 @@
               aria-live="polite"
               (scroll)="chatScroll.onScroll($event)"
             >
-              <div class="fe-time">Hoje {{ openingTime }}</div>
+              <div class="fe-time">{{ 'ui.today' | t }} {{ openingTime }}</div>
               @for (msg of messages(); track msg.id) {
                 @if (msg.role === 'system') {
                   <div class="fe-row system">
@@ -190,7 +194,7 @@
                       {{ msg.text }}
                       @if (msg.retry) {
                         <button class="link-button fe-retry" (click)="retry(msg)">
-                          Tentar de novo
+                          {{ 'chat.try-again' | t }}
                         </button>
                       }
                     </p>
@@ -243,10 +247,10 @@
                           }
                           @if (undoByMessage()[msg.id]) {
                             <button class="link-button" (click)="undoMessage(msg.id)">
-                              Desfazer
+                              {{ 'documents.undo' | t }}
                             </button>
                           } @else {
-                            <em>desfeito</em>
+                            <em>{{ 'documents.undone' | t }}</em>
                           }
                         </span>
                       </div>
@@ -271,7 +275,9 @@
                       <i></i>
                     }
                   </div>
-                  <button class="link-button fe-stop" (click)="stop()">Parar</button>
+                  <button class="link-button fe-stop" (click)="stop()">
+                    {{ 'chat.stop' | t }}
+                  </button>
                 </div>
               }
               @if (receipt(); as text) {
@@ -284,20 +290,26 @@
               [hidden]="!chatScroll.unread()"
               (click)="chatScroll.jump('.at-chat .fe-msgs')"
             >
-              Nova mensagem ↓
+              {{ 'chat.new-message' | t }}
             </button>
             <div class="fe-compose">
               <div class="fe-suggest" [hidden]="hasUserMessages()">
-                <button (click)="quickSend('Seguir a pauta da reunião')">Seguir a pauta</button>
+                <button (click)="quickSend('Seguir a pauta da reunião')">
+                  {{ 'documents.follow-the-agenda' | t }}
+                </button>
                 <button (click)="quickSend('Criar a primeira versão de todos os documentos')">
-                  Primeira versão de tudo
+                  {{ 'documents.first-draft-of-everything' | t }}
                 </button>
                 <button (click)="quickSend('Revisar o que já existe nos documentos')">
-                  Revisar o que existe
+                  {{ 'documents.review-existing-documents' | t }}
                 </button>
               </div>
               @if (allMentions().length) {
-                <div class="at-mention-menu" role="listbox" aria-label="Marcar participante">
+                <div
+                  class="at-mention-menu"
+                  role="listbox"
+                  [attr.aria-label]="'documents.mention-participant' | t"
+                >
                   @for (a of mentionHere(); track a.id) {
                     <button
                       type="button"
@@ -313,7 +325,7 @@
                     </button>
                   }
                   @if (mentionInvite().length) {
-                    <div class="at-mention-head">Convidar para a reunião</div>
+                    <div class="at-mention-head">{{ 'documents.invite-to-meeting' | t }}</div>
                     @for (a of mentionInvite(); track a.id) {
                       <button
                         type="button"
@@ -341,15 +353,15 @@
                   [(ngModel)]="message"
                   (ngModelChange)="mentionChanged()"
                   (keydown)="composerKey($event)"
-                  placeholder="Digite uma mensagem. Use @ para marcar alguém"
-                  aria-label="Mensagem para a reunião"
+                  [placeholder]="'documents.type-a-message-use-to-mention-someone' | t"
+                  [attr.aria-label]="'documents.message-for-the-meeting' | t"
                 ></textarea>
                 <button
                   class="fe-send"
                   (click)="send()"
                   [disabled]="!message.trim()"
-                  aria-label="Enviar"
-                  title="Enviar (Enter)"
+                  [attr.aria-label]="'chat.send' | t"
+                  [title]="'chat.send-enter' | t"
                 >
                   <svg viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" />
@@ -361,12 +373,11 @@
           <div class="at-pane at-docs" [hidden]="tab() !== 'docs'">
             <form class="fe-form doc-form" id="docForm">
               <p class="hint doc-hint">
-                Vai para
+                {{ 'documents.goes-to' | t }}
                 <code>docs/project/</code>
                 e
                 <code>docs/architecture/</code>
-                na exportação para o Codex CLI. Edite à vontade: os agentes partem do que estiver
-                aqui.
+                {{ 'documents.when-exporting-for-codex-cli-edit-freely-agents-start-from' | t }}
               </p>
               @for (field of fields; track field) {
                 <luma-markdown-editor
@@ -376,7 +387,9 @@
                 />
               }
               <div class="field full doc-adrs">
-                <span class="label adr-label">DECISÕES DE ARQUITETURA (ADR)</span>
+                <span class="label adr-label">
+                  {{ 'documents.architecture-decisions-adr' | t }}
+                </span>
                 <div class="adr-list">
                   @for (adr of draft.adrs; track adr.id) {
                     <div class="adr-block">
@@ -387,7 +400,7 @@
                           [(ngModel)]="adr.title"
                           [ngModelOptions]="{ standalone: true }"
                           maxlength="120"
-                          aria-label="Título do ADR"
+                          [attr.aria-label]="'documents.adr-title' | t"
                         />
                         <select
                           name="adrStatus"
@@ -395,14 +408,14 @@
                           [ngModelOptions]="{ standalone: true }"
                         >
                           @for (status of adrStatuses; track status) {
-                            <option>{{ status }}</option>
+                            <option [value]="status">{{ status | uiLabel }}</option>
                           }
                         </select>
                         <button
                           type="button"
                           class="icon-button small"
                           (click)="removeAdr(adr.id)"
-                          aria-label="Remover ADR"
+                          [attr.aria-label]="'documents.remove-adr' | t"
                         >
                           <luma-icon name="trash" />
                         </button>
@@ -411,19 +424,19 @@
                         class="code"
                         [(ngModel)]="adr.content"
                         [ngModelOptions]="{ standalone: true }"
-                        aria-label="Contexto, decisão e consequências"
+                        [attr.aria-label]="'documents.context-decision-and-consequences' | t"
                       ></textarea>
                     </div>
                   }
                 </div>
                 <button type="button" class="btn ghost sm" (click)="addAdr()">
                   <luma-icon name="plus" />
-                  Adicionar ADR
+                  {{ 'documents.add-adr' | t }}
                 </button>
               </div>
               @if (undoAvailable()) {
                 <button type="button" class="btn ghost sm" (click)="undoProposal()">
-                  Desfazer alteração dos documentos
+                  {{ 'documents.undo-document-changes' | t }}
                 </button>
               }
             </form>

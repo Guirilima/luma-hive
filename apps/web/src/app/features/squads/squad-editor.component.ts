@@ -1,3 +1,5 @@
+import { UiLabelPipe } from '../../core/i18n/i18n.service';
+import { PortraitService } from '../../core/appearance/portrait.service';
 import catalog from '@domain/catalog.json';
 import { Component, inject, signal, HostListener, effect, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
@@ -14,7 +16,7 @@ import { SquadCardComponent } from '../projects/project-form.component';
 @Component({
   selector: 'luma-squad-editor',
   standalone: true,
-  imports: [SquadCardComponent, IconComponent, FormsModule, TranslatePipe],
+  imports: [UiLabelPipe, SquadCardComponent, IconComponent, FormsModule, TranslatePipe],
   templateUrl: './squad-editor.component.html',
 })
 export class SquadEditorComponent implements OnDestroy {
@@ -111,7 +113,9 @@ export class SquadEditorComponent implements OnDestroy {
   }
   categoryChips(key: string): string[] {
     return (CATEGORIES.find((c) => c.key === key)?.presets || []).map((p, i) =>
-      i === 0 ? 'Generalista' : ('specialty' in p ? p.specialty : '') || ROLES[p.role].label,
+      i === 0
+        ? this.i18n.text('ui.generalist')
+        : ('specialty' in p ? p.specialty : '') || ROLES[p.role].label,
     );
   }
   categoryCount(key: string): number {
@@ -156,11 +160,15 @@ export class SquadEditorComponent implements OnDestroy {
   }
   choiceTag(): string {
     const a = this.choice();
-    if (!a || a.id === '__custom__') return 'NOVO AGENTE';
+    if (!a || a.id === '__custom__') return this.i18n.text('shell.new-agent');
     const generalist = CATEGORIES.find((c) => c.key === this.category)?.presets[0]?.name === a.name;
     return (
       (generalist ? 'GENERALISTA · ' : '') +
-      (this.taken(a.id) ? 'JÁ NESTA SQUAD' : this.store.agent(a.id) ? 'NO WORKSPACE' : 'PRÉ-PRONTO')
+      (this.taken(a.id)
+        ? this.i18n.text('ui.already-in-this-squad')
+        : this.store.agent(a.id)
+          ? this.i18n.text('ui.in-workspace')
+          : 'PRÉ-PRONTO')
     );
   }
   choiceRole(): string {
@@ -190,7 +198,7 @@ export class SquadEditorComponent implements OnDestroy {
       ? template.name + (template.content !== c.base ? ' (editado)' : '')
       : c.base.trim()
         ? 'Personalizado'
-        : 'Sem guia';
+        : this.i18n.text('ui.no-guide');
     return (
       name +
       (c.subsets.length
@@ -201,11 +209,11 @@ export class SquadEditorComponent implements OnDestroy {
   confirmLabel(): string {
     const item = this.choice();
     return this.categoryMode()
-      ? 'Ver agentes'
+      ? this.i18n.text('ui.view-agents')
       : item?.id === '__custom__'
-        ? 'Criar customizado'
+        ? this.i18n.text('ui.create-custom')
         : item && this.taken(item.id)
-          ? 'Já na squad'
+          ? this.i18n.text('ui.already-in-squad')
           : item?.id === this.currentPickId()
             ? 'Manter'
             : 'Escolher';
@@ -213,14 +221,14 @@ export class SquadEditorComponent implements OnDestroy {
   pickerTitle(): string {
     const p = this.pick();
     return p?.slot === 'op'
-      ? (p.index < 0 ? 'NOVO OPERADOR' : 'OPERADOR') +
+      ? (p.index < 0 ? this.i18n.text('ui.new-operator') : 'OPERADOR') +
           ' / ' +
           (CATEGORIES.find((c) => c.key === this.category)?.label.toUpperCase() || 'ESPECIALIDADE')
       : p?.slot === 'commander'
         ? 'COMANDANTE'
         : p?.slot === 'adr'
-          ? 'RECONHECEDOR ADR'
-          : 'RECONHECEDOR PRD';
+          ? this.i18n.text('ui.adr-analyst')
+          : this.i18n.text('ui.prd-analyst');
   }
   categoryDescription(): string {
     const c = this.selectedCategory();
@@ -309,7 +317,7 @@ export class SquadEditorComponent implements OnDestroy {
       createdAt: timestamp(),
     },
   );
-  readonly portrait = portrait;
+  readonly portrait = inject(PortraitService).source;
   readonly presets = PRESETS;
   readonly presetAgents = PRESETS.map((p) => makeAgent(p.role, p.name));
   constructor() {
@@ -471,10 +479,9 @@ export class SquadEditorComponent implements OnDestroy {
         id: '__custom__',
         name: 'CUSTOMIZADO',
         icon: 'sparkle',
-        description:
-          'Crie um agente do zero no estúdio: codinome, especialidade, instruções e ferramentas. Ele entra direto nesta posição.',
+        description: this.i18n.text('ui.create-an-agent-from-scratch-in-the-studio-codename-spe'),
         prompt: '',
-        specialty: 'NOVO AGENTE',
+        specialty: this.i18n.text('shell.new-agent'),
       },
     ];
   }
@@ -556,7 +563,7 @@ export class SquadEditorComponent implements OnDestroy {
             q.id !== this.draft.id && q.name.toUpperCase() === this.draft.name.trim().toUpperCase(),
         )
     ) {
-      this.store.error.set('Já existe uma squad com esse nome.');
+      this.store.error.set(this.i18n.text('ui.a-squad-with-this-name-already-exists'));
       return;
     }
     this.draft.name = this.draft.name.toUpperCase();
@@ -569,7 +576,9 @@ export class SquadEditorComponent implements OnDestroy {
         !this.draft.prdId ||
         !this.draft.operatorIds.length)
     ) {
-      this.store.error.set('Complete o comandante, ADR, PRD e pelo menos um operador.');
+      this.store.error.set(
+        this.i18n.text('ui.complete-commander-adr-prd-and-at-least-one-operator'),
+      );
       return;
     }
     if (this.store.saveSquad(this.draft, this.newAgents)) {
@@ -584,15 +593,15 @@ export class SquadEditorComponent implements OnDestroy {
   async remove(): Promise<void> {
     if (this.used()) {
       this.store.error.set(
-        'A squad está em uso por uma operação. Associe outra squad antes de excluir.',
+        this.i18n.text('ui.this-squad-is-used-by-an-operation-assign-another-squad'),
       );
       return;
     }
     if (
       !(await this.dialogs.ask(
         this.i18n.text('squad.deleteConfirm'),
-        'EXCLUIR SQUAD',
-        'Excluir squad',
+        this.i18n.text('ui.delete-squad'),
+        this.i18n.text('ui.delete-squad-387'),
         true,
       ))
     )

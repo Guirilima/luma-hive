@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/i18n.service';
 import { IconComponent } from '../../shared/icon.component';
 import { ModalComponent } from '../../shared/modal.component';
 import { Component, inject, signal, computed } from '@angular/core';
@@ -7,7 +8,7 @@ import { DialogService, download } from '../../core/ui/dialog.service';
 import { I18nService } from '../../core/i18n/i18n.service';
 @Component({
   standalone: true,
-  imports: [IconComponent, ModalComponent, FormsModule],
+  imports: [TranslatePipe, IconComponent, ModalComponent, FormsModule],
   templateUrl: './handoffs.component.html',
 })
 export class HandoffsComponent {

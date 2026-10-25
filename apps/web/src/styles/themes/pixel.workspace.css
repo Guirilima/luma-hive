@@ -1,0 +1,348 @@
+/* Application chrome and operation pages. The map canvas is deliberately untouched. */
+html[data-interface-theme='pixel'] .topbar {
+  background: #102839;
+  border-bottom: 3px solid #bd9257;
+  box-shadow:
+    inset 0 -2px #f4d28b55,
+    0 4px 0 #071b27;
+}
+html[data-interface-theme='pixel'] .brand {
+  color: #f0cc83;
+  letter-spacing: 1.5px;
+}
+html[data-interface-theme='pixel'] .brand small {
+  color: #b9cbbc;
+}
+html[data-interface-theme='pixel'] .brand-slash {
+  color: #7de0c4;
+}
+html[data-interface-theme='pixel'] .mode-nav {
+  background: #102839;
+  border: 1px solid #c7a36966;
+}
+html[data-interface-theme='pixel'] .mode-nav > a {
+  font-family: var(--pixel-font);
+  font-size: 15px;
+  letter-spacing: 0.4px;
+  color: #c4cbbd;
+}
+html[data-interface-theme='pixel'] .mode-nav > a.active {
+  background: #294c55;
+  color: #ffdf9d;
+  font-size: 17px;
+  box-shadow: inset 0 2px #4c7474;
+}
+html[data-interface-theme='pixel'] .mode-nav > a.active:after {
+  height: 3px;
+  background: #f0cc83;
+}
+html[data-interface-theme='pixel'] .mode-nav > a:hover {
+  background: #244851;
+  color: #fff0c9;
+}
+html[data-interface-theme='pixel'] .mode-nav .nav-key {
+  border: 2px solid #8d805c;
+  background: #1c3b47;
+  box-shadow: 2px 2px 0 #071b27;
+  color: #f0cc83;
+}
+html[data-interface-theme='pixel'] .mode-indicator {
+  color: #b9d4c9;
+}
+html[data-interface-theme='pixel'] .home-view {
+  background-color: #102430;
+  background-image:
+    linear-gradient(90deg, #29414a35 1px, transparent 1px),
+    linear-gradient(#29414a35 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+html[data-interface-theme='pixel'] .home-view .home-inner {
+  background: transparent;
+}
+html[data-interface-theme='pixel'] .home-head h1 {
+  color: #f4dfac;
+  font-size: 44px;
+  letter-spacing: 0.5px;
+}
+html[data-interface-theme='pixel'] .home-head h1 span {
+  color: #7de0c4;
+}
+html[data-interface-theme='pixel'] .home-head p {
+  color: #b2c5c1;
+  font-size: 15px;
+}
+html[data-interface-theme='pixel'] :is(.home-section-head, .ops-section-head) {
+  border-color: #be9b6155;
+}
+html[data-interface-theme='pixel']
+  :is(
+    .home-project,
+    .home-squad,
+    .home-run,
+    .home-review,
+    .home-log,
+    .ops-section,
+    .ops-side,
+    .ops-detail,
+    .sprint,
+    .feature-card,
+    .kanban-column,
+    .empty-panel,
+    .home-empty
+  ) {
+  background: #173544;
+  border: 2px solid #a27b49;
+  box-shadow: var(--pixel-frame);
+  border-radius: 0;
+}
+html[data-interface-theme='pixel'] :is(.home-project.current, .ops-op.active, .home-squad.current) {
+  border-color: #79d9b9;
+  box-shadow:
+    inset 3px 0 #79d9b9,
+    inset 0 0 0 2px #79d9b925,
+    4px 4px 0 #061823;
+}
+html[data-interface-theme='pixel'] :is(.home-project.new, .home-squad.new) {
+  background: #142e3b;
+  border-style: dashed;
+  border-color: #7d977f;
+}
+html[data-interface-theme='pixel'] :is(.home-project, .home-squad, .feature-card):hover {
+  background: #1d414f;
+}
+html[data-interface-theme='pixel'] :is(.home-project h3, .home-squad h3, .ops-title h2, .ops-name) {
+  color: #f0d59e;
+  font-size: 21px;
+}
+html[data-interface-theme='pixel']
+  :is(.home-project p, .home-project.new small, .home-squad p, .home-run small) {
+  color: #c1cabb;
+  font-family: var(--pixel-font);
+  font-size: 14px;
+}
+html[data-interface-theme='pixel']
+  :is(.home-stats, .ops-summary, .home-project-foot, .sprint-head, .ops-detail-head) {
+  border-color: #b48b5355;
+  background-color: #102a37;
+}
+html[data-interface-theme='pixel'] :is(.home-stats dd, .home-stat strong) {
+  color: #f0cc83;
+}
+html[data-interface-theme='pixel'] :is(.progress-rail, .ops-progress) {
+  background: #071e2a;
+  border: 1px solid #8a7951;
+}
+html[data-interface-theme='pixel'] :is(.progress-rail > span, .ops-progress > b) {
+  background: #72d3ad;
+  box-shadow: inset 0 2px #b0efd4;
+}
+html[data-interface-theme='pixel'] .ops-op {
+  border: 2px solid #725b40;
+  background: #173544;
+  box-shadow: inset 0 0 0 2px #ba965d22;
+}
+html[data-interface-theme='pixel'] :is(.ops-op:hover, .ops-op.active) {
+  background: #214451;
+}
+html[data-interface-theme='pixel']
+  :is(.ops-op-name, .sprint-title strong, .ops-feature-open strong) {
+  color: #f0dfbb;
+  font-family: var(--pixel-font);
+  font-size: 16px;
+}
+html[data-interface-theme='pixel'] .ops-feature {
+  background: #1a3d4a;
+  border: 1px solid #9f8154;
+  box-shadow: inset 0 -2px #102430;
+}
+html[data-interface-theme='pixel'] .ops-feature:hover {
+  background: #244e58;
+}
+html[data-interface-theme='pixel'] :is(.ops-key, .sprint-code) {
+  color: #f0cc83;
+}
+html[data-interface-theme='pixel'] .ops-feature.selected {
+  border-color: #7ce0c0;
+  background: #27505a;
+}
+html[data-interface-theme='pixel']
+  :is(.ops-filter button, .ops-tabs button, .ops-squad, .squad-option) {
+  background: #163443;
+  border: 1px solid #a27b4966;
+  color: #d2d5be;
+}
+html[data-interface-theme='pixel']
+  :is(.ops-filter button.active, .ops-tabs button.active, .ops-squad.active) {
+  background: #285451;
+  color: #f4dfac;
+  border-color: #b4d09b;
+}
+html[data-interface-theme='pixel'] .tag {
+  background: #234450;
+  border: 1px solid #ac8a55;
+  color: #e1d7b9;
+  box-shadow: 1px 1px 0 #061823;
+}
+html[data-interface-theme='pixel'] .tag.accent {
+  color: #a1f0cf;
+  border-color: #5eac8c;
+  background: #164a45;
+}
+html[data-interface-theme='pixel'] :is(.ops-status, .status-chip) {
+  border-radius: 0;
+}
+html[data-interface-theme='pixel'] .ops-status.s-done {
+  color: #95e7b6;
+  background: #1d503f;
+  border: 1px solid #5f9870;
+}
+html[data-interface-theme='pixel'] .ops-status.s-review {
+  color: #ffe1a1;
+  background: #53442a;
+  border: 1px solid #b49a5f;
+}
+html[data-interface-theme='pixel'] .ops-status.s-blocked {
+  color: #efb7ac;
+  background: #4c3433;
+  border: 1px solid #956b5b;
+}
+html[data-interface-theme='pixel']
+  :is(.btn, .primary-action, .secondary-action, .op-choice, .roster-add button) {
+  border: 2px solid #997746;
+  background: #234450;
+  color: #f2e4c4;
+  border-radius: 0;
+  box-shadow:
+    inset 2px 2px 0 #66816a66,
+    inset -2px -2px 0 #06182388,
+    3px 3px 0 #061823;
+  font-family: var(--pixel-font);
+  font-size: 15px;
+  letter-spacing: 0.2px;
+  transition:
+    background 0.1s steps(2),
+    color 0.1s steps(2),
+    box-shadow 0.1s steps(2);
+}
+html[data-interface-theme='pixel'] :is(.btn.sm, .btn.square) {
+  font-size: 13px;
+}
+html[data-interface-theme='pixel'] :is(.btn:hover, .secondary-action:hover) {
+  background: #345a61;
+  color: #fff0c9;
+}
+html[data-interface-theme='pixel'] :is(.btn.primary, .primary-action, .btn.white) {
+  background: #e6bf75;
+  color: #172b35;
+  border-color: #9b713c;
+  box-shadow:
+    inset 2px 2px 0 #ffe6a9,
+    inset -2px -2px 0 #b7874d,
+    3px 3px 0 #061823;
+}
+html[data-interface-theme='pixel']
+  :is(.btn.primary:hover, .primary-action:hover, .btn.white:hover) {
+  background: #f4d18b;
+  color: #102430;
+}
+html[data-interface-theme='pixel'] .btn.ghost {
+  background: #173341;
+  color: #d4d9c6;
+  border-color: #6d775c;
+}
+html[data-interface-theme='pixel'] .btn.danger {
+  background: #653b3e;
+  border-color: #c08465;
+  color: #ffe1bf;
+}
+html[data-interface-theme='pixel']
+  :is(.btn, .primary-action, .secondary-action):active:not(:disabled) {
+  box-shadow:
+    inset 2px 2px 0 #06182377,
+    1px 1px 0 #061823;
+}
+html[data-interface-theme='pixel'] .icon-button {
+  border: 1px solid #8f7e56;
+  background: #173b48;
+  color: #e2d1a6;
+  border-radius: 0;
+  box-shadow: 2px 2px 0 #061823;
+}
+html[data-interface-theme='pixel'] .icon-button:hover {
+  background: #31565c;
+  color: #fff0bf;
+}
+html[data-interface-theme='pixel'] .icon {
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+}
+html[data-interface-theme='pixel'] :is(.mini-faces img, .roster-avatar) {
+  border: 2px solid #b18c54;
+  border-radius: 0;
+  image-rendering: pixelated;
+}
+html[data-interface-theme='pixel'] .toast {
+  background: #173544;
+  border: 2px solid #bd9257;
+  border-radius: 0;
+  box-shadow: var(--pixel-frame);
+  color: #f2dfb7;
+}
+html[data-interface-theme='pixel'] .toast.error {
+  background: #51363c;
+  border-color: #d48c72;
+}
+@media (max-width: 560px) {
+  html[data-interface-theme='pixel'] .home-head h1 {
+    font-size: 32px;
+  }
+  html[data-interface-theme='pixel'] .mode-nav > a {
+    font-size: 13px;
+    padding-left: 11px;
+    padding-right: 11px;
+  }
+  html[data-interface-theme='pixel'] .mode-nav > a.active {
+    font-size: 15px;
+  }
+}
+
+html[data-interface-theme='pixel'] .ops-item {
+  background: #183744;
+  border: 2px solid #927849;
+  box-shadow: inset 0 0 0 1px #c9ab6b22;
+}
+html[data-interface-theme='pixel'] .ops-item.active {
+  background: #244a51;
+  border-color: #80d3ac;
+  box-shadow:
+    inset 3px 0 #80d3ac,
+    3px 3px 0 #061823;
+}
+html[data-interface-theme='pixel'] .ops-item.new {
+  background: #142f3d;
+  border-color: #7b8055;
+  border-style: dashed;
+}
+html[data-interface-theme='pixel'] :is(.ops-item h3, .ops-item strong) {
+  font-family: var(--pixel-font);
+  color: #f1dfb4;
+  font-size: 16px;
+}
+html[data-interface-theme='pixel'] :is(.sqc, .sqc-cmd, .sqc-ops, .sqc-top) {
+  background-color: #163441;
+  border-color: #a1845355;
+}
+html[data-interface-theme='pixel'] :is(.sq-ring, .sqc-icon, .sqc-cmd-icon, .sqc-role, .sqc-dot) {
+  border-radius: 0;
+  border-color: #b49259;
+  box-shadow: 2px 2px 0 #061823;
+}
+html[data-interface-theme='pixel'] :is(.ops-segmented button, .ops-features-tabs button) {
+  background: #173946;
+  border: 1px solid #927c4c;
+  color: #b8c8b5;
+}
+html[data-interface-theme='pixel'] :is(.ops-segmented button.active, .ops-segmented button.on) {
+  background: #ddb975;
+  color: #173341;
+}

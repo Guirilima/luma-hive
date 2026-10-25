@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/i18n.service';
 import { FormsModule } from '@angular/forms';
 import { Component, inject, signal, effect, ElementRef, viewChild } from '@angular/core';
 import { ApiService } from '../../core/api/api.service';
@@ -11,7 +12,7 @@ import { Run, RunEvent } from '@domain/models';
 @Component({
   selector: 'luma-console',
   standalone: true,
-  imports: [IconComponent, FormsModule, ModalComponent],
+  imports: [TranslatePipe, IconComponent, FormsModule, ModalComponent],
   templateUrl: './console.component.html',
 })
 export class ConsoleComponent {
@@ -25,10 +26,10 @@ export class ConsoleComponent {
   readonly showHistory = signal(false);
   readonly filters = [
     { key: '', label: 'Todos' },
-    { key: 'agent', label: 'Agentes' },
+    { key: 'agent', label: 'dashboard.agents' },
     { key: 'plan', label: 'Plano' },
     { key: 'handoff', label: 'Handoffs' },
-    { key: 'review', label: 'Revisões' },
+    { key: 'review', label: 'ui.reviews' },
   ];
   clock(at: string): string {
     return new Date(at).toLocaleTimeString('pt-BR', {

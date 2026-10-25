@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/i18n.service';
 import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { dependenciesReady, projectGaps } from '@domain/workspace';
@@ -10,7 +11,7 @@ import { ModalComponent } from '../../shared/modal.component';
 @Component({
   selector: 'luma-spawn',
   standalone: true,
-  imports: [IconComponent, FormsModule, ModalComponent],
+  imports: [TranslatePipe, IconComponent, FormsModule, ModalComponent],
   templateUrl: './spawn.component.html',
 })
 export class SpawnComponent {

@@ -1,17 +1,16 @@
 @if (showHistory()) {
   <luma-modal
-    title="REDE DE <span class=word-tag>HANDOFFS</span>"
-    [subtitle]="store.project()!.code + ' / TRANSMISSÕES ENTRE ESPECIALISTAS'"
+    [title]="'handoffs.handoff-network' | t"
+    [subtitle]="store.project()!.code + ('ui.specialist-transmissions' | t)"
     (closed)="showHistory.set(false)"
   >
     <div class="modal-toolbar">
       <p>
-        A tarefa muda de agente, mas o contexto acompanha a entrega. Os registros abaixo pertencem à
-        demonstração local.
+        {{ 'handoffs.the-task-moves-between-agents-while-context-travels-with-t' | t }}
       </p>
       <button class="btn primary" (click)="showHistory.set(false); dialogs.open('handoff')">
         <luma-icon name="plus" />
-        Novo handoff
+        {{ 'handoffs.new-handoff-268' | t }}
       </button>
     </div>
     @if (handoffs().length) {
@@ -22,10 +21,10 @@
             <luma-icon name="flow" />
             <div>
               <h3>
-                {{ store.agent(handoff.from)?.name || 'REMOVIDO' }} →
-                {{ store.agent(handoff.to)?.name || 'REMOVIDO' }}
+                {{ store.agent(handoff.from)?.name || ('ui.removed' | t) }} →
+                {{ store.agent(handoff.to)?.name || ('ui.removed' | t) }}
                 <span class="muted">
-                  / {{ store.feature(handoff.featureId)?.key || 'ARQUIVADA' }}
+                  / {{ store.feature(handoff.featureId)?.key || ('ui.archived' | t) }}
                 </span>
               </h3>
               <p>{{ handoff.context.slice(0, 600) }}</p>
@@ -33,7 +32,7 @@
             <span class="tag">
               {{
                 handoff.manual
-                  ? 'MANUAL'
+                  ? ('ui.manual' | t)
                   : handoff.simulated
                     ? 'DEMO'
                     : store.providerLabel(handoff.from)
@@ -45,10 +44,10 @@
     } @else {
       <div class="empty-panel">
         <luma-icon name="flow" />
-        <h3>Nenhuma transferência ainda</h3>
-        <p>Distribua as features e inicie a demonstração, ou configure um handoff manual.</p>
+        <h3>{{ 'handoffs.no-transfers-yet' | t }}</h3>
+        <p>{{ 'handoffs.distribute-features-and-start-the-demo-or-configure-a-manu' | t }}</p>
         <button class="btn primary" (click)="showHistory.set(false); dialogs.open('handoff')">
-          Configurar handoff
+          {{ 'handoffs.configure-handoff' | t }}
         </button>
       </div>
     }

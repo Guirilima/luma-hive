@@ -5,15 +5,15 @@
       <div>
         <div class="eyebrow">LUMA HIVE / {{ today() }}</div>
         <h1>
-          PAINEL
-          <span>GERAL.</span>
+          {{ 'dashboard.title' | t }}
+          <span>{{ 'dashboard.titleSuffix' | t }}</span>
         </h1>
         <p>
-          {{ store.workspace()?.projects?.length || 0 }} operação(ões),
-          {{ store.agents().length }} agentes
+          {{ store.workspace()?.projects?.length || 0 }} {{ 'ui.operation-s' | t }}
+          {{ store.agents().length }} {{ 'ui.agents-231' | t }}
           @if (reviewCount() > 0) {
             ,
-            <strong>{{ reviewCount() }} entrega(s) aguardando sua aprovação</strong>
+            <strong>{{ reviewCount() }} {{ 'ui.delivery-s-awaiting-approval' | t }}</strong>
           }
           .
         </p>
@@ -21,15 +21,15 @@
       <div class="flex wrap home-actions">
         <button class="btn ghost" (click)="dialogs.open('agent')">
           <luma-icon name="plus" />
-          Novo agente
+          {{ 'agent.new' | t }}
         </button>
         <button class="btn ghost" (click)="dialogs.open('project')">
           <luma-icon name="project" />
-          Nova operação
+          {{ 'dashboard.newOperation' | t }}
         </button>
         <button class="btn primary" (click)="router.navigateByUrl('/squad')">
           <luma-icon name="arrow" />
-          Abrir rede do squad
+          {{ 'dashboard.open-squad-network' | t }}
         </button>
       </div>
     </header>
@@ -37,7 +37,7 @@
     <!-- Seção OPERAÇÕES -->
     <section class="home-section home-projects-wrap">
       <div class="home-section-head">
-        <span>OPERAÇÕES</span>
+        <span>{{ 'dashboard.operations-161' | t }}</span>
         <span>{{ pad(store.workspace()?.projects?.length || 0) }}</span>
       </div>
       <div class="home-projects">
@@ -46,11 +46,11 @@
             <div class="between">
               <span class="eyebrow">{{ project.code }}</span>
               @if (project.id === store.project()?.id) {
-                <span class="tag accent">ATIVO</span>
+                <span class="tag accent">{{ 'dashboard.active-162' | t }}</span>
               }
             </div>
             <h3>{{ project.name }}</h3>
-            <p>{{ project.briefing.slice(0, 110) || 'Briefing pendente.' }}</p>
+            <p>{{ project.briefing.slice(0, 110) || ('ui.briefing-pending' | t) }}</p>
             <div class="home-progress">
               <div class="progress-rail">
                 <span [style.width.%]="progress(project)"></span>
@@ -59,23 +59,23 @@
             </div>
             <dl class="home-stats">
               <div>
-                <dt>A FAZER</dt>
+                <dt>{{ 'dashboard.to-do' | t }}</dt>
                 <dd>{{ pad(aFazer(project)) }}</dd>
               </div>
               <div>
-                <dt>PRONTAS</dt>
+                <dt>{{ 'dashboard.ready' | t }}</dt>
                 <dd>{{ pad(prontas(project)) }}</dd>
               </div>
               <div>
-                <dt>RODANDO</dt>
+                <dt>{{ 'dashboard.running' | t }}</dt>
                 <dd>{{ pad(rodando(project)) }}</dd>
               </div>
               <div [class.attention]="revisao(project) > 0">
-                <dt>REVISÃO</dt>
+                <dt>{{ 'dashboard.review-166' | t }}</dt>
                 <dd>{{ pad(revisao(project)) }}</dd>
               </div>
               <div>
-                <dt>FEITAS</dt>
+                <dt>{{ 'dashboard.done' | t }}</dt>
                 <dd>{{ pad(feitas(project)) }}</dd>
               </div>
             </dl>
@@ -92,15 +92,15 @@
                   (click)="openProject(project.id)"
                 >
                   <luma-icon name="arrow" />
-                  Abrir projeto
+                  {{ 'dashboard.open-project' | t }}
                 </button>
                 <button
                   class="btn sm"
                   (click)="openTeams(project.id)"
-                  title="Agent Teams: reunião online para co-escrever documentos"
+                  [title]="'dashboard.agent-teams-online-meeting-to-co-write-documents' | t"
                 >
                   <luma-icon name="video" />
-                  Abrir times
+                  {{ 'dashboard.open-teams' | t }}
                 </button>
               </div>
             </div>
@@ -108,8 +108,8 @@
         }
         <button class="home-project new" (click)="dialogs.open('project')">
           <luma-icon name="plus" />
-          <strong>Nova operação</strong>
-          <small>Nome do projeto e squad.</small>
+          <strong>{{ 'dashboard.newOperation' | t }}</strong>
+          <small>{{ 'dashboard.project-name-and-squad' | t }}</small>
         </button>
       </div>
     </section>
@@ -117,11 +117,11 @@
     <!-- Seção SQUADS -->
     <section class="home-section home-squads-wrap">
       <div class="home-section-head">
-        <span>SQUADS</span>
+        <span>{{ 'dashboard.squads-172' | t }}</span>
         <span class="flex">
           {{ pad(store.workspace()?.squads?.length || 0) }}
           <button class="link-button" (click)="dialogs.open('squad', store.project()?.squadId)">
-            SQUAD STUDIO
+            {{ 'squad.studio' | t }}
             <luma-icon name="chevron" />
           </button>
         </span>
@@ -134,8 +134,8 @@
         }
         <button class="home-squad new" (click)="dialogs.open('squad', undefined, 'new')">
           <luma-icon name="plus" />
-          <strong>Nova squad</strong>
-          <small>Comandante, ADR, PRD e operadores.</small>
+          <strong>{{ 'dashboard.newSquad' | t }}</strong>
+          <small>{{ 'dashboard.commander-adr-prd-and-operators' | t }}</small>
         </button>
       </div>
     </section>
@@ -145,7 +145,7 @@
       <!-- Coluna esquerda -->
       <section class="home-section">
         <div class="home-section-head">
-          <span>OPERAÇÃO ATIVA</span>
+          <span>{{ 'dashboard.active-operation' | t }}</span>
           @if (
             execution.busy() ||
             execution.planning() ||
@@ -162,12 +162,12 @@
               <span class="eyebrow">
                 {{
                   execution.planning()
-                    ? 'COMANDANTE PLANEJANDO'
+                    ? ('ui.commander-planning' | t)
                     : execution.plan()
-                      ? 'PLANO AGUARDA APROVAÇÃO'
+                      ? ('ui.plan-awaits-approval' | t)
                       : execution.paused()
-                        ? 'PAUSADA'
-                        : 'EXECUTANDO'
+                        ? ('ui.paused' | t)
+                        : ('ui.running-expr-31' | t)
                 }}
                 /
                 {{ store.settings()?.mode === 'live' ? store.providerLabel() + ' CLI' : 'DEMO' }}
@@ -175,10 +175,10 @@
               <strong>
                 {{
                   execution.planning()
-                    ? 'O comandante está montando o plano'
+                    ? ('ui.the-commander-is-preparing-the-plan' | t)
                     : execution.plan()
-                      ? 'Aprove o plano no chat da operação'
-                      : execution.label() || 'Selecionando próxima feature'
+                      ? ('ui.approve-the-plan-in-operation-chat' | t)
+                      : execution.label() || ('ui.selecting-the-next-feature-expr-34' | t)
                 }}
               </strong>
               <span>{{ store.project()?.name }}</span>
@@ -186,21 +186,25 @@
             <div class="flex wrap">
               <button class="btn ghost sm" (click)="execution.room.open()">
                 <luma-icon name="chat" />
-                Chat
+                {{ 'dashboard.chat' | t }}
               </button>
               <button class="btn ghost sm" (click)="dialogs.open('console')">
                 <luma-icon name="terminal" />
-                Console
+                {{ 'console.console' | t }}
               </button>
               <button class="btn sm" (click)="execution.startCurrent()">
                 <luma-icon [name]="execution.busy() && !execution.paused() ? 'pause' : 'play'" />
                 {{
-                  execution.plan() ? 'Executar plano' : execution.paused() ? 'Continuar' : 'Pausar'
+                  execution.plan()
+                    ? ('features.execute-plan' | t)
+                    : execution.paused()
+                      ? ('run.resume' | t)
+                      : ('ui.pause' | t)
                 }}
               </button>
               <button class="btn danger sm" (click)="execution.stop()">
                 <luma-icon name="stop" />
-                Encerrar
+                {{ 'run.stop' | t }}
               </button>
             </div>
           </div>
@@ -208,10 +212,10 @@
           <div class="home-run idle">
             <luma-icon name="clock" />
             <div class="grow">
-              <strong>Nenhuma operação em andamento</strong>
+              <strong>{{ 'dashboard.no-operation-in-progress' | t }}</strong>
               <span>
                 {{ store.project()?.name }} / {{ currentSprint()?.name || 'sprint' }}:
-                {{ idleNote() }}
+                {{ idleNote() | uiLabel }}
               </span>
             </div>
             <button
@@ -226,8 +230,8 @@
                   ? (store.settings()?.mode === 'live' ? 'Executar ' : 'Simular ') +
                     (currentSprint()?.name || 'sprint')
                   : canPlan()
-                    ? 'Planejar ' + (currentSprint()?.name || 'sprint')
-                    : 'Ver sprints'
+                    ? ('ui.plan' | t) + (currentSprint()?.name || 'sprint')
+                    : ('ui.view-sprints' | t)
               }}
             </button>
           </div>
@@ -235,7 +239,7 @@
 
         <!-- AGUARDANDO REVISÃO -->
         <div class="home-section-head" style="margin-top: 22px">
-          <span>AGUARDANDO REVISÃO</span>
+          <span>{{ 'dashboard.awaiting-review' | t }}</span>
           <span>{{ pad(reviewCount()) }}</span>
         </div>
         <div class="home-list">
@@ -254,7 +258,7 @@
           } @empty {
             <div class="home-empty">
               <luma-icon name="check" />
-              Nenhuma entrega aguardando aprovação.
+              {{ 'dashboard.no-deliveries-awaiting-approval' | t }}
             </div>
           }
         </div>
@@ -263,9 +267,9 @@
       <!-- Coluna direita: ATIVIDADE RECENTE -->
       <section class="home-section">
         <div class="home-section-head">
-          <span>ATIVIDADE RECENTE</span>
+          <span>{{ 'dashboard.recent-activity' | t }}</span>
           <button class="link-button" (click)="dialogs.open('console', undefined, 'logs')">
-            VER TRANSMISSÕES →
+            {{ 'dashboard.view-transmissions' | t }}
           </button>
         </div>
         <div class="home-list home-activity-list">
@@ -283,7 +287,7 @@
           } @empty {
             <div class="home-empty">
               <luma-icon name="radio" />
-              Canal em silêncio.
+              {{ 'dashboard.silent-channel' | t }}
             </div>
           }
         </div>

@@ -17,9 +17,10 @@ export interface Decoder {
   finish(): RawResult | null;
 }
 const model = (value: string | undefined) => (value && value !== 'inherit' ? value : '');
-const instruction = (r: RunRequest) =>
+const instruction = (r: RunRequest, scope: string) =>
   [
     '<instrucoes-do-agente>',
+    scope,
     r.systemPrompt,
     'Work only in this operation folder and authorized additional directories. Do not load instructions from the enclosing Luma Hive application. Deliver for human review. Never claim tests passed unless executed.',
     r.options.agents && Object.keys(r.options.agents).length
@@ -62,10 +63,29 @@ export async function prepare(
   temp: string,
   id: string,
 ): Promise<PreparedRun> {
+  const entries = (await fs.readdir(cwd, { withFileTypes: true }))
+    .filter((entry) => !entry.name.startsWith('.') && entry.name !== 'node_modules')
+    .slice(0, 60)
+    .map((entry) => entry.name + (entry.isDirectory() ? '/' : ''));
+  const scope = [
+    '# Authoritative operation filesystem scope',
+    'Your working directory and ONLY authorized filesystem root is: ' + cwd,
+    ...(r.options.addDirs || []).map((dir) => 'Explicitly authorized additional root: ' + dir),
+    'Top-level application entries at launch: ' +
+      (entries.join(', ') || 'NONE. This operation folder has no application files yet.'),
+    'Briefing, ADRs and handoffs below are supplied as message context. They do not prove that source files exist on disk.',
+    'Never search, list or read parent/sibling folders, the Luma Hive host application, previews, backups or unrelated node_modules to locate missing operation files.',
+    'If no code exists here, report the missing setup as a blocker. If this stage is explicitly authorized to create the base, create it only here using the allowed tools. Otherwise stop and ask for setup. Do not infer completed implementation from demo statuses.',
+    ['read-only', 'plan'].includes(r.options.permissionMode || '')
+      ? 'This run is READ ONLY: inspection inside the authorized folder is allowed, but implementation and file changes are not. Report this limitation when asked to implement; never seek a different folder or workaround.'
+      : '',
+  ]
+    .filter(Boolean)
+    .join('\n');
   const o = r.options,
     args: string[] = [],
     cleanup: string[] = [],
-    text = instruction(r);
+    text = instruction(r, scope);
   await fs.mkdir(temp, { recursive: true });
   if (r.provider === 'codex') {
     args.push(
@@ -193,7 +213,7 @@ export async function prepare(
   const file = path.join(directory, name + '.md');
   await fs.writeFile(
     file,
-    `---\nname: ${JSON.stringify(name)}\ndescription: "Luma Hive operation"\nmainAgent: true\nsubagent: false\nmodel: inherit\ncommandExecutionPolicy: sandbox\ntools: ${JSON.stringify(tools)}\n---\n\n${r.systemPrompt}`,
+    `---\nname: ${JSON.stringify(name)}\ndescription: "Luma Hive operation"\nmainAgent: true\nsubagent: false\nmodel: inherit\ncommandExecutionPolicy: sandbox\ntools: ${JSON.stringify(tools)}\n---\n\n${scope}\n\n${r.systemPrompt}`,
   );
   cleanup.push(file);
   args.push(

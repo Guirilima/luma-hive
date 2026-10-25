@@ -2,27 +2,26 @@
   <div class="home-inner ops-inner">
     <header class="home-head">
       <div>
-        <div class="eyebrow">LUMA HIVE / CADEIA DE COMANDO</div>
+        <div class="eyebrow">{{ 'squads.luma-hive-chain-of-command' | t }}</div>
         <h1>
-          SQUAD
+          {{ 'nav.squad' | t }}
           <span>STUDIO.</span>
         </h1>
         <p>
-          Toda squad tem 1 comandante, 2 reconhecedores (ADR e PRD) e operadores especialistas.
-          Clique em uma posição da árvore para escolher o agente.
+          {{ 'squads.every-squad-has-1-commander-2-analysts-adr-and-prd-and-spe' | t }}
         </p>
       </div>
       <div class="flex wrap home-actions">
         <button class="btn primary" (click)="newSquad()">
           <luma-icon name="squad" />
-          Nova squad
+          {{ 'dashboard.newSquad' | t }}
         </button>
       </div>
     </header>
     <div class="ops-layout">
-      <aside class="ops-list" id="sqList" aria-label="Squads">
+      <aside class="ops-list" id="sqList" [attr.aria-label]="'dashboard.squads' | t">
         <div class="ops-list-head">
-          <span>SQUADS</span>
+          <span>{{ 'dashboard.squads-172' | t }}</span>
           <span>{{ pad(store.workspace()!.squads.length) }}</span>
         </div>
         @for (q of store.workspace()!.squads; track q.id) {
@@ -36,21 +35,21 @@
         }
         <button class="ops-item new" (click)="newSquad()">
           <luma-icon name="plus" />
-          <strong>NOVA SQUAD</strong>
+          <strong>{{ 'squads.new-squad' | t }}</strong>
         </button>
       </aside>
       <div class="ops-main">
         <div id="sqHead">
           <form id="squadForm" class="sq-name-form" (ngSubmit)="save()">
             <label for="squadName" class="eyebrow">
-              {{ existing ? 'NOME DA SQUAD' : 'NOVA SQUAD / NOME OBRIGATÓRIO' }}
+              {{ existing ? ('ui.squad-name' | t) : ('ui.new-squad-name-required' | t) }}
             </label>
             <input
               id="squadName"
               name="name"
               [(ngModel)]="draft.name"
               maxlength="60"
-              placeholder="Ex.: SQUAD ALPHA"
+              [placeholder]="'squads.e-g-squad-alpha' | t"
               autocomplete="off"
             />
           </form>
@@ -59,14 +58,18 @@
           <div class="ops-badges">
             @if (dialogs.pendingOperation()) {
               <span class="tag accent">
-                PARA A OPERAÇÃO {{ dialogs.pendingOperation().toUpperCase() }}
+                {{ 'ui.for-the-operation' | t }} {{ dialogs.pendingOperation().toUpperCase() }}
               </span>
             }
             <span class="tag" [class.accent]="complete()" [class.sq-warn]="!complete()">
-              {{ complete() ? 'SQUAD COMPLETA' : 'FALTA: ' + missing().join(', ').toUpperCase() }}
+              {{
+                complete()
+                  ? ('ui.complete-squad' | t)
+                  : ('ui.missing' | t) + missing().join(', ').toUpperCase()
+              }}
             </span>
             @if (dirty() && existing) {
-              <span class="tag sq-dirty">ALTERAÇÕES NÃO SALVAS</span>
+              <span class="tag sq-dirty">{{ 'squads.unsaved-changes' | t }}</span>
             }
             @for (p of operations(); track p.id) {
               <span class="tag">{{ p.code }} / {{ p.name }}</span>
@@ -74,46 +77,54 @@
           </div>
           <div class="flex wrap">
             @if (!existing) {
-              <button class="btn" (click)="cancelNew()">Cancelar</button>
+              <button class="btn" (click)="cancelNew()">{{ 'action.cancel' | t }}</button>
             } @else {
               @if (dirty()) {
-                <button class="btn" (click)="selectSquad(draft.id)">Descartar</button>
+                <button class="btn" (click)="selectSquad(draft.id)">
+                  {{ 'features.discard' | t }}
+                </button>
               }
               <button class="btn danger" (click)="remove()">
                 <luma-icon name="trash" />
-                Excluir
+                {{ 'action.delete' | t }}
               </button>
             }
             <button class="btn primary" type="submit" form="squadForm">
               <luma-icon name="check" />
               {{
                 existing
-                  ? 'Salvar squad'
+                  ? ('ui.save-squad' | t)
                   : dialogs.pendingOperation()
-                    ? 'Criar squad e operação'
-                    : 'Criar squad'
+                    ? ('ui.create-squad-and-operation' | t)
+                    : ('ui.create-squad' | t)
               }}
             </button>
           </div>
         </div>
-        <section class="ops-section sq-stage" id="sqTree" aria-label="Hierarquia da squad">
+        <section
+          class="ops-section sq-stage"
+          id="sqTree"
+          [attr.aria-label]="'squads.squad-hierarchy' | t"
+        >
           <button
             class="sq-view-toggle"
             [class.on]="photos()"
             (click)="togglePhotos()"
             [attr.aria-pressed]="photos()"
             [attr.aria-label]="
-              photos() ? 'Mostrar ícones dos agentes' : 'Mostrar fotos dos agentes'
+              photos() ? ('ui.show-agent-icons' | t) : ('ui.show-agent-photos' | t)
             "
-            title="Mostrar fotos / ícones"
+            [title]="'squads.show-photos-icons' | t"
           >
             <luma-icon [name]="photos() ? 'layers' : 'eye'" />
           </button>
           <div class="sq-tree">
             <div class="sq-band sq-band-cmd">
               <div class="sq-band-label">
-                <span>01 / COMANDO</span>
-                <small>RECEBE O BRIEFING, TOMA DECISÕES E DELEGA</small>
+                <span>{{ 'squads.01-command' | t }}</span>
+                <small>
+                  {{ 'squads.receives-the-briefing-makes-decisions-and-delegates' | t }}
+                </small>
               </div>
               <div class="sq-row">
                 <button
@@ -135,7 +146,7 @@
                     }
                   </span>
                   <span class="sq-node-label">
-                    <strong>{{ agent(draft.commanderId)?.name || 'VAZIO' }}</strong>
+                    <strong>{{ agent(draft.commanderId)?.name || ('ui.empty' | t) }}</strong>
                     <small>{{ 'squad.commander' | t }}</small>
                   </span>
                 </button>
@@ -143,8 +154,8 @@
             </div>
             <div class="sq-band">
               <div class="sq-band-label">
-                <span>02 / INTELIGÊNCIA</span>
-                <small>TRANSFORMA REQUISITOS E CONTEXTO EM PLANO DE MISSÃO</small>
+                <span>{{ 'squads.02-intelligence' | t }}</span>
+                <small>{{ 'squads.turns-requirements-and-context-into-a-mission-plan' | t }}</small>
               </div>
               <div class="sq-row">
                 <div class="sq-bus">
@@ -168,7 +179,7 @@
                         }
                       </span>
                       <span class="sq-node-label">
-                        <strong>{{ slotAgent(slot)?.name || 'VAZIO' }}</strong>
+                        <strong>{{ slotAgent(slot)?.name || ('ui.empty' | t) }}</strong>
                         <small>{{ 'squad.' + slot | t }}</small>
                       </span>
                     </button>
@@ -178,9 +189,10 @@
             </div>
             <div class="sq-band">
               <div class="sq-band-label">
-                <span>03 / OPERADORES</span>
+                <span>{{ 'squads.03-operators' | t }}</span>
                 <small>
-                  EXECUTA TECNICAMENTE A MISSÃO · {{ pad(draft.operatorIds.length) }} OPERADOR(ES)
+                  {{ 'ui.technically-executes-the-mission' | t }}
+                  {{ pad(draft.operatorIds.length) }} {{ 'ui.operator-s' | t }}
                 </small>
               </div>
               <div class="sq-row">
@@ -229,30 +241,38 @@
     id="sqDock"
     role="dialog"
     aria-modal="true"
-    aria-label="Selecionar agente"
+    [attr.aria-label]="'squad.pickAgent' | t"
     (keydown)="pickKeys($event)"
   >
     <div class="sq-dock-head">
       @if (position.slot === 'op' && category) {
-        <button class="sq-back" (click)="backCategory()" aria-label="Voltar para as especialidades">
+        <button
+          class="sq-back"
+          (click)="backCategory()"
+          [attr.aria-label]="'squads.back-to-specialties' | t"
+        >
           <luma-icon name="back" />
-          Especialidades
+          {{ 'squads.specialties' | t }}
         </button>
       }
       <span class="eyebrow">
-        SELECIONAR /
-        {{ pickerTitle() }}
+        {{ 'ui.select' | t }}
+        {{ pickerTitle() | uiLabel }}
       </span>
       <span class="sq-count">
         {{ pad(pickerIndex() + 1) }} /
         {{ pad(categoryMode() ? categories.length : choices().length) }}
       </span>
-      <button class="icon-button small" (click)="closePick()" aria-label="Fechar seletor">
+      <button
+        class="icon-button small"
+        (click)="closePick()"
+        [attr.aria-label]="'squads.close-picker' | t"
+      >
         <luma-icon name="close" />
       </button>
     </div>
     <div class="sq-strip-wrap">
-      <button class="sq-arrow" (click)="moveCursor(-1)" aria-label="Anterior">
+      <button class="sq-arrow" (click)="moveCursor(-1)" [attr.aria-label]="'squads.previous' | t">
         <luma-icon name="back" />
       </button>
       <div
@@ -260,7 +280,7 @@
         [class.cats]="categoryMode()"
         tabindex="0"
         role="listbox"
-        aria-label="Opções para a posição"
+        [attr.aria-label]="'squads.position-options' | t"
       >
         <div class="sq-strip-track" [style.transform]="stripTransform()">
           @if (categoryMode()) {
@@ -274,13 +294,14 @@
                 (click)="clickCategory(item.key)"
               >
                 @if (currentCategory() === item.key) {
-                  <em class="sq-cat-now">ATUAL</em>
+                  <em class="sq-cat-now">{{ 'projects.current' | t }}</em>
                 }
                 <span class="sq-cat-medal"><luma-icon [name]="categoryIcon(item.key)" /></span>
-                <strong>{{ item.label.toUpperCase() }}</strong>
+                <strong>{{ item.label.toUpperCase() | uiLabel }}</strong>
                 <small>
                   {{ categoryCount(item.key) }}
-                  {{ categoryCount(item.key) === 1 ? 'AGENTE' : 'AGENTES' }} NESTA CATEGORIA
+                  {{ categoryCount(item.key) === 1 ? ('ui.agent' | t) : ('ui.agents' | t) }}
+                  {{ 'ui.in-this-category' | t }}
                 </small>
                 <span class="sq-cat-chips">
                   @for (chip of categoryChips(item.key).slice(0, 4); track $index) {
@@ -319,7 +340,7 @@
           }
         </div>
       </div>
-      <button class="sq-arrow" (click)="moveCursor(1)" aria-label="Próximo">
+      <button class="sq-arrow" (click)="moveCursor(1)" [attr.aria-label]="'squads.next' | t">
         <luma-icon name="arrow" />
       </button>
     </div>
@@ -337,7 +358,7 @@
       </div>
       <div class="sq-detail-text">
         <span class="sq-detail-tag eyebrow">
-          {{ categoryMode() ? 'CATEGORIA' : choiceTag() }}
+          {{ categoryMode() ? ('ui.category' | t) : choiceTag() }}
         </span>
         <h3 class="sq-type">
           {{ categoryMode() ? selectedCategory().label.toUpperCase() : choice()?.name }}
@@ -345,7 +366,7 @@
         <span class="sq-detail-role">
           {{
             categoryMode()
-              ? categoryCount(selectedCategory().key) + ' AGENTES NESTA CATEGORIA'
+              ? categoryCount(selectedCategory().key) + ('ui.agents-in-this-category' | t)
               : choiceRole()
           }}
         </span>
@@ -355,16 +376,16 @@
         @if (!categoryMode() && choice()?.id !== '__custom__') {
           <div class="sq-detail-prompt">
             <span class="eyebrow">
-              INSTRUÇÕES DO AGENTE
+              {{ 'squads.agent-instructions' | t }}
               @if (conventionLabel()) {
-                · CONVENÇÕES: {{ conventionLabel().toUpperCase() }}
+                {{ 'ui.conventions' | t }} {{ conventionLabel().toUpperCase() }}
               }
             </span>
             <p class="sq-prompt-text">
               {{ choice()?.prompt }}
             </p>
             <button class="link-button" (click)="openDetails()">
-              VER MAIS
+              {{ 'squads.see-more' | t }}
               <luma-icon name="chevron" />
             </button>
           </div>
@@ -377,7 +398,7 @@
           [disabled]="!categoryMode() && (!choice() || taken(choice()!.id))"
         >
           <luma-icon name="check" />
-          {{ confirmLabel() }}
+          {{ confirmLabel() | uiLabel }}
         </button>
         @if (position.slot === 'op' && position.index >= 0) {
           <button
@@ -385,11 +406,11 @@
             (click)="draft.operatorIds.splice(position.index, 1); closePick()"
           >
             <luma-icon name="trash" />
-            Remover
+            {{ 'action.remove' | t }}
           </button>
         }
       </div>
     </div>
-    <p class="hint">Use ← → para navegar, Enter para escolher e Esc para fechar.</p>
+    <p class="hint">{{ 'squads.use-to-navigate-enter-to-choose-and-esc-to-close' | t }}</p>
   </section>
 }

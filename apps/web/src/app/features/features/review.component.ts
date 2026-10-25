@@ -1,3 +1,4 @@
+import { TranslatePipe } from '../../core/i18n/i18n.service';
 import { Component, inject, input, output } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { Feature } from '@domain/models';
@@ -11,7 +12,7 @@ import { ModalComponent } from '../../shared/modal.component';
 @Component({
   selector: 'luma-review',
   standalone: true,
-  imports: [NgTemplateOutlet, IconComponent, FormsModule, ModalComponent],
+  imports: [TranslatePipe, NgTemplateOutlet, IconComponent, FormsModule, ModalComponent],
   templateUrl: './review.component.html',
 })
 export class ReviewComponent {
@@ -37,7 +38,7 @@ export class ReviewComponent {
     return s === 'fullstack'
       ? 'Full stack'
       : s === 'setup'
-        ? 'Setup do projeto'
+        ? this.i18n.text('ui.project-setup')
         : ROLES[s]?.label || s;
   }
   status(s: string): string {

@@ -1,3 +1,4 @@
+import { UiLabelPipe } from '../../core/i18n/i18n.service';
 import { Component, inject, signal } from '@angular/core';
 import { MarkdownEditorComponent } from '../../shared/markdown-editor.component';
 import { FormsModule } from '@angular/forms';
@@ -10,7 +11,7 @@ import { ModalComponent } from '../../shared/modal.component';
 @Component({
   selector: 'luma-document-editor',
   standalone: true,
-  imports: [MarkdownEditorComponent, FormsModule, TranslatePipe, ModalComponent],
+  imports: [UiLabelPipe, MarkdownEditorComponent, FormsModule, TranslatePipe, ModalComponent],
   templateUrl: './document-editor.component.html',
 })
 export class DocumentEditorComponent {

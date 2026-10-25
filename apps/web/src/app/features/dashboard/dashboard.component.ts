@@ -1,3 +1,5 @@
+import { UiLabelPipe } from '../../core/i18n/i18n.service';
+import { PortraitService } from '../../core/appearance/portrait.service';
 import { dependenciesReady } from '@domain/workspace';
 import { SquadCardComponent } from '../projects/project-form.component';
 import { Component, inject, computed } from '@angular/core';
@@ -12,7 +14,7 @@ import { IconComponent } from '../../shared/icon.component';
 
 @Component({
   standalone: true,
-  imports: [SquadCardComponent, IconComponent],
+  imports: [UiLabelPipe, TranslatePipe, SquadCardComponent, IconComponent],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {
@@ -42,12 +44,12 @@ export class DashboardComponent {
   idleNote(): string {
     const fs = this.sprintFeatures();
     return this.ready()
-      ? 'features prontas para iniciar'
+      ? this.i18n.text('ui.features-ready-to-start')
       : this.canPlan()
-        ? 'distribua as features para montar o plano'
+        ? this.i18n.text('ui.distribute-features-to-prepare-the-plan')
         : fs.length && fs.every((f) => f.status === 'done')
-          ? 'todas as sprints concluídas'
-          : 'aguardando revisão ou dependências';
+          ? this.i18n.text('ui.all-sprints-completed')
+          : this.i18n.text('ui.awaiting-review-or-dependencies');
   }
   runAction(): void {
     if (this.ready() || this.canPlan()) this.execution.startCurrent();
@@ -60,7 +62,7 @@ export class DashboardComponent {
   readonly execution = inject(ExecutionService);
   readonly dialogs = inject(DialogService);
   readonly i18n = inject(I18nService);
-  readonly portrait = portrait;
+  readonly portrait = inject(PortraitService).source;
   readonly router = inject(Router);
 
   readonly today = computed(() => {

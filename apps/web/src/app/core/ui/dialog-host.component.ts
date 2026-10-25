@@ -1,3 +1,6 @@
+import { UiLabelPipe } from '../i18n/i18n.service';
+import { TranslatePipe } from '../i18n/i18n.service';
+import { PortraitService } from '../appearance/portrait.service';
 import { portrait } from '@domain/catalog';
 import { WorkspaceStore } from '../workspace/workspace.store';
 import { IconComponent } from '../../shared/icon.component';
@@ -22,6 +25,8 @@ import { ModalComponent } from '../../shared/modal.component';
   selector: 'luma-dialog-host',
   standalone: true,
   imports: [
+    UiLabelPipe,
+    TranslatePipe,
     AgentEditorComponent,
     CatalogComponent,
     ProjectEditorComponent,
@@ -63,7 +68,7 @@ export class DialogHostComponent {
   ];
   readonly dialogs = inject(DialogService);
   readonly store = inject(WorkspaceStore);
-  readonly portrait = portrait;
+  readonly portrait = inject(PortraitService).source;
   squadName(id: string): string {
     return this.store.workspace()?.squads.find((q) => q.id === id)?.name || 'SEM SQUAD';
   }

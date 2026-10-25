@@ -30,7 +30,9 @@
       </span>
     </a>
     <nav class="mode-nav">
-      <button class="nav-key" (click)="navStep(-1)" aria-label="Aba anterior (Q)">Q</button>
+      <button class="nav-key" (click)="navStep(-1)" [attr.aria-label]="'shell.previous-tab-q' | t">
+        Q
+      </button>
       @for (view of views; track view.path) {
         <a
           [attr.href]="view.path"
@@ -40,7 +42,9 @@
           {{ view.key | t }}
         </a>
       }
-      <button class="nav-key" (click)="navStep(1)" aria-label="Próxima aba (E)">E</button>
+      <button class="nav-key" (click)="navStep(1)" [attr.aria-label]="'shell.next-tab-e' | t">
+        E
+      </button>
     </nav>
     <div class="system-meta">
       <luma-usage />
@@ -48,7 +52,7 @@
         class="mode-indicator"
         [class.connected]="!!providers.health()[activeProvider()]?.version"
         (click)="dialogs.open('settings', undefined, activeProvider())"
-        [attr.aria-label]="'Status do ' + activeProvider() + ' CLI'"
+        [attr.aria-label]="('ui.status-of' | t) + activeProvider() + ' CLI'"
       >
         <i></i>
         {{ activeProvider().toUpperCase() }} CLI / {{ cliVersion() }} /
@@ -74,7 +78,7 @@
       <div class="legend-strip">
         <button (click)="dialogs.open('help')">
           <kbd class="mouse-key">M</kbd>
-          ARRASTAR MAPA
+          {{ 'shell.drag-map' | t }}
         </button>
         <button (click)="map.zoom(1.15)">
           <kbd>+</kbd>
@@ -83,12 +87,12 @@
         </button>
         <button (click)="map.home()">
           <kbd>0</kbd>
-          CENTRALIZAR
+          {{ 'shell.center' | t }}
         </button>
         <i class="legend-sep"></i>
         <button (click)="dialogs.open('agent')">
           <kbd>A</kbd>
-          NOVO AGENTE
+          {{ 'shell.new-agent' | t }}
         </button>
         <button (click)="map.openSection('opsBriefing')">
           <kbd>B</kbd>
@@ -100,7 +104,7 @@
         </button>
         <button (click)="dialogs.open('help')"><kbd>?</kbd></button>
       </div>
-      <div class="workspace-note">{{ store.pending() ? 'SALVANDO…' : '' }}</div>
+      <div class="workspace-note">{{ store.pending() ? ('ui.saving' | t) : '' }}</div>
     </div>
     <button
       id="transmissionStrip"
@@ -109,13 +113,13 @@
     >
       <luma-icon name="radio" />
       <div class="grow">
-        <strong>REGISTRO DE TRANSMISSÕES</strong>
-        <span>{{ store.project()?.logs?.at(-1)?.message || 'Nenhum evento registrado.' }}</span>
+        <strong>{{ 'shell.transmission-log' | t }}</strong>
+        <span>{{ store.project()?.logs?.at(-1)?.message || ('ui.no-events-recorded' | t) }}</span>
       </div>
     </button>
     <div class="operation-progress">
       <div class="progress-caption">
-        <span>PROGRESSO DA OPERAÇÃO</span>
+        <span>{{ 'shell.operation-progress' | t }}</span>
         <strong>{{ progress() }}%</strong>
       </div>
       <div class="progress-rail"><span [style.width.%]="progress()"></span></div>
@@ -147,7 +151,7 @@
       </div>
       <div class="progress-meta">
         {{ pad(store.project()?.features?.filter(doneFeature)?.length || 0) }} /
-        {{ pad(store.project()?.features?.length || 0) }} CONCLUÍDAS
+        {{ pad(store.project()?.features?.length || 0) }} {{ 'ui.completed' | t }}
       </div>
     </div>
   </footer>
@@ -162,24 +166,23 @@
     >
       <header class="modal-header">
         <div>
-          <div class="eyebrow">PRIMEIRA EXECUÇÃO</div>
+          <div class="eyebrow">{{ 'setup.first' | t }}</div>
           <h2 id="db-setup-heading">
-            NENHUM
-            <span class="word-tag">BANCO</span>
-            ENCONTRADO
+            {{ 'shell.no' | t }}
+            <span class="word-tag">{{ 'shell.database' | t }}</span>
+            {{ 'shell.found' | t }}
           </h2>
         </div>
       </header>
       <div class="modal-body">
         <p class="op-new-ask">
-          Nenhum banco de dados foi encontrado. Para usar o SQUAD/CODE, inicie um novo; ele será
-          criado em:
+          {{ 'shell.no-database-was-found-create-one-to-use-luma-hive-it-will-' | t }}
         </p>
         <code class="db-setup-path">{{ store.path() }}</code>
         <div class="db-setup-status">
           <span class="db-check ok">
             <luma-icon name="check" />
-            Bridge conectado
+            {{ 'shell.bridge-connected' | t }}
           </span>
           @for (runtime of setupProviders; track runtime) {
             <span
@@ -199,77 +202,76 @@
               />
               {{ runtime.toUpperCase() }} CLI
               @if (providers.busy()[runtime] && !providers.health()[runtime]) {
-                / verificando…
+                {{ 'shell.checking' | t }}
               } @else if (
                 providers.health()[runtime]?.executable &&
                 !providers.health()[runtime]?.runtimeError
               ) {
-                / {{ providers.health()[runtime]?.version || 'encontrado' }}
+                / {{ providers.health()[runtime]?.version || ('ui.found' | t) }}
               } @else {
-                / não encontrado
+                {{ 'shell.not-found' | t }}
               }
             </span>
           }
           <p class="hint">
-            Executáveis detectados no Windows. Sem CLI o app funciona, mas as execuções ficam só na
-            simulação.
+            {{ 'shell.executables-detected-on-windows-without-a-cli-the-app-runs' | t }}
             <button type="button" class="btn ghost sm" (click)="testRuntimes()">
-              Testar de novo
+              {{ 'shell.check-again' | t }}
             </button>
           </p>
         </div>
         <form (ngSubmit)="store.create(operationName)" class="db-setup-fresh" novalidate>
           <div class="field">
-            <label for="dbSetupName">NOME DA PRIMEIRA OPERAÇÃO</label>
+            <label for="dbSetupName">{{ 'shell.first-operation-name' | t }}</label>
             <input
               id="dbSetupName"
               name="name"
               [(ngModel)]="operationName"
               maxlength="70"
-              placeholder="Ex.: Loja da Ana"
+              [placeholder]="'shell.e-g-ana-s-store' | t"
               autocomplete="off"
               autofocus
             />
           </div>
           <button class="btn primary" type="submit" [disabled]="!operationName.trim()">
             <luma-icon name="plus" />
-            Começar do zero
+            {{ 'setup.start' | t }}
           </button>
           <p class="hint">
-            Cria os agentes e a squad padrão e uma operação vazia para você preencher o briefing.
+            {{ 'shell.creates-the-default-agents-and-squad-plus-an-empty-operati' | t }}
           </p>
         </form>
-        <div class="db-setup-or">ou</div>
+        <div class="db-setup-or">{{ 'shell.or' | t }}</div>
         <div class="op-choices">
           <button type="button" class="op-choice" (click)="store.create('Atlas Commerce', true)">
             <luma-icon name="layers" />
-            <strong>Carregar exemplo</strong>
+            <strong>{{ 'setup.example' | t }}</strong>
             <small>
-              Atlas Commerce: um e-commerce com squad, sprints e features prontos para explorar.
+              {{ 'shell.atlas-commerce-an-e-commerce-example-with-a-squad-sprints-' | t }}
             </small>
           </button>
           <label class="op-choice">
             <luma-icon name="upload" />
-            <strong>Importar backup</strong>
+            <strong>{{ 'setup.backup' | t }}</strong>
             <small>
-              Um .json exportado em Configurações &gt; Workspace, de outra máquina ou instalação.
+              {{ 'shell.a-json-exported-from-settings-workspace-on-another-install' | t }}
             </small>
             <input type="file" accept=".json,application/json" (change)="import($event)" hidden />
           </label>
           @if (localBackup(); as copy) {
             <button type="button" class="op-choice" (click)="restoreLocal()">
               <luma-icon name="database" />
-              <strong>Recuperar a cópia deste navegador</strong>
+              <strong>{{ 'shell.recover-this-browser-s-backup' | t }}</strong>
               <small>
-                {{ copy.projects?.length || 1 }} operação, {{ copy.agents?.length || 6 }} agentes ·
-                atividade recente.
+                {{ copy.projects?.length || 1 }} {{ 'ui.operation' | t }}
+                {{ copy.agents?.length || 6 }} {{ 'ui.agents-recent-activity' | t }}
               </small>
             </button>
           }
         </div>
       </div>
       <footer class="modal-footer">
-        <span class="footer-note">Nada é gravado em disco até você escolher.</span>
+        <span class="footer-note">{{ 'shell.nothing-is-saved-to-disk-until-you-choose' | t }}</span>
       </footer>
     </section>
   </div>

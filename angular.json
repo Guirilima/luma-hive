@@ -28,7 +28,9 @@
               "apps/web/src/styles/tokens.css",
               "apps/web/src/styles/workspace.css",
               "apps/web/src/styles/map.css",
-              "apps/web/src/styles/angular.css"
+              "apps/web/src/styles/angular.css",
+              "apps/web/src/styles/themes/pixel.css",
+              "apps/web/src/styles/agent-portraits.css"
             ]
           },
           "configurations": {

@@ -4,8 +4,9 @@ import { ICONS } from '@domain/catalog';
 @Component({
   selector: 'luma-icon',
   standalone: true,
-  template:
-    '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true" [innerHTML]="markup()"></svg>',
+  template: `
+    <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" [innerHTML]="markup()"></svg>
+  `,
   styles: ':host{display:contents}',
 })
 export class IconComponent {

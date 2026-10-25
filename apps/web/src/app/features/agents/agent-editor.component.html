@@ -1,29 +1,25 @@
 <luma-modal
-  [title]="
-    isNew()
-      ? 'RECRUTAR &lt;span class=word-tag&gt;AGENTE&lt;/span&gt;'
-      : 'ESTÚDIO DO &lt;span class=word-tag&gt;AGENTE&lt;/span&gt;'
-  "
-  subtitle="LUMA HIVE / IDENTIDADE & CAPACIDADES"
+  [title]="isNew() ? ('ui.recruit-agent' | t) : ('ui.agent-studio' | t)"
+  [subtitle]="'agents.luma-hive-identity-capabilities' | t"
   (closed)="close()"
 >
   <form id="agentForm" (ngSubmit)="save()">
     <div class="editor-layout">
       <div class="editor-side">
         <div class="editor-photo">
-          <img id="editorPortrait" [src]="portrait(draft)" alt="Retrato do agente" />
+          <img id="editorPortrait" [src]="portrait(draft)" [alt]="'agents.agent-portrait' | t" />
           <span class="photo-code">IDENTITY // {{ rolesInfo[draft.role]?.short }}</span>
           <span class="photo-stage">
             STAGE // {{ ('stage.' + draft.productionStage | t).toUpperCase() }}
           </span>
         </div>
         <p class="editor-side-note">
-          POSIÇÃO NO MAPA
+          {{ 'agents.map-position' | t }}
           <br />
           Q {{ draft.hex.q }} / R {{ draft.hex.r }}
           <br />
           <br />
-          MESA {{ draft.desk || 'AUTOMÁTICA' }}
+          {{ 'ui.desk' | t }} {{ draft.desk || ('ui.automatic' | t) }}
           <br />
           {{ deskRoom() }}
           <br />
@@ -32,7 +28,7 @@
         </p>
       </div>
       <div>
-        <nav class="editor-nav" aria-label="Abas do estúdio">
+        <nav class="editor-nav" [attr.aria-label]="'agents.studio-tabs' | t">
           @for (item of panes; track item.key) {
             <button
               type="button"
@@ -40,14 +36,14 @@
               [class.active]="tab() === item.key"
               (click)="tab.set(item.key)"
             >
-              {{ item.label }}
+              {{ item.label | uiLabel }}
             </button>
           }
         </nav>
         <div class="editor-pane" [class.hidden]="tab() !== 'identity'" data-pane="general">
           <div class="form-grid">
             <div class="field full">
-              <label for="agentName">CODINOME</label>
+              <label for="agentName">{{ 'agents.codename' | t }}</label>
               <div class="input-action">
                 <input
                   id="agentName"
@@ -61,15 +57,15 @@
                   type="button"
                   class="dice-button"
                   (click)="rollName()"
-                  title="Codinome aleatório"
-                  aria-label="Gerar codinome aleatório"
+                  [title]="'agents.random-codename' | t"
+                  [attr.aria-label]="'agents.generate-random-codename' | t"
                 >
                   <luma-icon name="dice" />
                 </button>
               </div>
             </div>
             <div class="field">
-              <label for="agentRole">ESPECIALIDADE</label>
+              <label for="agentRole">{{ 'agents.specialty' | t }}</label>
               <select
                 id="agentRole"
                 name="role"
@@ -77,12 +73,12 @@
                 (ngModelChange)="roleChanged()"
               >
                 @for (role of roles; track role) {
-                  <option [value]="role">{{ rolesInfo[role].label }}</option>
+                  <option [value]="role">{{ rolesInfo[role].label | uiLabel }}</option>
                 }
               </select>
             </div>
             <div class="field">
-              <label for="agentSpecialty">TÍTULO DA ESPECIALIDADE</label>
+              <label for="agentSpecialty">{{ 'agents.specialty-title' | t }}</label>
               <input
                 id="agentSpecialty"
                 name="specialty"
@@ -92,12 +88,11 @@
                 [placeholder]="rolesInfo[draft.role]?.label || ''"
               />
               <span class="hint">
-                Opcional. Ex.: Tech Lead de Pagamentos, SRE de Kubernetes, Engenheiro de
-                Performance. Obrigatório em Especialista personalizado.
+                {{ 'agents.optional-e-g-payments-tech-lead-kubernetes-sre-performance' | t }}
               </span>
             </div>
             <div class="field full">
-              <label for="agentLink">CONECTADO A</label>
+              <label for="agentLink">{{ 'agents.connected-to' | t }}</label>
               <select
                 id="agentLink"
                 name="linkId"
@@ -107,35 +102,36 @@
                 <option value="">
                   {{
                     draft.id === store.project()?.commanderId
-                      ? 'Centro do squad'
-                      : 'Comandante da operação'
+                      ? ('ui.squad-center' | t)
+                      : ('ui.operation-commander' | t)
                   }}
                 </option>
                 @for (a of store.team(); track a.id) {
                   @if (a.id !== draft.id) {
-                    <option [value]="a.id">{{ a.name }} / {{ rolesInfo[a.role]?.label }}</option>
+                    <option [value]="a.id">
+                      {{ a.name }} / {{ rolesInfo[a.role]?.label | uiLabel }}
+                    </option>
                   }
                 }
               </select>
               <span class="hint">
-                O comandante fica no centro e recebe as conexões dos demais agentes.
+                {{ 'agents.the-commander-stays-at-the-center-and-receives-connections' | t }}
               </span>
             </div>
             <div class="field full">
-              <label for="agentDesk">MESA NO ESCRITÓRIO</label>
+              <label for="agentDesk">{{ 'agents.office-desk' | t }}</label>
               <select id="agentDesk" name="desk" [(ngModel)]="draft.desk">
-                <option value="">Mesa livre automática</option>
+                <option value="">{{ 'agents.automatically-choose-a-free-desk' | t }}</option>
                 @for (slot of desks; track slot.id) {
                   <option [value]="slot.id">{{ slot.id }}</option>
                 }
               </select>
               <span class="hint">
-                Posição do agente na vista de escritório. Também dá para arrastar o agente no mapa
-                ou dar duplo clique numa mesa vazia.
+                {{ 'agents.agent-position-in-the-office-you-can-also-drag-the-agent-o' | t }}
               </span>
             </div>
             <div class="field full">
-              <span class="label">APARÊNCIA NA MESA DO SQUAD</span>
+              <span class="label">{{ 'agents.squad-desk-appearance' | t }}</span>
               <div class="look-cards">
                 <button
                   type="button"
@@ -145,8 +141,8 @@
                 >
                   <img [src]="portrait(draft)" alt="" />
                   <span class="grow">
-                    <strong>FOTO</strong>
-                    <small>{{ draft.image ? 'Galeria' : 'Automático' }}</small>
+                    <strong>{{ 'agents.photo' | t }}</strong>
+                    <small>{{ draft.image ? ('ui.gallery' | t) : ('agents.automatic' | t) }}</small>
                   </span>
                   <luma-icon name="edit" />
                 </button>
@@ -163,21 +159,24 @@
                     </span>
                   </span>
                   <span class="grow">
-                    <strong>ÍCONE</strong>
+                    <strong>{{ 'agents.icon' | t }}</strong>
                     <small>
-                      {{ !draft.icon ? 'Automático' : iconLabels[draft.icon] || draft.icon }}
+                      {{
+                        !draft.icon
+                          ? ('agents.automatic' | t)
+                          : iconLabels[draft.icon] || draft.icon
+                      }}
                     </small>
                   </span>
                   <luma-icon name="edit" />
                 </button>
               </div>
               <span class="hint">
-                Clique na foto ou no ícone para abrir a galeria. Automático usa o padrão da
-                especialidade.
+                {{ 'agents.click-the-photo-or-icon-to-open-the-gallery-automatic-uses' | t }}
               </span>
             </div>
             <div class="field">
-              <label for="agentProvider">PROVEDOR</label>
+              <label for="agentProvider">{{ 'agents.provider' | t }}</label>
               <select
                 id="agentProvider"
                 name="provider"
@@ -189,34 +188,37 @@
                 <option value="antigravity">Antigravity CLI</option>
               </select>
               <span class="hint">
-                Conexão e permissões ficam na aba do provedor em Configurações.
+                {{ 'agents.connection-and-permissions-are-in-the-provider-s-settings-' | t }}
               </span>
             </div>
             <div class="field">
-              <label for="agentModel">MODELO</label>
+              <label for="agentModel">{{ 'agents.model' | t }}</label>
               <select
                 id="agentModel"
                 name="model"
                 [(ngModel)]="draft.model"
                 (ngModelChange)="modelChanged()"
               >
-                <option value="inherit">PADRÃO {{ draft.provider.toUpperCase() }}</option>
+                <option value="inherit">
+                  {{ 'ui.default' | t }} {{ draft.provider.toUpperCase() }}
+                </option>
                 @for (model of providers.catalogs()[draft.provider] || []; track model.id) {
                   <option [value]="model.id">{{ model.label }}</option>
                 }
                 @if (customModel()) {
-                  <option [value]="draft.model">{{ draft.model }} (personalizado)</option>
+                  <option [value]="draft.model">{{ draft.model }} {{ 'ui.custom' | t }}</option>
                 }
               </select>
               <span class="hint">
-                Usa o modelo configurado no CLI. {{ providers.errors()[draft.provider] }}
+                {{ 'ui.uses-the-model-configured-in-the-cli' | t }}
+                {{ providers.errors()[draft.provider] }}
               </span>
               <button type="button" class="btn ghost sm" (click)="providers.check(draft.provider)">
-                Atualizar modelos
+                {{ 'settings.models' | t }}
               </button>
             </div>
             <div class="field">
-              <label for="agentStage">ESTÁGIO DE PRODUÇÃO</label>
+              <label for="agentStage">{{ 'agents.production-stage' | t }}</label>
               <select id="agentStage" name="productionStage" [(ngModel)]="draft.productionStage">
                 @for (stage of stages; track stage) {
                   <option [value]="stage">{{ 'stage.' + stage | t }}</option>
@@ -224,8 +226,8 @@
               </select>
             </div>
             <div class="field full effort-field">
-              <span class="label">NÍVEL DE ESFORÇO</span>
-              <div class="effort-pills" role="radiogroup" aria-label="Nível de esforço">
+              <span class="label">{{ 'agents.reasoning-effort' | t }}</span>
+              <div class="effort-pills" role="radiogroup" [attr.aria-label]="'agent.effort' | t">
                 @for (effort of efforts; track effort) {
                   <label class="effort-pill">
                     <input
@@ -235,15 +237,17 @@
                       [(ngModel)]="draft.effort"
                       [disabled]="!providers.efforts(draft.provider, draft.model).includes(effort)"
                     />
-                    <span>{{ effort ? effort.toUpperCase() : 'PADRÃO' }}</span>
+                    <span>{{ effort ? effort.toUpperCase() : ('ui.default' | t) }}</span>
                   </label>
                 }
               </div>
-              <span class="hint">Usa o nível padrão do modelo. Padrão: o do modelo da sessão.</span>
+              <span class="hint">
+                {{ 'agents.uses-the-model-s-default-effort-default-the-session-model-' | t }}
+              </span>
             </div>
 
             <div class="field full">
-              <label for="agentDescription">RESPONSABILIDADE / DESCRIÇÃO</label>
+              <label for="agentDescription">{{ 'agents.responsibility-description' | t }}</label>
               <textarea
                 id="agentDescription"
                 name="description"
@@ -252,7 +256,7 @@
               ></textarea>
             </div>
             <div class="field full">
-              <label for="agentSoul">SOUL / PERSONALIDADE</label>
+              <label for="agentSoul">{{ 'agents.soul-personality' | t }}</label>
               <textarea
                 id="agentSoul"
                 name="soul"
@@ -260,8 +264,8 @@
                 maxlength="1200"
               ></textarea>
               <span class="label soul-hello">
-                MENSAGENS INICIAIS
-                <small>uma é sorteada ao começar cada conversa</small>
+                {{ 'agents.opening-messages' | t }}
+                <small>{{ 'agents.one-is-chosen-at-random-for-each-conversation' | t }}</small>
               </span>
               <div class="hello-list">
                 @for (hello of helloLines(); track $index) {
@@ -273,13 +277,13 @@
                       (ngModelChange)="setHello($index, $event)"
                       [ngModelOptions]="{ standalone: true }"
                       maxlength="300"
-                      [attr.aria-label]="'Mensagem inicial ' + ($index + 1)"
+                      [attr.aria-label]="('ui.opening-message' | t) + ($index + 1)"
                     />
                     <button
                       type="button"
                       class="icon-button small"
                       (click)="removeHello($index)"
-                      aria-label="Remover variação"
+                      [attr.aria-label]="'agents.remove-variation' | t"
                     >
                       <luma-icon name="trash" />
                     </button>
@@ -293,41 +297,39 @@
                 [disabled]="helloLines().length >= 8"
               >
                 <luma-icon name="plus" />
-                Adicionar variação
+                {{ 'agents.add-variation' | t }}
               </button>
               <span class="hint">
-                Molda o jeito de conversar e de iniciar as conversas e vai na exportação. Todo
-                agente fica sempre de prontidão.
+                {{ 'agents.shapes-how-the-agent-talks-and-starts-conversations-and-is' | t }}
               </span>
             </div>
             <div class="field full">
-              <label for="agentNext">PREFERÊNCIA DE HANDOFF</label>
+              <label for="agentNext">{{ 'agents.handoff-preference' | t }}</label>
               <select id="agentNext" name="nextId" [(ngModel)]="draft.nextId">
-                <option value="">Comandante decide</option>
+                <option value="">{{ 'agents.commander-decides' | t }}</option>
                 @for (a of store.agents(); track a.id) {
                   @if (a.id !== draft.id) {
-                    <option [value]="a.id">{{ a.name }} / {{ rolesInfo[a.role]?.label }}</option>
+                    <option [value]="a.id">
+                      {{ a.name }} / {{ rolesInfo[a.role]?.label | uiLabel }}
+                    </option>
                   }
                 }
               </select>
               <span class="hint">
-                Adiciona o destino ao plano quando ele pertence ao squad e ainda não faz parte da
-                rota.
+                {{ 'agents.adds-the-destination-to-the-plan-when-it-belongs-to-the-sq' | t }}
               </span>
             </div>
             <div class="field full">
               <div class="notice" style="margin-bottom: 0">
                 <luma-icon name="board" />
-                A produção do agente também aparece no Kanban de agentes. Use este campo para
-                indicar se ele ainda está em descoberta, definindo identidade, refinando prompts, em
-                validação ou pronto para uso.
+                {{ 'agents.the-agent-s-production-stage-also-appears-on-the-agent-kan' | t }}
               </div>
             </div>
           </div>
         </div>
         <div class="editor-pane" [class.hidden]="tab() !== 'instructions'" data-pane="prompt">
           <div class="field">
-            <label for="agentPrompt">SYSTEM PROMPT / INSTRUÇÕES DO AGENTE</label>
+            <label for="agentPrompt">{{ 'agents.system-prompt-agent-instructions' | t }}</label>
             <textarea
               id="agentPrompt"
               class="code"
@@ -336,8 +338,7 @@
               maxlength="20000"
             ></textarea>
             <span class="hint">
-              Defina papel, limites, entregáveis e contexto para o próximo especialista. Com o
-              bridge ativo, estas instruções são anexadas ao system prompt do CLI.
+              {{ 'agents.define-the-role-limits-deliverables-and-context-for-the-ne' | t }}
             </span>
           </div>
           <button
@@ -347,16 +348,14 @@
             style="margin-top: 10px"
           >
             <luma-icon name="file" />
-            Usar instruções da especialidade
+            {{ 'agents.use-specialty-instructions' | t }}
           </button>
         </div>
         <div class="editor-pane" [class.hidden]="tab() !== 'tools'" data-pane="tools">
           <p class="hint">
-            Estas seleções descrevem a especialidade do agente. O CLI usa ferramentas nativas; a
-            restrição efetiva de escrita vem do sandbox nas configurações. Colegas sem Edit, Write
-            ou Bash usam read-only.
+            {{ 'agents.these-selections-describe-the-agent-s-specialty-the-cli-us' | t }}
           </p>
-          <div class="eyebrow" style="margin: 15px 0">FERRAMENTAS SOLICITADAS</div>
+          <div class="eyebrow" style="margin: 15px 0">{{ 'agents.requested-tools' | t }}</div>
           <div class="check-grid">
             @for (tool of tools; track tool) {
               <label class="check-card">
@@ -367,7 +366,7 @@
                 />
                 <span>
                   <strong>{{ tool }}</strong>
-                  <small>{{ toolInfo[tool] }}</small>
+                  <small>{{ toolInfo[tool] | uiLabel }}</small>
                 </span>
               </label>
             }
@@ -375,25 +374,22 @@
           <div class="notice warning">
             <luma-icon name="lock" />
             <span>
-              O modo de permissão global continua valendo: em modo headless, qualquer ação que
-              exigiria aprovação é negada.
+              {{ 'agents.global-permissions-still-apply-in-headless-mode-any-action' | t }}
             </span>
           </div>
         </div>
         <div class="editor-pane" [class.hidden]="tab() !== 'advanced'" data-pane="advanced">
           <div class="conv-head">
             <div>
-              <div class="eyebrow">DIRETRIZES DO AGENTE</div>
+              <div class="eyebrow">{{ 'agents.agent-guidelines' | t }}</div>
               <p class="hint">
-                Convenções e boas práticas em Markdown que o agente segue sempre que é executado:
-                nomenclatura, formatação, padrões de projeto, testes e entregas. São anexadas às
-                instruções enviadas ao CLI em toda etapa.
+                {{ 'agents.markdown-conventions-and-practices-the-agent-follows-on-ev' | t }}
               </p>
             </div>
-            <span class="tag accent">{{ familyLabel() }}</span>
+            <span class="tag accent">{{ familyLabel() | uiLabel }}</span>
           </div>
           <div class="field conv-tpl-field">
-            <label for="convTemplateSelect">TEMPLATE BASE</label>
+            <label for="convTemplateSelect">{{ 'agents.base-template' | t }}</label>
             <div class="conv-tpl-row">
               <select
                 id="convTemplateSelect"
@@ -404,7 +400,9 @@
                 @if (templateSelection() === '__custom') {
                   <option value="__custom">
                     {{
-                      draft.conventions.base.trim() ? 'Personalizado (editado)' : 'Sem guia base'
+                      draft.conventions.base.trim()
+                        ? ('ui.custom-edited' | t)
+                        : ('ui.no-base-guide' | t)
                     }}
                   </option>
                 }
@@ -417,7 +415,7 @@
                   type="button"
                   class="icon-button small"
                   (click)="deleteTemplate()"
-                  aria-label="Excluir template da biblioteca"
+                  [attr.aria-label]="'agents.delete-library-template' | t"
                 >
                   <luma-icon name="trash" />
                 </button>
@@ -427,14 +425,14 @@
           @if (canUndoConventions()) {
             <div class="conv-undo">
               <luma-icon name="check" />
-              <span>Template aplicado.</span>
+              <span>{{ 'agents.template-applied' | t }}</span>
               <button type="button" class="link-button" (click)="undoConventions()">
-                DESFAZER
+                {{ 'agents.undo' | t }}
               </button>
             </div>
           }
           <div class="field">
-            <label for="convBase">GUIA BASE (MARKDOWN)</label>
+            <label for="convBase">{{ 'agents.base-guide-markdown' | t }}</label>
             <textarea
               id="convBase"
               class="code conv-base"
@@ -449,20 +447,19 @@
               name="templateName"
               [(ngModel)]="templateName"
               maxlength="60"
-              placeholder="Nome do template na biblioteca"
-              aria-label="Nome do template"
+              [placeholder]="'agents.library-template-name' | t"
+              [attr.aria-label]="'agents.template-name' | t"
             />
             <button type="button" class="btn ghost sm" (click)="saveTemplate()">
               <luma-icon name="upload" />
-              Salvar como template
+              {{ 'agents.save-as-template' | t }}
             </button>
           </div>
           <div class="conv-sub-head">
             <div>
               <div class="eyebrow">SUBSETS</div>
               <span class="hint">
-                Blocos de regras extras anexados depois do guia base. Cada bloco pode ser editado,
-                salvo na biblioteca ou removido.
+                {{ 'agents.extra-rule-blocks-appended-after-the-base-guide-each-block' | t }}
               </span>
             </div>
             <button
@@ -472,7 +469,7 @@
               [attr.aria-expanded]="subsetPicker()"
             >
               <luma-icon name="search" />
-              Adicionar subset
+              {{ 'agents.add-subset' | t }}
             </button>
           </div>
           @if (subsetPicker()) {
@@ -494,13 +491,13 @@
                     [name]="'subsetName' + $index"
                     [(ngModel)]="subset.name"
                     maxlength="60"
-                    aria-label="Nome do subset"
+                    [attr.aria-label]="'agents.subset-name' | t"
                   />
                   <button
                     type="button"
                     class="icon-button small"
                     (click)="saveSubset($index)"
-                    aria-label="Salvar subset na biblioteca"
+                    [attr.aria-label]="'agents.save-subset-to-library' | t"
                   >
                     <luma-icon name="upload" />
                   </button>
@@ -508,7 +505,7 @@
                     type="button"
                     class="icon-button small"
                     (click)="draft.conventions.subsets.splice($index, 1)"
-                    aria-label="Remover subset"
+                    [attr.aria-label]="'agents.remove-subset' | t"
                   >
                     <luma-icon name="trash" />
                   </button>
@@ -525,14 +522,14 @@
           </div>
           <details class="conv-preview">
             <summary>
-              PRÉ-VISUALIZAÇÃO FINAL
-              <span>{{ finalConventions().length }} caracteres</span>
+              {{ 'agents.final-preview' | t }}
+              <span>{{ finalConventions().length }} {{ 'ui.characters' | t }}</span>
             </summary>
             <div class="conv-md" [innerHTML]="render(finalConventions())"></div>
           </details>
         </div>
         <div class="editor-pane" [class.hidden]="tab() !== 'squads'" data-pane="projects">
-          <div class="eyebrow" style="margin-bottom: 15px">POSIÇÕES NAS SQUADS</div>
+          <div class="eyebrow" style="margin-bottom: 15px">{{ 'agents.squad-positions' | t }}</div>
           <div class="check-grid">
             @for (q of memberships(); track q.id) {
               <div class="check-card">
@@ -543,19 +540,18 @@
                 </span>
               </div>
             } @empty {
-              <p class="hint">Este agente ainda não ocupa nenhuma posição em squads.</p>
+              <p class="hint">{{ 'agents.this-agent-has-no-squad-positions-yet' | t }}</p>
             }
           </div>
           <div class="notice">
             <luma-icon name="link" />
-            As squads são montadas no Squad Studio, na árvore de comando (comandante, ADR, PRD e
-            operadores).
+            {{ 'agents.squads-are-assembled-in-squad-studio-using-the-command-tre' | t }}
             <button
               type="button"
               class="link-button"
               (click)="dialogs.open('squad', store.project()?.squadId)"
             >
-              Abrir Squad Studio
+              {{ 'agents.open-squad-studio' | t }}
               <luma-icon name="chevron" />
             </button>
           </div>
@@ -568,17 +564,17 @@
         <div
           class="look-picker-panel"
           role="dialog"
-          [attr.aria-label]="look() === 'photo' ? 'ESCOLHER FOTO' : 'ESCOLHER ÍCONE'"
+          [attr.aria-label]="look() === 'photo' ? ('ui.choose-photo' | t) : ('ui.choose-icon' | t)"
         >
           <header class="look-picker-head">
             <span class="eyebrow">
-              {{ look() === 'photo' ? 'ESCOLHER FOTO' : 'ESCOLHER ÍCONE' }}
+              {{ look() === 'photo' ? ('ui.choose-photo' | t) : ('ui.choose-icon' | t) }}
             </span>
             <button
               type="button"
               class="icon-button small"
               (click)="look.set(null)"
-              aria-label="Fechar galeria"
+              [attr.aria-label]="'agents.close-gallery' | t"
             >
               <luma-icon name="close" />
             </button>
@@ -591,7 +587,7 @@
                 [class.selected]="!draft.image"
                 (click)="draft.image = ''; look.set(null)"
               >
-                <img [src]="autoPortrait()" alt="Automático" />
+                <img [src]="autoPortrait()" [alt]="'agents.automatic' | t" />
                 <span>AUTO</span>
               </button>
               @for (photo of photos; track photo[0]) {
@@ -602,13 +598,17 @@
                   (click)="draft.image = photo[1]; look.set(null)"
                   [title]="photoLabel(photo[0])"
                 >
-                  <img [src]="photo[1]" [alt]="photoLabel(photo[0])" loading="lazy" />
+                  <img
+                    [src]="portraitSource(photo[1])"
+                    [alt]="photoLabel(photo[0])"
+                    loading="lazy"
+                  />
                   <span>{{ photoShort(photo[0]) }}</span>
                 </button>
               }
             </div>
             <label class="btn ghost sm">
-              Importar foto
+              {{ 'agents.import-photo' | t }}
               <input
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
@@ -617,14 +617,14 @@
               />
             </label>
           } @else {
-            <div class="icon-group-label">GERAL</div>
+            <div class="icon-group-label">{{ 'agents.general' | t }}</div>
             <div class="icon-picker look-grid">
               <button
                 type="button"
                 class="icon-choice auto"
                 [class.selected]="!draft.icon"
                 (click)="draft.icon = ''; look.set(null)"
-                aria-label="Automático"
+                [attr.aria-label]="'agents.automatic' | t"
               >
                 <luma-icon [name]="rolesInfo[draft.role].icon" />
                 <small>AUTO</small>
@@ -642,7 +642,7 @@
                 </button>
               }
             </div>
-            <div class="icon-group-label">TECNOLOGIAS</div>
+            <div class="icon-group-label">{{ 'agents.technologies' | t }}</div>
             <div class="icon-picker look-grid">
               @for (icon of techIcons; track icon) {
                 <button
@@ -664,12 +664,16 @@
   </form>
   <footer class="modal-footer" modal-footer>
     @if (!isNew()) {
-      <button class="btn danger square" (click)="remove()" aria-label="Excluir agente">
+      <button
+        class="btn danger square"
+        (click)="remove()"
+        [attr.aria-label]="'agents.delete-agent' | t"
+      >
         <luma-icon name="trash" />
       </button>
       <button class="btn ghost" (click)="duplicate()">
         <luma-icon name="copy" />
-        Duplicar
+        {{ 'agents.duplicate' | t }}
       </button>
       <button class="btn ghost" (click)="exportAgent()">
         <luma-icon name="download" />
@@ -678,17 +682,17 @@
       @if (canReset()) {
         <button class="btn ghost" (click)="reset()">
           <luma-icon name="rotate-left" />
-          Restaurar default
+          {{ 'agents.restore-default' | t }}
         </button>
       }
       <span class="grow"></span>
     } @else {
-      <span class="footer-note">LOCAL / SEM EXECUÇÃO</span>
+      <span class="footer-note">{{ 'agents.local-no-execution' | t }}</span>
     }
-    <button class="btn ghost" (click)="close()">Cancelar</button>
+    <button class="btn ghost" (click)="close()">{{ 'action.cancel' | t }}</button>
     <button class="btn primary" type="submit" form="agentForm">
       <luma-icon name="check" />
-      Salvar agente
+      {{ 'agents.save-agent' | t }}
     </button>
   </footer>
 </luma-modal>

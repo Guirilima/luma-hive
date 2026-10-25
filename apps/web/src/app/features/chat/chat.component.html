@@ -1,11 +1,15 @@
 <luma-modal
-  [title]="agent()?.name || 'CONVERSA'"
-  subtitle="CONVERSA"
+  [title]="agent()?.name || ('life.visit' | t)"
+  [subtitle]="'life.visit' | t"
   modalClass="agent-phone"
   (closed)="close()"
 >
   <div class="ac-phone">
-    <div class="ac-screen fe-chat" role="group" [attr.aria-label]="'Conversa com ' + agent()?.name">
+    <div
+      class="ac-screen fe-chat"
+      role="group"
+      [attr.aria-label]="('ui.conversation-with' | t) + agent()?.name"
+    >
       <div class="ac-status">
         <span class="ac-clock">{{ clock }}</span>
         <span class="ac-island" aria-hidden="true"></span>
@@ -34,7 +38,7 @@
           <div class="fe-chat-id">
             <strong>{{ agent()?.name }}</strong>
             <span class="fe-model">{{ model() }}</span>
-            <span class="fe-effort">▥ {{ agent()?.effort || 'PADRÃO' }}</span>
+            <span class="fe-effort">▥ {{ agent()?.effort || ('ui.default' | t) }}</span>
           </div>
           <small>{{ role().toUpperCase() }}</small>
         </div>
@@ -42,14 +46,14 @@
           type="button"
           class="icon-button small ac-close"
           (click)="close()"
-          aria-label="Fechar conversa"
-          title="Fechar (Esc)"
+          [attr.aria-label]="'chat.close-conversation' | t"
+          [title]="'chat.close-esc' | t"
         >
           <luma-icon name="close" />
         </button>
       </header>
       <div class="fe-msgs" id="feMsgs" aria-live="polite" (scroll)="chatScroll.onScroll($event)">
-        <div class="fe-time">Hoje {{ clock }}</div>
+        <div class="fe-time">{{ 'ui.today' | t }} {{ clock }}</div>
         <div class="fe-row agent">
           <div class="fe-bubble agent">{{ greeting }}</div>
         </div>
@@ -64,7 +68,7 @@
                 {{ m.text }}
                 @if (m.retry) {
                   <button type="button" class="link-button fe-retry" (click)="retry(m)">
-                    Tentar de novo
+                    {{ 'chat.try-again' | t }}
                   </button>
                 }
               </p>
@@ -76,7 +80,9 @@
                 <div class="fe-bubble-md" [innerHTML]="render(m.text)"></div>
               </div>
               @if (m.retry) {
-                <button class="link-button fe-retry" (click)="retry(m)">Tentar novamente</button>
+                <button class="link-button fe-retry" (click)="retry(m)">
+                  {{ 'chat.retry' | t }}
+                </button>
               }
               @if (!m.used && (m.options?.length || m.list?.length)) {
                 <div class="ac-pick">
@@ -122,7 +128,7 @@
                 <i></i>
               }
             </div>
-            <button class="link-button fe-stop" (click)="stop()">Parar</button>
+            <button class="link-button fe-stop" (click)="stop()">{{ 'chat.stop' | t }}</button>
           </div>
         }
         @if (receipt(); as text) {
@@ -135,7 +141,7 @@
         [hidden]="!chatScroll.unread()"
         (click)="chatScroll.jump('.ac-screen .fe-msgs')"
       >
-        Nova mensagem ↓
+        {{ 'chat.new-message' | t }}
       </button>
       @if (live()) {
         <div class="fe-compose">
@@ -147,15 +153,15 @@
               rows="1"
               maxlength="4000"
               placeholder="iMessage"
-              [attr.aria-label]="'Mensagem para ' + agent()?.name"
+              [attr.aria-label]="('ui.message-for' | t) + agent()?.name"
               autofocus
             ></textarea>
             <button
               class="fe-send"
               (click)="send()"
               [disabled]="!message.trim()"
-              aria-label="Enviar"
-              title="Enviar (Enter)"
+              [attr.aria-label]="'chat.send' | t"
+              [title]="'chat.send-enter' | t"
             >
               <svg viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" /></svg>
             </button>
@@ -164,8 +170,7 @@
       } @else {
         <div class="fe-compose offline">
           <p class="fe-note">
-            As opções funcionam aqui mesmo. Para conversar livremente, conecte o CLI com a execução
-            ligada.
+            {{ 'chat.the-options-work-here-for-open-ended-conversations-connect' | t }}
           </p>
         </div>
       }

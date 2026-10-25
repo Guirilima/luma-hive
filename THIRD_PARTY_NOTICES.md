@@ -7,3 +7,7 @@ Foram reutilizados como recursos e dados: identidade visual do layout, disposiç
 O frontend Angular, os serviços, os contratos e a organização do backend foram reimplementados. Para recuperar a fidelidade visual, os algoritmos de construção do escritório e da cidade e os parâmetros de estilo da base local foram portados e adaptados a módulos TypeScript. Isso não altera a origem do código visual, dos recursos e do conteúdo do catálogo. Não há carregamento do aplicativo global antigo.
 
 Angular, Three.js, TypeScript, RxJS, better-sqlite3 e as ferramentas de desenvolvimento mantêm suas respectivas licenças. As versões exatas são registradas em `package-lock.json`; os textos de licença dos pacotes instalados ficam nos próprios pacotes em `node_modules/`.
+
+## Pixelify Sans
+
+O tema opcional Pixel art inclui a fonte Pixelify Sans, de The Pixelify Sans Project Authors, sob SIL Open Font License 1.1. O arquivo da licença acompanha a fonte em apps/web/public/assets/fonts/pixelify-sans/OFL.txt. Origem: https://github.com/google/fonts/tree/main/ofl/pixelifysans. SHA-256 do TTF incluído: 9ba86cd010a4de309d263ceff8e8044092c9db7efda869620cb9ff1c4389e8a5.

@@ -7,7 +7,7 @@
   >
     <header class="modal-header">
       <div>
-        <div class="eyebrow">{{ subtitle() }}</div>
+        <div class="eyebrow">{{ subtitle() | uiLabel }}</div>
         <h2 [id]="headingId" [innerHTML]="title() | t"></h2>
       </div>
       <button

@@ -45,10 +45,10 @@
             <span class="pixel-agent-status">
               {{
                 execution.busyAgents().includes(a.id)
-                  ? 'TRABALHANDO'
+                  ? ('ui.working' | t)
                   : marker.walking
-                    ? 'EM TRÂNSITO'
-                    : 'DISPONÍVEL'
+                    ? ('ui.in-transit' | t)
+                    : ('ui.available' | t)
               }}
             </span>
           </button>
@@ -82,11 +82,12 @@
               <strong>{{ agent.name }}</strong>
               <small>
                 {{
-                  store.selectedId() === agent.id
+                  (store.selectedId() === agent.id
                     ? roleLabel(agent)
                     : roles[agent.role].short +
                       ' / ' +
                       (execution.busyAgents().includes(agent.id) ? 'EXECUTANDO' : 'READY')
+                  ) | uiLabel
                 }}
               </small>
             </span>
@@ -116,7 +117,7 @@
           <img [src]="portrait(agent)" alt="" />
           <span class="agent-card-text">
             <strong>{{ agent.name }}</strong>
-            <small>{{ roleLabel(agent) }}</small>
+            <small>{{ roleLabel(agent) | uiLabel }}</small>
           </span>
         </button>
       }
@@ -132,11 +133,11 @@
             [title]="'agent.chat' | t"
           >
             <luma-icon name="phone" />
-            <span>CONVERSAR</span>
+            <span>{{ 'map.chat' | t }}</span>
           </button>
           <button class="node-bubble move" (click)="beginMove(marker.id)" [title]="'map.move' | t">
             <luma-icon name="move" />
-            <span>DESLOCAR</span>
+            <span>{{ 'map.move-273' | t }}</span>
           </button>
           <button
             class="node-bubble edit"
@@ -144,7 +145,7 @@
             [title]="'action.edit' | t"
           >
             <luma-icon name="edit" />
-            <span>EDITAR</span>
+            <span>{{ 'map.edit' | t }}</span>
           </button>
         </div>
       }
@@ -171,7 +172,7 @@
               <img [src]="portrait(member)" alt="" />
               <span class="ops-who">
                 <strong>{{ member.name }}</strong>
-                <small>{{ roleLabel(member) }}</small>
+                <small>{{ roleLabel(member) | uiLabel }}</small>
                 <span class="ops-foot">{{ work.foot }}</span>
               </span>
               <em class="ops-chip">{{ work.chip }}</em>
@@ -208,33 +209,35 @@
   </div>
   @if (store.settings()?.layout === 'office-pixel') {
     <div class="pixel-heading">
-      <span class="pixel-kicker">SQUAD / OFFICE</span>
-      <strong>ESCRITÓRIO PIXEL</strong>
+      <span class="pixel-kicker">{{ 'map.squad-office' | t }}</span>
+      <strong>{{ 'map.pixel-office' | t }}</strong>
       <small class="pixel-summary">
-        13 DEPARTAMENTOS · {{ store.team().length }} AGENTES ·
+        {{ 'ui.13-departments' | t }} {{ store.team().length }} {{ 'ui.agents-283' | t }}
         {{
           execution.busy()
             ? execution.paused()
-              ? 'OPERAÇÃO PAUSADA'
-              : 'EM OPERAÇÃO'
-            : 'EM PRONTIDÃO'
+              ? ('ui.operation-paused' | t)
+              : ('ui.in-operation' | t)
+            : ('ui.on-standby' | t)
         }}
       </small>
     </div>
     <div class="pixel-note" role="status">{{ pixelNote() }}</div>
     @if (store.selected(); as a) {
       <div class="pixel-actions">
-        <button type="button" (click)="dialogs.open('chat', a.id)">Conversar</button>
-        <button type="button" (click)="beginMove(a.id)">Visitar sala</button>
-        <button type="button" (click)="dialogs.open('agent', a.id)">Editar agente</button>
+        <button type="button" (click)="dialogs.open('chat', a.id)">{{ 'agent.chat' | t }}</button>
+        <button type="button" (click)="beginMove(a.id)">{{ 'agent.visit' | t }}</button>
+        <button type="button" (click)="dialogs.open('agent', a.id)">
+          {{ 'map.edit-agent' | t }}
+        </button>
         <select
           class="pixel-destination"
-          aria-label="Departamento para visitar"
+          [attr.aria-label]="'map.department-to-visit' | t"
           (change)="visitDepartment($any($event.target).value); $any($event.target).value = ''"
         >
-          <option value="">Visitar departamento…</option>
+          <option value="">{{ 'map.visit-department' | t }}</option>
           @for (r of rooms; track r.id) {
-            <option [value]="r.id">{{ r.name }}</option>
+            <option [value]="r.id">{{ 'pixel.room.' + r.id | t }}</option>
           }
         </select>
       </div>
@@ -248,7 +251,7 @@
   }
 </div>
 @if (!background()) {
-  <div class="map-side-controls hud" aria-label="Controles do mapa">
+  <div class="map-side-controls hud" [attr.aria-label]="'map.map-controls' | t">
     @if (!handoffs() && store.settings()?.layout !== 'city-3d') {
       <button
         class="pixel-toggle"
@@ -256,24 +259,26 @@
           setLayout(store.settings()?.layout === 'office-pixel' ? 'office-3d' : 'office-pixel')
         "
         [attr.aria-pressed]="store.settings()?.layout === 'office-pixel'"
-        aria-label="Ver escritório pixel art"
+        [attr.aria-label]="'map.view-pixel-art-office' | t"
       >
         <span aria-hidden="true">▦</span>
-        <span class="msc-tip"><b>Ver escritório pixel art</b></span>
+        <span class="msc-tip">
+          <b>{{ 'map.view-pixel-art-office' | t }}</b>
+        </span>
       </button>
     }
     <button
       class="view-toggle"
       (click)="setLayout(store.settings()?.layout === 'city-3d' ? 'office-3d' : 'city-3d')"
       [attr.data-view]="store.settings()?.layout === 'city-3d' ? 'city' : 'office'"
-      aria-label="Alternar vista do mapa"
+      [attr.aria-label]="'map.switch-map-view' | t"
     >
       <span class="vt-cube">
         <span class="vt-face vt-city"><luma-icon name="map-city" /></span>
         <span class="vt-face vt-office"><luma-icon name="map-office" /></span>
       </span>
       <span class="msc-tip">
-        <b>Alternar vista</b>
+        <b>{{ 'map.switch-view' | t }}</b>
         <kbd>V</kbd>
       </span>
     </button>
@@ -283,75 +288,83 @@
       [disabled]="store.settings()?.layout !== 'city-3d'"
       (click)="toggleShape()"
       [attr.aria-pressed]="store.settings()?.cityShape === 'planet'"
-      aria-label="Dobrar em planeta"
+      [attr.aria-label]="'map.fold-into-a-planet' | t"
     >
       <luma-icon name="map-planet" />
       <span class="msc-tip">
-        <b>Dobrar em planeta</b>
+        <b>{{ 'map.fold-into-a-planet' | t }}</b>
         <kbd>P</kbd>
       </span>
     </button>
     <span class="map-control-line"></span>
-    <div class="msc-zoom" role="group" aria-label="Zoom do mapa">
-      <button class="msc-in" (click)="zoom(1.15)" aria-label="Ampliar mapa">
+    <div class="msc-zoom" role="group" [attr.aria-label]="'map.map-zoom' | t">
+      <button class="msc-in" (click)="zoom(1.15)" [attr.aria-label]="'map.zoom-in-on-map' | t">
         <luma-icon name="map-zoom-in" />
         <span class="msc-tip">
-          <b>Ampliar</b>
+          <b>{{ 'map.zoom-in' | t }}</b>
           <kbd>+</kbd>
         </span>
       </button>
       <span id="zoomValue">{{ zoomPercent() }}%</span>
-      <button class="msc-out" (click)="zoom(1 / 1.15)" aria-label="Reduzir mapa">
+      <button
+        class="msc-out"
+        (click)="zoom(1 / 1.15)"
+        [attr.aria-label]="'map.zoom-out-of-map' | t"
+      >
         <luma-icon name="map-zoom-out" />
         <span class="msc-tip">
-          <b>Reduzir</b>
+          <b>{{ 'map.zoom-out' | t }}</b>
           <kbd>−</kbd>
         </span>
       </button>
     </div>
-    <button class="msc-center" (click)="home()" aria-label="Centralizar mapa">
+    <button class="msc-center" (click)="home()" [attr.aria-label]="'map.center-map' | t">
       <luma-icon name="map-center" />
       <span class="msc-tip">
-        <b>Centralizar</b>
+        <b>{{ 'map.center' | t }}</b>
         <kbd>0</kbd>
       </span>
     </button>
     <button
       class="msc-rot-l"
       (click)="rotate(-Math.PI / 4)"
-      aria-label="Girar mapa para a esquerda"
+      [attr.aria-label]="'map.rotate-map-left' | t"
     >
       <luma-icon name="map-rot-left" />
       <span class="msc-tip">
-        <b>Girar à esquerda</b>
+        <b>{{ 'map.rotate-left' | t }}</b>
         <kbd>[</kbd>
       </span>
     </button>
-    <button class="msc-rot-r" (click)="rotate(Math.PI / 4)" aria-label="Girar mapa para a direita">
+    <button
+      class="msc-rot-r"
+      (click)="rotate(Math.PI / 4)"
+      [attr.aria-label]="'map.rotate-map-right' | t"
+    >
       <luma-icon name="map-rot-right" />
       <span class="msc-tip">
-        <b>Girar à direita</b>
+        <b>{{ 'map.rotate-right' | t }}</b>
         <kbd>]</kbd>
       </span>
     </button>
     <span class="map-control-line"></span>
-    <button class="msc-panels" (click)="toggleFocus()" aria-label="Ocultar painéis">
+    <button class="msc-panels" (click)="toggleFocus()" [attr.aria-label]="'map.focus' | t">
       <luma-icon name="map-panels" />
       <span class="msc-tip">
-        <b>Ocultar painéis</b>
+        <b>{{ 'map.focus' | t }}</b>
         <kbd>H</kbd>
       </span>
     </button>
   </div>
   @if (!focused()) {
-    <aside class="left-hud hud" id="leftHud" aria-label="Projeto e squad">
+    <aside class="left-hud hud" id="leftHud" [attr.aria-label]="'map.project-and-squad' | t">
       <div class="project-topline">
         <span>{{ store.project()?.code }} / WORKSPACE</span>
         <luma-icon name="radio" />
       </div>
       @if (handoffs()) {
         <h1>
-          FLUXO DE
+          {{ 'map.handoff' | t }}
           <br />
           <span>HANDOFFS.</span>
         </h1>
@@ -359,13 +372,14 @@
       <button
         class="project-chip"
         (click)="router.navigateByUrl('/projects')"
-        title="Trocar ou criar projeto"
+        [title]="'map.switch-or-create-project' | t"
       >
         <luma-icon name="project" />
         <span class="grow">
           <strong>{{ store.project()?.name }}</strong>
           <small>
-            {{ store.team().length }} AGENTES / {{ store.project()?.features?.length }} FEATURES
+            {{ store.team().length }} {{ 'ui.agents-285' | t }}
+            {{ store.project()?.features?.length }} FEATURES
           </small>
         </span>
         <luma-icon name="chevron" />
@@ -381,14 +395,14 @@
             [class.selected]="store.selectedId() === agent.id && !dismissed()"
             (click)="select(agent.id)"
             (dblclick)="dialogs.open('chat', agent.id)"
-            [attr.aria-label]="'Selecionar ' + agent.name"
-            title="Duplo clique para conversar"
+            [attr.aria-label]="('ui.select-expr-72' | t) + agent.name"
+            [title]="'map.double-click-to-chat' | t"
             [attr.aria-pressed]="!dismissed() && store.selectedId() === agent.id"
           >
             <img class="roster-avatar" [src]="portrait(agent)" alt="" />
             <div>
               <div class="roster-name">{{ agent.name }}</div>
-              <div class="roster-role">{{ roleLabel(agent) }}</div>
+              <div class="roster-role">{{ roleLabel(agent) | uiLabel }}</div>
             </div>
             <div class="roster-end" [class.busy]="execution.busyAgents().includes(agent.id)">
               @if (execution.busyAgents().includes(agent.id)) {
@@ -404,7 +418,7 @@
       <div class="roster-add">
         <button (click)="dialogs.open('agent')">
           <luma-icon name="plus" />
-          NOVO AGENTE
+          {{ 'shell.new-agent' | t }}
         </button>
         <button (click)="openSection('opsBriefing')">
           <luma-icon name="file" />
@@ -412,30 +426,30 @@
         </button>
         <button (click)="dialogs.open('squad', store.project()?.squadId)">
           <luma-icon name="squad" />
-          SQUAD STUDIO
+          {{ 'squad.studio' | t }}
         </button>
       </div>
     </aside>
     @if (!dismissed()) {
       @if (store.selected(); as agent) {
-        <aside class="right-hud hud" id="rightHud" aria-label="Agente selecionado">
+        <aside class="right-hud hud" id="rightHud" [attr.aria-label]="'map.selected-agent' | t">
           <div class="section-cap">
-            <span>PERFIL DO AGENTE</span>
+            <span>{{ 'map.agent-profile' | t }}</span>
             <button
               class="icon-button small"
               (click)="dialogs.open('agent', agent.id)"
-              [attr.aria-label]="'Editar ' + agent.name"
+              [attr.aria-label]="('action.edit' | t) + agent.name"
             >
               <luma-icon name="edit" />
             </button>
           </div>
           <div class="identity">
             <div class="identity-portrait">
-              <img [src]="portrait(agent)" [alt]="'Retrato de ' + agent.name" />
+              <img [src]="portrait(agent)" [alt]="('ui.portrait-of' | t) + agent.name" />
             </div>
             <div class="grow">
               <div class="identity-name">{{ agent.name }}</div>
-              <span class="identity-role">{{ roleLabel(agent) }}</span>
+              <span class="identity-role">{{ roleLabel(agent) | uiLabel }}</span>
               <div class="identity-id">
                 {{ roles[agent.role].short }} // {{ pad(store.agents().indexOf(agent) + 1) }} /
                 AGENT
@@ -445,38 +459,39 @@
           <p class="agent-description">{{ agent.description }}</p>
           <dl>
             <div class="data-pair">
-              <dt>MODELO</dt>
+              <dt>{{ 'agents.model' | t }}</dt>
               <dd>
                 {{ agent.provider.toUpperCase() }} /
                 {{
                   agent.model === 'inherit'
-                    ? 'PADRÃO ' + agent.provider.toUpperCase()
+                    ? ('ui.default-expr-75' | t) + agent.provider.toUpperCase()
                     : agent.model.toUpperCase()
                 }}
               </dd>
             </div>
             <div class="data-pair">
-              <dt>ESFORÇO</dt>
-              <dd>{{ agent.effort ? agent.effort.toUpperCase() : 'PADRÃO' }}</dd>
+              <dt>{{ 'map.effort' | t }}</dt>
+              <dd>{{ agent.effort ? agent.effort.toUpperCase() : ('ui.default' | t) }}</dd>
             </div>
             <div class="data-pair" [class.active]="execution.busyAgents().includes(agent.id)">
-              <dt>ESTADO</dt>
+              <dt>{{ 'map.state' | t }}</dt>
               <dd>
                 {{
                   execution.busyAgents().includes(agent.id)
                     ? execution.paused()
-                      ? 'OPERAÇÃO PAUSADA'
-                      : 'EXECUTANDO ' + (store.settings()?.mode === 'live' ? 'CLI' : 'DEMO')
-                    : 'EM PRONTIDÃO'
+                      ? ('ui.operation-paused' | t)
+                      : ('ui.running-expr-76' | t) +
+                        (store.settings()?.mode === 'live' ? 'CLI' : 'DEMO')
+                    : ('ui.on-standby' | t)
                 }}
               </dd>
             </div>
             <div class="data-pair">
-              <dt>FEATURES ATRIBUÍDAS</dt>
+              <dt>{{ 'map.assigned-features' | t }}</dt>
               <dd>{{ pad(assigned(agent.id).length) }}</dd>
             </div>
             <div class="data-pair">
-              <dt>PRODUÇÃO DO AGENTE</dt>
+              <dt>{{ 'map.agent-production' | t }}</dt>
               <dd>{{ ('stage.' + agent.productionStage | t).toUpperCase() }}</dd>
             </div>
           </dl>
@@ -488,12 +503,12 @@
           <div class="profile-actions">
             <button class="action-text" (click)="dialogs.open('squad', store.project()?.squadId)">
               <luma-icon name="squad" />
-              SQUADS
+              {{ 'dashboard.squads-172' | t }}
             </button>
             <button
               class="action-text"
               (click)="dialogs.open('spawn', agent.id)"
-              aria-label="Spawn individual"
+              [attr.aria-label]="'run.individual' | t"
             >
               <luma-icon name="play" />
             </button>
@@ -502,13 +517,15 @@
             <div class="between">
               <div class="eyebrow">
                 {{
-                  execution.busyAgents().includes(agent.id) ? 'MISSÃO ATUAL' : 'PRÓXIMA ATRIBUIÇÃO'
+                  execution.busyAgents().includes(agent.id)
+                    ? ('ui.current-mission' | t)
+                    : ('ui.next-assignment' | t)
                 }}
               </div>
               <button
                 class="icon-button small"
                 (click)="openSection('opsFeatures')"
-                aria-label="Ver todas as features"
+                [attr.aria-label]="'map.view-all-features' | t"
               >
                 <luma-icon name="board" />
               </button>
@@ -521,9 +538,9 @@
             } @else {
               <div class="mission-empty">
                 <luma-icon name="clock" />
-                Aguardando distribuição.
+                {{ 'map.awaiting-distribution' | t }}
                 <br />
-                O comandante define o plano do squad.
+                {{ 'map.the-commander-defines-the-squad-s-plan' | t }}
               </div>
             }
           </section>
@@ -533,16 +550,16 @@
               (click)="dialogs.open('handoff')"
               [disabled]="execution.busy()"
             >
-              CONFIGURAR HANDOFF
+              {{ 'map.configure-handoff' | t }}
               <luma-icon name="flow" />
             </button>
             <button class="secondary-action" (click)="historyRequested.emit()">
-              HISTÓRICO / {{ pad(store.project()?.handoffs?.length || 0) }}
+              {{ 'ui.history' | t }} {{ pad(store.project()?.handoffs?.length || 0) }}
               <luma-icon name="clock" />
             </button>
           }
           <button class="primary-action" (click)="distribute()" [disabled]="store.projectLocked()">
-            DISTRIBUIR FEATURES
+            {{ 'map.distribute-features' | t }}
             <luma-icon name="flow" />
           </button>
           <button
@@ -552,14 +569,14 @@
           >
             {{
               execution.planning()
-                ? 'PLANEJANDO'
+                ? ('ui.planning' | t)
                 : execution.plan() && execution.planOrigin() === 'execution'
-                  ? 'APROVAR PLANO'
+                  ? ('ui.approve-plan' | t)
                   : execution.busy()
                     ? execution.paused()
-                      ? 'RETORNAR'
-                      : 'PAUSAR'
-                    : 'PLANEJAR ' +
+                      ? ('ui.resume' | t)
+                      : ('ui.pause-expr-83' | t)
+                    : ('ui.plan-expr-84' | t) +
                       (currentSprint()?.name || 'sprint').toUpperCase() +
                       ' / ' +
                       (store.settings()?.mode === 'live'
@@ -580,24 +597,24 @@
           </button>
           @if (execution.busy()) {
             <button class="secondary-action" (click)="execution.stop()">
-              ENCERRAR OPERAÇÃO
+              {{ 'map.end-operation' | t }}
               <luma-icon name="stop" />
             </button>
           }
           @if (execution.busy() || room.messages().length) {
             <button class="secondary-action" (click)="room.open()">
-              CHAT DA OPERAÇÃO
+              {{ 'map.operation-chat' | t }}
               <luma-icon name="chat" />
             </button>
           }
           @if (execution.events().length) {
             <button class="secondary-action" (click)="dialogs.open('console')">
-              CONSOLE AO VIVO
+              {{ 'map.live-console' | t }}
               <luma-icon name="terminal" />
             </button>
           }
           @if (store.settings()?.mode === 'demo') {
-            <div class="demo-note">SIMULAÇÃO LOCAL. SEM EXECUÇÃO DE IA.</div>
+            <div class="demo-note">{{ 'map.local-simulation-no-ai-execution' | t }}</div>
           }
         </aside>
       }
@@ -606,7 +623,7 @@
   @if (focused()) {
     <button class="restore-hud" style="display: flex" (click)="toggleFocus()">
       <luma-icon name="eye" />
-      MOSTRAR PAINÉIS
+      {{ 'map.show-panels' | t }}
     </button>
   }
   @if (fallback()) {

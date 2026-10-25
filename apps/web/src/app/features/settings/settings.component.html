@@ -1,13 +1,13 @@
 <luma-modal
-  title="CONFIGURAÇÕES DO <span class=word-tag>WORKSPACE</span>"
+  [title]="'settings.workspace-settings' | t"
   [subtitle]="
     store.settings()?.mode === 'live'
-      ? 'EXECUÇÃO REAL / CODEX, DEVIN E ANTIGRAVITY'
-      : 'LOCAL-FIRST / RUNTIME DESCONECTADO'
+      ? ('ui.live-execution-codex-devin-and-antigravity' | t)
+      : ('ui.local-first-runtime-disconnected' | t)
   "
   (closed)="cancel()"
 >
-  <nav class="editor-nav" aria-label="Seções das configurações">
+  <nav class="editor-nav" [attr.aria-label]="'settings.settings-sections' | t">
     @for (item of tabs; track item) {
       <button
         type="button"
@@ -15,7 +15,7 @@
         [class.active]="tab() === item"
         (click)="tab.set(item)"
       >
-        {{ tabLabel(item) }}
+        {{ tabLabel(item) | uiLabel }}
       </button>
     }
   </nav>
@@ -23,13 +23,13 @@
     @for (item of toggles; track item.key) {
       <div class="settings-row">
         <div>
-          <h3>{{ item.title }}</h3>
-          <p>{{ item.description }}</p>
+          <h3>{{ item.title | uiLabel }}</h3>
+          <p>{{ item.description | uiLabel }}</p>
         </div>
         <button
           class="toggle"
           role="switch"
-          [attr.aria-label]="item.aria"
+          [attr.aria-label]="item.aria | uiLabel"
           [attr.aria-checked]="toggleValue(item.key)"
           (click)="toggleSetting(item.key)"
         ></button>
@@ -37,39 +37,80 @@
     }
     <div class="settings-row">
       <div>
-        <h3>Idioma</h3>
-        <p>Idioma da interface do workspace.</p>
+        <h3>
+          <label for="interfaceLocale">{{ 'settings.locale' | t }}</label>
+        </h3>
+        <p>{{ 'settings.workspace-interface-language' | t }}</p>
       </div>
-      <select [ngModel]="draft.locale" (ngModelChange)="setLocale($event)" aria-label="Idioma">
-        <option value="pt-BR">Português (Brasil)</option>
-        <option value="en">English</option>
-        <option value="es">Español</option>
+      <select
+        id="interfaceLocale"
+        [ngModel]="draft.locale"
+        (ngModelChange)="setLocale($event)"
+        [attr.aria-label]="'settings.locale' | t"
+      >
+        @for (language of i18n.languages; track language.id) {
+          <option [value]="language.id">{{ language.label }}</option>
+        }
+      </select>
+    </div>
+    <div class="settings-row appearance-setting">
+      <div>
+        <h3>
+          <label for="interfaceTheme">{{ i18n.text('appearance.title') }}</label>
+        </h3>
+        <p>{{ i18n.text('appearance.description') }}</p>
+        <p class="hint">{{ i18n.text('appearance.saved') }}</p>
+      </div>
+      <select
+        id="interfaceTheme"
+        [ngModel]="appearance.theme()"
+        (ngModelChange)="appearance.setTheme($event)"
+      >
+        @for (theme of appearance.themes; track theme) {
+          <option [value]="theme">{{ i18n.text('appearance.' + theme) }}</option>
+        }
+      </select>
+    </div>
+    <div class="settings-row agent-appearance-setting">
+      <div>
+        <h3>
+          <label for="agentAppearance">{{ i18n.text('appearance.agents.title') }}</label>
+        </h3>
+        <p>{{ i18n.text('appearance.agents.description') }}</p>
+        <p class="hint">{{ i18n.text('appearance.saved') }}</p>
+      </div>
+      <select
+        id="agentAppearance"
+        [ngModel]="appearance.agents()"
+        (ngModelChange)="appearance.setAgentAppearance($event)"
+      >
+        @for (style of appearance.agentAppearances; track style) {
+          <option [value]="style">{{ i18n.text('appearance.agents.' + style) }}</option>
+        }
       </select>
     </div>
     <div class="settings-row">
       <div>
-        <h3>Exportar workspace</h3>
+        <h3>{{ 'settings.export-workspace' | t }}</h3>
         <p>
-          Backup JSON com agentes, retratos, prompts, projetos, features, histórico e configurações
-          do runtime.
+          {{ 'settings.json-backup-with-agents-portraits-prompts-projects-feature' | t }}
         </p>
       </div>
       <button class="btn" (click)="export()">
         <luma-icon name="download" />
-        Exportar
+        {{ 'action.export' | t }}
       </button>
     </div>
     <div class="settings-row">
       <div>
-        <h3>Importar backup</h3>
+        <h3>{{ 'setup.backup' | t }}</h3>
         <p>
-          Restaura um backup JSON após confirmação. Substitui os dados atuais, que ficam nas versões
-          salvas.
+          {{ 'settings.restores-a-json-backup-after-confirmation-replaces-current' | t }}
         </p>
       </div>
       <button class="btn" (click)="importInput.click()" [disabled]="store.projectLocked()">
         <luma-icon name="upload" />
-        Importar
+        {{ 'action.import' | t }}
       </button>
       <input
         #importInput
@@ -81,18 +122,18 @@
     </div>
     <div class="settings-row">
       <div>
-        <h3>Reiniciar workspace</h3>
-        <p>Remove alterações deste workspace e restaura o projeto Atlas Commerce.</p>
+        <h3>{{ 'settings.reset-workspace' | t }}</h3>
+        <p>{{ 'settings.removes-changes-in-this-workspace-and-restores-the-atlas-c' | t }}</p>
       </div>
       <button class="btn danger" (click)="reset()" [disabled]="store.projectLocked()">
         <luma-icon name="trash" />
-        Reiniciar
+        {{ 'settings.reset' | t }}
       </button>
     </div>
     <div class="settings-row ws-versions-row">
       <div>
-        <h3>Versões salvas</h3>
-        <p>O banco guarda versões do workspace antes de importações e restaurações.</p>
+        <h3>{{ 'settings.saved-versions' | t }}</h3>
+        <p>{{ 'settings.the-database-saves-workspace-versions-before-imports-and-r' | t }}</p>
         <div class="ws-versions">
           @for (version of snapshots(); track version.id) {
             <div class="ws-version">
@@ -106,11 +147,11 @@
                 [disabled]="store.projectLocked()"
               >
                 <luma-icon name="upload" />
-                Restaurar
+                {{ 'action.restore' | t }}
               </button>
             </div>
           } @empty {
-            <span class="hint">Nenhuma versão ainda.</span>
+            <span class="hint">{{ 'settings.no-versions-yet' | t }}</span>
           }
         </div>
       </div>
@@ -118,10 +159,9 @@
     <div class="notice" style="margin-bottom: 0">
       <luma-icon name="lock" />
       <span>
-        O workspace, a sala da operação, as conversas e o histórico de execuções ficam no banco
-        SQLite local
+        {{ 'settings.the-workspace-operation-room-conversations-and-run-history' | t }}
         <code>{{ store.path() }}</code>
-        . Não coloque credenciais nos prompts ou no briefing.
+        {{ 'settings.do-not-put-credentials-in-prompts-or-the-briefing' | t }}
       </span>
     </div>
   </div>
@@ -130,20 +170,21 @@
       <div class="notice" style="margin-top: 0">
         <luma-icon name="info" />
         <span>
-          Estas configurações valem para todos os agentes, Codex, Devin e Antigravity. Escolha o
-          provedor no perfil de cada agente.
+          {{ 'settings.these-settings-apply-to-all-agents-codex-devin-and-antigra' | t }}
         </span>
       </div>
       <div class="form-grid">
         <div class="field">
-          <label for="rtMode">EXECUÇÃO DOS AGENTES</label>
+          <label for="rtMode">{{ 'settings.agent-execution' | t }}</label>
           <select id="rtMode" name="mode" [(ngModel)]="draft.mode">
-            <option value="live">Execução real (Codex, Devin e Antigravity)</option>
-            <option value="demo">Simulação local (demo)</option>
+            <option value="live">
+              {{ 'settings.live-execution-codex-devin-and-antigravity' | t }}
+            </option>
+            <option value="demo">{{ 'settings.local-simulation-demo' | t }}</option>
           </select>
         </div>
         <div class="field">
-          <label for="rtTimeout">TEMPO LIMITE POR ETAPA (S)</label>
+          <label for="rtTimeout">{{ 'settings.time-limit-per-stage-s' | t }}</label>
           <input
             id="rtTimeout"
             name="timeoutSec"
@@ -155,7 +196,7 @@
           />
         </div>
         <div class="field">
-          <label for="rtConc">EXECUÇÕES SIMULTÂNEAS NO BRIDGE</label>
+          <label for="rtConc">{{ 'settings.concurrent-bridge-runs' | t }}</label>
           <input
             id="rtConc"
             name="concurrency"
@@ -166,24 +207,23 @@
           />
         </div>
         <div class="field">
-          <label for="execStepMs">INTERVALO ENTRE ETAPAS</label>
+          <label for="execStepMs">{{ 'settings.delay-between-stages' | t }}</label>
           <select id="execStepMs" name="stepMs" [(ngModel)]="draft.stepMs">
-            <option [ngValue]="600">Rápida / 0,6 s</option>
-            <option [ngValue]="1000">Ágil / 1 s</option>
-            <option [ngValue]="1800">Normal / 1,8 s</option>
-            <option [ngValue]="3200">Lenta / 3,2 s</option>
+            <option [ngValue]="600">{{ 'settings.fast-0-6-s' | t }}</option>
+            <option [ngValue]="1000">{{ 'settings.agile-1-s' | t }}</option>
+            <option [ngValue]="1800">{{ 'settings.normal-1-8-s' | t }}</option>
+            <option [ngValue]="3200">{{ 'settings.slow-3-2-s' | t }}</option>
           </select>
           <span class="hint">
-            Pausa entre etapas. Na simulação, define a duração de cada etapa.
+            {{ 'settings.pause-between-stages-in-simulation-defines-each-stage-s-du' | t }}
           </span>
         </div>
         <div class="field full">
-          <span class="label">PASTA DOS PROJETOS</span>
+          <span class="label">{{ 'settings.projects-folder' | t }}</span>
           <div class="hint" style="margin-top: 10px; word-break: break-all">
-            Cada operação trabalha na sua própria pasta dentro de
+            {{ 'settings.each-operation-works-in-its-own-folder-inside' | t }}
             <code>{{ providers.health().codex?.projectsDir || 'projects/' }}</code>
-            , criada na primeira execução. É lá que os agentes leem e escrevem os arquivos. Esta
-            operação:
+            {{ 'settings.created-on-the-first-run-agents-read-and-write-files-there' | t }}
             <code>projects/{{ store.project()?.folder }}</code>
             .
           </div>
@@ -197,20 +237,22 @@
         <luma-icon [name]="providers.health()[cli]?.version ? 'check' : 'info'" />
         <span>
           @if (providers.health()[cli]?.version) {
-            Bridge conectado ao
+            {{ 'settings.bridge-connected-to' | t }}
             <strong>{{ cli.toUpperCase() }} CLI {{ providers.health()[cli]?.version }}</strong>
             <br />
             <small>{{ providers.health()[cli]?.executable }}</small>
           } @else {
-            O bridge respondeu, mas o CLI não foi encontrado:
-            {{ providers.errors()[cli] || 'Verificando conexão…' }}
+            {{ 'ui.the-bridge-responded-but-the-cli-was-not-found' | t }}
+            {{ providers.errors()[cli] || ('ui.checking-connection' | t) }}
           }
         </span>
       </div>
       <form [id]="cli + 'Form'" (ngSubmit)="save()">
         <div class="form-grid">
           <div class="field">
-            <label [for]="cli + 'Path'">EXECUTÁVEL DO {{ cli.toUpperCase() }}</label>
+            <label [for]="cli + 'Path'">
+              {{ 'ui.executable-for' | t }} {{ cli.toUpperCase() }}
+            </label>
             <input
               [id]="cli + 'Path'"
               [name]="cli + 'Path'"
@@ -218,25 +260,24 @@
               maxlength="400"
               [placeholder]="
                 cli === 'antigravity'
-                  ? 'agy.exe (detectado automaticamente)'
-                  : cli + ' (padrão do bridge)'
+                  ? ('ui.agy-exe-automatically-detected' | t)
+                  : cli + ('ui.bridge-default' | t)
               "
               autocomplete="off"
             />
             <span class="hint">
               @if (cli === 'devin') {
-                Nome no PATH ou caminho completo — ex.: o devin.exe que vem com o Devin Desktop.
-                Vazio = padrão do bridge.
+                {{ 'settings.name-in-path-or-full-path-e-g-devin-exe-from-devin-desktop' | t }}
               } @else if (cli === 'antigravity') {
-                Use o CLI agy.exe; Antigravity.exe é o aplicativo de desktop.
+                {{ 'settings.use-the-agy-exe-cli-antigravity-exe-is-the-desktop-applica' | t }}
               } @else {
-                Nome no PATH ou caminho completo. Vazio = padrão do bridge.
+                {{ 'settings.name-in-path-or-full-path-empty-bridge-default' | t }}
               }
             </span>
           </div>
           <div class="field">
             <label [for]="cli + 'Permission'">
-              {{ cli === 'antigravity' ? 'MODO DE EXECUÇÃO' : 'MODO DE PERMISSÃO' }}
+              {{ cli === 'antigravity' ? ('ui.execution-mode' | t) : ('ui.permission-mode' | t) }}
             </label>
             <select
               [id]="cli + 'Permission'"
@@ -244,30 +285,29 @@
               [(ngModel)]="draft.providers[cli].permission"
             >
               @for (permission of permissions[cli]; track permission) {
-                <option [value]="permission">{{ permissionLabel(permission) }}</option>
+                <option [value]="permission">{{ permissionLabel(permission) | uiLabel }}</option>
               }
             </select>
             @if (cli === 'devin') {
               <span class="hint">
-                Modo nativo do Devin CLI (--permission-mode) usado pelos agentes Devin.
+                {{ 'settings.native-devin-cli-mode-permission-mode-used-by-devin-agents' | t }}
               </span>
             } @else if (cli === 'antigravity') {
               <span class="hint">
-                read-only e plan disponibilizam apenas ferramentas de leitura. Ações que exigem
-                aprovação são negadas na execução sem interação.
+                {{ 'settings.read-only-and-plan-expose-only-reading-tools-actions-requi' | t }}
               </span>
             }
           </div>
           @if (cli === 'codex') {
             <div class="field">
-              <label for="rtModel">MODELO (SOBRESCREVE AGENTES CODEX)</label>
+              <label for="rtModel">{{ 'settings.model-overrides-codex-agents' | t }}</label>
               <input
                 id="rtModel"
                 name="model"
                 [(ngModel)]="draft.providers.codex.model"
                 list="rtModels"
                 maxlength="80"
-                placeholder="vazio = modelo de cada agente"
+                [placeholder]="'settings.empty-each-agent-s-model' | t"
               />
               <datalist id="rtModels">
                 @for (model of providers.catalogs().codex || []; track model.id) {
@@ -276,35 +316,37 @@
               </datalist>
             </div>
             <div class="field">
-              <label for="rtEffort">ESFORÇO (SOBRESCREVE AGENTES CODEX)</label>
+              <label for="rtEffort">{{ 'settings.effort-overrides-codex-agents' | t }}</label>
               <select id="rtEffort" name="effort" [(ngModel)]="draft.providers.codex.effort">
-                <option value="">Vazio = esforço de cada agente</option>
+                <option value="">{{ 'settings.empty-each-agent-s-effort' | t }}</option>
                 @for (effort of efforts; track effort) {
                   <option [value]="effort">{{ effort.toUpperCase() }}</option>
                 }
               </select>
             </div>
             <div class="field full">
-              <label for="rtDirs">DIRETÓRIOS ADICIONAIS (--add-dir)</label>
+              <label for="rtDirs">{{ 'settings.additional-directories-add-dir' | t }}</label>
               <input
                 id="rtDirs"
                 name="addDirs"
                 [(ngModel)]="directories"
                 maxlength="2000"
-                placeholder="Separados por vírgula"
+                [placeholder]="'settings.comma-separated' | t"
               />
             </div>
           } @else {
             <div class="field full">
-              <span class="label">CATÁLOGO DE MODELOS</span>
+              <span class="label">{{ 'settings.model-catalog' | t }}</span>
               @if (cli === 'devin') {
                 <div class="hint" style="margin-top: 10px">
-                  {{ (providers.catalogs()[cli] || []).length }} modelos carregados do Devin CLI.
+                  {{ (providers.catalogs()[cli] || []).length }}
+                  {{ 'ui.models-loaded-from-devin-cli' | t }}
                   {{ providers.errors()[cli] }}
                 </div>
               } @else {
                 <p class="hint">
-                  {{ (providers.catalogs()[cli] || []).length }} modelos carregados do CLI.
+                  {{ (providers.catalogs()[cli] || []).length }}
+                  {{ 'ui.models-loaded-from-the-cli' | t }}
                   {{ providers.errors()[cli] }}
                 </p>
               }
@@ -313,14 +355,13 @@
                 class="btn ghost sm"
                 (click)="providers.load(cli, draft.providers[cli].path, true)"
               >
-                Atualizar modelos
+                {{ 'settings.models' | t }}
               </button>
               <span class="hint">
                 @if (cli === 'devin') {
-                  Os modelos aparecem no campo MODELO do perfil de cada agente com provedor Devin
-                  CLI.
+                  {{ 'settings.models-appear-in-the-model-field-of-each-agent-using-devin' | t }}
                 } @else {
-                  Selecione provedor, modelo e esforço compatível no perfil do agente.
+                  {{ 'settings.select-provider-model-and-compatible-effort-in-the-agent-s' | t }}
                 }
               </span>
             </div>
@@ -328,17 +369,17 @@
         </div>
         <div class="notice">
           <luma-icon name="info" />
-          <span>{{ providerDescription(cli) }}</span>
+          <span>{{ providerDescription(cli) | uiLabel }}</span>
         </div>
         @if (cli === 'codex') {
           <div class="cmd-preview">
             <div class="cmd-preview-head">
-              <span class="eyebrow">PREVIEW DA CHAMADA NO TERMINAL</span>
+              <span class="eyebrow">{{ 'settings.terminal-call-preview' | t }}</span>
               <div class="flex wrap">
                 <select
                   id="cmdAgent"
                   name="previewAgent"
-                  aria-label="Agente do preview"
+                  [attr.aria-label]="'settings.preview-agent' | t"
                   [(ngModel)]="previewAgent"
                 >
                   @for (a of store.team(); track a.id) {
@@ -348,7 +389,7 @@
                 <select
                   id="cmdShell"
                   name="previewShell"
-                  aria-label="Shell do preview"
+                  [attr.aria-label]="'settings.preview-shell' | t"
                   [(ngModel)]="previewShell"
                 >
                   <option value="powershell">PowerShell</option>
@@ -356,14 +397,13 @@
                 </select>
                 <button type="button" class="btn ghost sm" (click)="copyCommand(cli)">
                   <luma-icon name="copy" />
-                  Copiar
+                  {{ 'settings.copy' | t }}
                 </button>
               </div>
             </div>
             <pre id="cmdPreview" class="cmd-lines">{{ commandPreview(cli) }}</pre>
             <span class="hint" id="cmdNote">
-              Prévia da chamada e de suas opções. O prompt da etapa e os perfis são preparados pelo
-              bridge na execução.
+              {{ 'settings.preview-of-the-call-and-its-options-the-stage-prompt-and-p' | t }}
             </span>
           </div>
         }
@@ -372,10 +412,7 @@
   }
   <div class="editor-pane" [class.hidden]="tab() !== 'config'" data-pane="settingsjson">
     <div class="notice">
-      O Codex CLI usa a autenticação existente e ~/.codex/config.toml. Modelo, esforço, sandbox e
-      diretórios escolhidos nesta tela valem apenas para a execução. O app não altera suas
-      credenciais ou configurações pessoais. Os especialistas ficam em
-      projects/&lt;operação&gt;/.codex/agents/.
+      {{ 'settings.codex-cli-uses-existing-authentication-and-codex-config-to' | t }}
     </div>
   </div>
   @if (tab() !== 'workspace' && tab() !== 'config') {
@@ -383,11 +420,11 @@
       @if (tab() !== 'execution') {
         <button class="btn ghost" (click)="check()">
           <luma-icon name="radio" />
-          Testar conexão
+          {{ 'settings.test' | t }}
         </button>
         <span class="grow"></span>
       }
-      <button class="btn ghost" (click)="cancel()">Cancelar</button>
+      <button class="btn ghost" (click)="cancel()">{{ 'action.cancel' | t }}</button>
       <button
         class="btn primary"
         type="submit"
@@ -395,7 +432,7 @@
         [disabled]="store.projectLocked()"
       >
         <luma-icon name="check" />
-        {{ tab() === 'execution' ? 'Salvar execução' : 'Salvar configurações' }}
+        {{ tab() === 'execution' ? ('ui.save-execution' | t) : ('ui.save-settings' | t) }}
       </button>
     </footer>
   }

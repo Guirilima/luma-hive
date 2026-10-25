@@ -1,3 +1,5 @@
+import { UiLabelPipe } from '../../core/i18n/i18n.service';
+import { PortraitService } from '../../core/appearance/portrait.service';
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { PRESETS, CATEGORIES, portrait, makeAgent } from '@domain/catalog';
@@ -8,10 +10,11 @@ import { ModalComponent } from '../../shared/modal.component';
 @Component({
   selector: 'luma-catalog',
   standalone: true,
-  imports: [FormsModule, TranslatePipe, ModalComponent],
+  imports: [UiLabelPipe, FormsModule, TranslatePipe, ModalComponent],
   templateUrl: './catalog.component.html',
 })
 export class CatalogComponent {
+  private readonly portraits = inject(PortraitService);
   readonly store = inject(WorkspaceStore);
   readonly dialogs = inject(DialogService);
   readonly role = signal('');
@@ -27,7 +30,7 @@ export class CatalogComponent {
     );
   }
   image(p: (typeof PRESETS)[number]): string {
-    return portrait(makeAgent(p.role, p.name));
+    return this.portraits.source(makeAgent(p.role, p.name));
   }
   add(p: (typeof PRESETS)[number]): void {
     this.store.addPreset(p.role, p.name);

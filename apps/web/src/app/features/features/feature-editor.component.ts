@@ -1,3 +1,6 @@
+import { UiLabelPipe } from '../../core/i18n/i18n.service';
+import { I18nService } from '../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../core/i18n/i18n.service';
 import { FEATURE_SCOPES } from '@domain/workspace';
 import { Component, inject, signal, viewChildren } from '@angular/core';
 import { MarkdownEditorComponent } from '../../shared/markdown-editor.component';
@@ -15,6 +18,8 @@ import { ModalComponent } from '../../shared/modal.component';
   selector: 'luma-feature-editor',
   standalone: true,
   imports: [
+    UiLabelPipe,
+    TranslatePipe,
     IconComponent,
     FeatureConversationComponent,
     MarkdownEditorComponent,
@@ -24,6 +29,7 @@ import { ModalComponent } from '../../shared/modal.component';
   templateUrl: './feature-editor.component.html',
 })
 export class FeatureEditorComponent {
+  readonly i18n = inject(I18nService);
   readonly store = inject(WorkspaceStore);
   readonly execution = inject(ExecutionService);
   readonly dialogs = inject(DialogService);
@@ -64,10 +70,11 @@ export class FeatureEditorComponent {
   fieldLabel(s: string): string {
     return (
       (
-        { description: 'ESCOPO', criteria: 'CRITÉRIOS DE ACEITAÇÃO', tasks: 'TAREFAS' } as Record<
-          string,
-          string
-        >
+        {
+          description: 'ESCOPO',
+          criteria: this.i18n.text('features.acceptance-criteria'),
+          tasks: 'TAREFAS',
+        } as Record<string, string>
       )[s] || s
     );
   }
@@ -125,7 +132,9 @@ export class FeatureEditorComponent {
       this.draft.status = this.existing.status;
     if (this.store.saveFeature(this.draft)) {
       this.dialogs.revealSprint.set(this.draft.sprintId);
-      this.dialogs.notify('Feature salva. Distribua o plano para atribuir os especialistas.');
+      this.dialogs.notify(
+        this.i18n.text('ui.feature-saved-distribute-the-plan-to-assign-specialists'),
+      );
       this.dialogs.close();
     }
   }
@@ -147,8 +156,8 @@ export class FeatureEditorComponent {
           ' / ' +
           this.draft.title +
           '? Essa ação remove o escopo e os registros de entrega desta feature.',
-        'EXCLUIR FEATURE',
-        'Excluir feature',
+        this.i18n.text('ui.delete-feature'),
+        this.i18n.text('features.delete-feature'),
         true,
       ))
     )

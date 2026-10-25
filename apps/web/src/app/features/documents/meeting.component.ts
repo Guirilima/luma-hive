@@ -1,3 +1,5 @@
+import { UiLabelPipe } from '../../core/i18n/i18n.service';
+import { PortraitService } from '../../core/appearance/portrait.service';
 import {
   meetingTurn,
   conversationRound,
@@ -34,7 +36,7 @@ type DocumentField = 'briefing' | 'vision' | 'scopeIn' | 'scopeOut' | 'glossary'
 @Component({
   selector: 'luma-meeting',
   standalone: true,
-  imports: [MarkdownEditorComponent, FormsModule, TranslatePipe, IconComponent],
+  imports: [UiLabelPipe, MarkdownEditorComponent, FormsModule, TranslatePipe, IconComponent],
   templateUrl: './meeting.component.html',
 })
 export class MeetingComponent implements OnDestroy {
@@ -42,7 +44,7 @@ export class MeetingComponent implements OnDestroy {
   readonly execution = inject(ExecutionService);
   readonly dialogs = inject(DialogService);
   readonly i18n = inject(I18nService);
-  readonly portrait = portrait;
+  readonly portrait = inject(PortraitService).source;
   readonly render = renderMarkdown;
   renderMessage(text: string): string {
     const entries = this.store
@@ -121,12 +123,12 @@ export class MeetingComponent implements OnDestroy {
     return (
       (
         {
-          briefing: 'Briefing',
-          vision: 'Visão',
+          briefing: this.i18n.text('project.briefing'),
+          vision: this.i18n.text('ui.vision'),
           scopeIn: 'Escopo',
-          scopeOut: 'Fora do escopo',
-          glossary: 'Glossário',
-          architecture: 'Arquitetura',
+          scopeOut: this.i18n.text('project.scopeOut'),
+          glossary: this.i18n.text('project.glossary'),
+          architecture: this.i18n.text('role.architect'),
           adrs: 'ADRs',
         } as Record<string, string>
       )[field] || field
@@ -254,10 +256,10 @@ export class MeetingComponent implements OnDestroy {
   }
 
   roleBadgeTag(a: Agent): string {
-    if (this.guests().includes(a.id)) return 'CONVIDADO';
+    if (this.guests().includes(a.id)) return this.i18n.text('documents.guest');
     if (a.role === 'commander') return 'COMANDANTE';
-    if (a.role === 'po') return 'RECONHECEDOR PRD';
-    if (a.role === 'architect') return 'RECONHECEDOR ADR';
+    if (a.role === 'po') return this.i18n.text('ui.prd-analyst');
+    if (a.role === 'architect') return this.i18n.text('ui.adr-analyst');
     const r = ROLES[a.role];
     return (r?.label || a.specialty || a.role).toUpperCase();
   }
@@ -265,8 +267,8 @@ export class MeetingComponent implements OnDestroy {
   plateRoleTag(a: Agent): string {
     const q = this.store.workspace()?.squads.find((s) => s.id === this.store.project()?.squadId);
     if (a.id === q?.commanderId) return 'COMANDANTE · ORGANIZADOR';
-    if (a.role === 'po') return 'RECONHECEDOR PRD';
-    if (a.role === 'architect') return 'RECONHECEDOR ADR';
+    if (a.role === 'po') return this.i18n.text('ui.prd-analyst');
+    if (a.role === 'architect') return this.i18n.text('ui.adr-analyst');
     return a.specialty || ROLES[a.role]?.label || a.role;
   }
 
@@ -332,7 +334,9 @@ export class MeetingComponent implements OnDestroy {
         'Para <b>@' +
         asked.name +
         '</b> <span>' +
-        (asked.id === cmd?.id ? 'conduz a reunião' : 'responde à pergunta dele') +
+        (asked.id === cmd?.id
+          ? this.i18n.text('ui.leads-the-meeting')
+          : this.i18n.text('ui.answers-their-question')) +
         '</span>'
       );
     if (cmd) {
@@ -470,9 +474,9 @@ export class MeetingComponent implements OnDestroy {
     const q = this.store.workspace()!.squads.find((s) => s.id === p.squadId);
     if (agent.id === q?.commanderId) return 'COMANDANTE · ORGANIZADOR';
     return agent.role === 'po'
-      ? 'RECONHECEDOR PRD'
+      ? this.i18n.text('ui.prd-analyst')
       : agent.role === 'architect'
-        ? 'RECONHECEDOR ADR'
+        ? this.i18n.text('ui.adr-analyst')
         : this.i18n.text('role.' + agent.role);
   }
 
@@ -525,7 +529,9 @@ export class MeetingComponent implements OnDestroy {
   }
 
   senderName(msg: ChatMessage): string {
-    return msg.role === 'user' ? 'Você' : this.store.agent(msg.agentId || '')?.name || 'AGENTE';
+    return msg.role === 'user'
+      ? this.i18n.text('documents.you')
+      : this.store.agent(msg.agentId || '')?.name || 'AGENTE';
   }
 
   senderAgent(msg: ChatMessage): Agent | undefined {
@@ -552,7 +558,7 @@ export class MeetingComponent implements OnDestroy {
     this.composer()?.nativeElement.focus();
   }
 
-  join(id: string, by = 'Você', reason = ''): boolean {
+  join(id: string, by = this.i18n.text('documents.you'), reason = ''): boolean {
     if (!id || this.members().some((a) => a.id === id) || this.guests().length >= 3) return false;
     this.guestDetails[id] = { by, reason };
     this.guests.update((v) => [...v, id]);
@@ -634,7 +640,7 @@ export class MeetingComponent implements OnDestroy {
     const text = this.message.trim();
     if (!text || this.execution.busy()) return;
     if (this.store.settings()?.mode !== 'live') {
-      this.dialogs.notify('Conecte o CLI com a execução ligada para conversar.');
+      this.dialogs.notify(this.i18n.text('ui.connect-the-cli-with-execution-enabled-to-chat'));
       return;
     }
     this.message = '';
@@ -664,7 +670,9 @@ export class MeetingComponent implements OnDestroy {
             ),
           );
         const called = mentioned.filter(
-          (a) => !this.members().some((m) => m.id === a.id) && this.join(a.id, 'Você', text),
+          (a) =>
+            !this.members().some((m) => m.id === a.id) &&
+            this.join(a.id, this.i18n.text('documents.you'), text),
         );
         const named = this.members().filter(
           (a) => mentioned.some((m) => m.id === a.id) && !called.includes(a),
@@ -852,7 +860,7 @@ export class MeetingComponent implements OnDestroy {
       this.original = JSON.stringify(this.draft);
       this.dialogs.projectDraft.set(structuredClone(this.draft));
       this.dialogs.projectAction.set({ kind: 'documents' });
-      this.dialogs.notify('Documentos salvos no projeto.');
+      this.dialogs.notify(this.i18n.text('ui.documents-saved-to-project'));
       this.confirmLeave.set(false);
       if (leave) this.dialogs.close();
     }

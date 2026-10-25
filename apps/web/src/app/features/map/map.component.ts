@@ -1,3 +1,5 @@
+import { UiLabelPipe } from '../../core/i18n/i18n.service';
+import { PortraitService } from '../../core/appearance/portrait.service';
 import { department } from './renderers/pixel-paths';
 import {
   Component,
@@ -52,7 +54,7 @@ interface WorkState {
 @Component({
   selector: 'luma-map',
   standalone: true,
-  imports: [FormsModule, TranslatePipe, IconComponent],
+  imports: [UiLabelPipe, FormsModule, TranslatePipe, IconComponent],
   templateUrl: './map.component.html',
 })
 export class MapComponent implements AfterViewInit, OnDestroy {
@@ -119,16 +121,15 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   readonly pixelInspected = signal('');
   pixelNote(): string {
     const room = this.rooms.find((r) => r.id === this.pixelInspected());
-    if (!room)
-      return 'Clique em um agente para selecioná-lo · Duplo clique para conversar · Arraste para navegar';
+    if (!room) return this.i18n.text('ui.click-to-select-an-agent-double-click-to-chat-drag-to-n');
     const names = this.store
       .team()
       .filter((a) => department(a) === room.id)
       .map((a) => a.name);
     return (
-      room.name.toUpperCase() +
+      this.i18n.text('pixel.room.' + room.id).toUpperCase() +
       ' · ' +
-      (names.length ? names.join(' / ') : 'Sala compartilhada, disponível para visitas')
+      (names.length ? names.join(' / ') : this.i18n.text('ui.shared-room-available-for-visits'))
     );
   }
   visitDepartment(id: string): void {
@@ -136,7 +137,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   }
   readonly rooms = PIXEL_ROOMS;
   readonly officeRooms = OFFICE_ROOMS;
-  portrait = (agent: import('@domain/models').Agent) => importedPortrait(agent);
+  portrait = inject(PortraitService).source;
   private renderer: MapRenderer | null = null;
   private observer: ResizeObserver | null = null;
   private ready = signal(false);
@@ -464,10 +465,10 @@ export class MapComponent implements AfterViewInit, OnDestroy {
         planning = this.execution.planning();
       return {
         tone: planning ? 'plan' : 'wait',
-        chip: planning ? 'PLANEJANDO' : 'AGUARDA APROVAÇÃO',
+        chip: planning ? 'PLANEJANDO' : this.i18n.text('ui.awaiting-approval'),
         doing: planning
           ? 'Montando o plano de ' + label
-          : 'Plano pronto. Aprove no chat da operação.',
+          : this.i18n.text('ui.plan-ready-approve-it-in-the-operation-chat'),
         icon: planning ? 'flow' : 'check',
         foot: label.toUpperCase() + ' · ' + tag,
         say: this.execution
@@ -509,7 +510,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
       tone: paused ? 'wait' : callee ? 'call' : 'work',
       chip: paused
         ? this.execution.interacting()
-          ? 'PAUSANDO APÓS A ETAPA'
+          ? this.i18n.text('ui.pausing-after-stage')
           : 'PAUSADO'
         : called
           ? 'ATENDENDO ' + (caller?.name || '')
