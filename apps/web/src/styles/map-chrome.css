@@ -1,0 +1,380 @@
+/* Compact provider status and map chrome; scene renderers remain independent of UI theme. */
+.connector-status-list {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex-shrink: 0;
+}
+#workspace .topbar .connector-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px;
+  min-height: 30px;
+  max-width: none;
+  font-size: 9px;
+  letter-spacing: 0.3px;
+  overflow: visible;
+}
+#workspace .connector-status i {
+  margin: 0;
+  background: #67d3ad;
+  flex: none;
+}
+#workspace .connector-status.offline i {
+  background: var(--muted);
+}
+#workspace .connector-status.current-provider {
+  border-color: var(--line);
+  background: var(--panel);
+}
+#workspace .squad-quick-stats button {
+  flex-direction: row;
+  justify-content: flex-start;
+  padding: 6px 8px;
+  gap: 6px;
+  min-height: 31px;
+  font-size: 9px;
+  text-align: left;
+}
+#workspace .squad-quick-stats button:nth-child(odd) {
+  border-left: 0;
+}
+#workspace .squad-quick-stats button:nth-child(even) {
+  border-left: 1px solid var(--line);
+}
+#workspace .squad-quick-stats button:nth-child(n + 3) {
+  border-top: 1px solid var(--line);
+}
+#workspace .squad-quick-stats strong {
+  font-size: 15px;
+  flex: none;
+  min-width: 14px;
+}
+#workspace .squad-quick-stats span {
+  overflow-wrap: anywhere;
+}
+#workspace .squad-quick-stats button {
+  border-bottom-width: 1px;
+}
+.delivery-guide-content {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 12px/1.7 var(--mono);
+  padding: 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+html[data-interface-theme='pixel'] #workspace .topbar .connector-status {
+  font-family: var(--pixel-font);
+  font-size: 14px;
+  color: var(--pixel-paper);
+  border: 1px solid var(--pixel-border);
+  background: var(--pixel-panel);
+  box-shadow: 2px 2px var(--pixel-shadow);
+}
+html[data-interface-theme='pixel'] #workspace .squad-quick-stats button {
+  font-size: 12px;
+}
+html[data-interface-theme='pixel'] #workspace .squad-quick-stats strong {
+  font-size: 18px;
+}
+html[data-interface-theme='pixel']
+  #workspace
+  :is(.right-hud, .operation-progress, .map-side-controls, .legend-strip, .transmission-strip) {
+  background: var(--pixel-panel);
+  color: var(--pixel-paper);
+  border: 2px solid var(--pixel-border);
+  border-radius: 0;
+  box-shadow: var(--pixel-frame);
+}
+html[data-interface-theme='pixel'] #workspace .right-hud {
+  padding: 14px;
+  width: 286px;
+  max-width: calc(100% - 32px);
+}
+html[data-interface-theme='pixel'] #workspace .right-hud .grow {
+  min-width: 0;
+}
+html[data-interface-theme='pixel'] #workspace :is(.identity-name, .identity-role, .progress-step) {
+  border-radius: 0;
+}
+html[data-interface-theme='pixel'] #workspace .identity-name {
+  color: var(--pixel-deep);
+  background: var(--pixel-gold);
+  font-family: var(--pixel-font);
+  font-size: 23px;
+}
+html[data-interface-theme='pixel'] #workspace .identity-role {
+  color: var(--pixel-deep);
+  background: var(--cyan);
+  font-size: 14px;
+}
+html[data-interface-theme='pixel']
+  #workspace
+  :is(
+    .agent-description,
+    .data-pair,
+    .mission-empty,
+    .mission-title,
+    .mission-sub,
+    .profile-actions .action-text
+  ) {
+  font-family: var(--pixel-font);
+  font-size: 13px;
+  color: var(--pixel-paper);
+}
+html[data-interface-theme='pixel'] #workspace .data-pair {
+  gap: 10px;
+  border-color: var(--line);
+}
+html[data-interface-theme='pixel'] #workspace .data-pair dt {
+  flex-shrink: 0;
+  color: var(--muted);
+}
+html[data-interface-theme='pixel'] #workspace .data-pair dd {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--pixel-paper);
+}
+html[data-interface-theme='pixel'] #workspace :is(.mission-empty, .profile-actions .action-text) {
+  background: var(--pixel-deep);
+  border: 1px solid var(--pixel-border);
+}
+html[data-interface-theme='pixel'] #workspace :is(.tool-tags .tag, .identity-id) {
+  color: var(--pixel-gold);
+}
+html[data-interface-theme='pixel'] #workspace .mission-block {
+  margin-top: 18px;
+}
+html[data-interface-theme='pixel'] #workspace .operation-progress {
+  margin-bottom: 8px;
+}
+html[data-interface-theme='pixel'] #workspace .progress-caption {
+  font-family: var(--pixel-font);
+  font-size: 13px;
+}
+html[data-interface-theme='pixel'] #workspace .progress-caption strong {
+  color: var(--cyan);
+  font-family: inherit;
+  font-size: 17px;
+}
+html[data-interface-theme='pixel'] #workspace .progress-step {
+  border-color: var(--pixel-border);
+  background: var(--pixel-deep);
+}
+html[data-interface-theme='pixel'] #workspace .progress-step.done {
+  background: var(--cyan);
+  color: var(--pixel-deep);
+}
+html[data-interface-theme='pixel'] #workspace :is(.map-side-controls button, .legend-strip button) {
+  color: var(--pixel-paper);
+}
+html[data-interface-theme='pixel'] #workspace .msc-tip {
+  background: var(--pixel-panel);
+  border-color: var(--pixel-border);
+  color: var(--pixel-paper);
+  border-radius: 0;
+}
+html[data-interface-theme='pixel'] #workspace :is(.node-caption, .ops-pop, .node-bubble) {
+  background: var(--pixel-panel);
+  border: 1px solid var(--pixel-border);
+  border-radius: 0;
+  box-shadow: 3px 3px var(--pixel-shadow);
+  color: var(--pixel-paper);
+}
+html[data-interface-theme='pixel'] #workspace .node-bubble {
+  width: 34px;
+  height: 34px;
+}
+html[data-interface-theme='pixel'] #workspace .node-bubble .icon {
+  width: 16px;
+  height: 16px;
+}
+html[data-interface-theme='pixel'] #workspace :is(.node-caption strong, .ops-who strong) {
+  color: var(--pixel-paper);
+}
+html[data-interface-theme='pixel']
+  #workspace
+  :is(.node-caption small, .ops-who small, .ops-doing, .ops-say) {
+  color: var(--muted);
+}
+html[data-interface-theme='pixel'] #workspace .ops-chip {
+  color: var(--pixel-gold);
+  background: var(--pixel-deep);
+}
+html[data-interface-theme='pixel'] #workspace .office-label {
+  color: var(--pixel-gold);
+  background: var(--pixel-deep);
+  border-color: var(--pixel-border);
+}
+html[data-interface-theme='pixel'] .delivery-guide-content {
+  background: var(--pixel-deep);
+  border: 2px solid var(--pixel-border);
+}
+@media (max-width: 900px) {
+  #workspace .topbar .system-meta {
+    gap: 5px;
+    max-width: none;
+  }
+  #workspace .topbar .connector-status {
+    font-size: 8px;
+    padding: 5px;
+  }
+  #workspace .topbar .connector-status-list {
+    gap: 2px;
+  }
+  html[data-interface-theme='pixel'] #workspace .topbar .connector-status {
+    font-size: 12px;
+  }
+}
+@media (max-width: 560px) {
+  #workspace .squad-quick-stats button {
+    padding: 4px;
+    min-height: 29px;
+    font-size: 8px;
+    gap: 4px;
+  }
+  #workspace .squad-quick-stats strong {
+    font-size: 13px;
+  }
+  html[data-interface-theme='pixel'] #workspace .squad-quick-stats button {
+    font-size: 11px;
+  }
+  html[data-interface-theme='pixel'] #workspace .squad-quick-stats strong {
+    font-size: 15px;
+  }
+  #workspace .topbar .connector-status {
+    font-size: 8px;
+    gap: 3px;
+    padding: 5px 3px;
+  }
+  #workspace .topbar .connector-status i {
+    width: 4px;
+    height: 4px;
+  }
+  #workspace .topbar .connector-status-list {
+    max-width: 145px;
+  }
+  html[data-interface-theme='pixel'] #workspace .topbar .connector-status {
+    font-size: 11px;
+  }
+  html[data-interface-theme='pixel'] #workspace .right-hud {
+    padding: 10px;
+  }
+}
+/* Shared project filters wrap as controls are added or translated. */
+.ops-filter-row {
+  flex-wrap: wrap;
+}
+.ops-filter-row select {
+  flex: 1 1 120px;
+  min-width: 0;
+  max-width: 100%;
+}
+html[data-interface-theme='pixel'] #workspace .pixel-actions :is(button, select) {
+  background: var(--pixel-panel);
+  color: var(--pixel-paper);
+  border: 2px solid var(--pixel-border);
+  border-radius: 0;
+  box-shadow: 2px 2px var(--pixel-shadow);
+  font: 14px var(--pixel-font);
+  padding: 5px 8px;
+}
+html[data-interface-theme='pixel'] #workspace .pixel-note {
+  color: var(--muted);
+  font: 13px var(--pixel-font);
+}
+html[data-interface-theme='pixel'] #workspace .pixel-heading strong {
+  color: var(--pixel-paper);
+  font-family: var(--pixel-font);
+}
+html[data-interface-theme='pixel'] #workspace .pixel-kicker {
+  color: var(--pixel-gold);
+}
+@media (max-width: 560px) {
+  html[data-interface-theme='pixel'] #workspace .pixel-actions :is(button, select) {
+    font-size: 12px;
+    padding: 4px;
+  }
+}
+/* Pixel hierarchy uses flat tiles and stepped borders instead of neon rings. */
+html[data-interface-theme='pixel'] #sqTree .sq-ring {
+  background: var(--pixel-deep);
+  color: var(--pixel-paper);
+  border: 2px solid var(--pixel-border);
+  border-radius: 0;
+  box-shadow: 3px 3px var(--pixel-shadow);
+  animation: none;
+}
+html[data-interface-theme='pixel'] #sqTree .sq-commander .sq-ring:before,
+html[data-interface-theme='pixel'] #sqTree .sq-commander .sq-ring:after {
+  display: none;
+}
+html[data-interface-theme='pixel'] #sqTree .sq-node:is(:hover, :focus-visible, .picking) .sq-ring {
+  border-color: var(--cyan);
+  background: var(--pixel-panel);
+  transform: translateY(-2px);
+}
+html[data-interface-theme='pixel'] #sqTree :is(.sq-tree, .sq-bus, .sq-node):before {
+  background: var(--pixel-border);
+  box-shadow: none;
+  animation: none;
+}
+html[data-interface-theme='pixel'] #sqTree .sq-band-label {
+  background: var(--pixel-deep);
+}
+html[data-interface-theme='pixel'] #sqTree .sq-band-label span {
+  color: var(--pixel-gold);
+}
+html[data-interface-theme='pixel'] #sqTree .sq-band-label small {
+  color: var(--pixel-paper);
+}
+@media (max-width: 560px) {
+  #workspace .topbar {
+    gap: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  #workspace .topbar .brand {
+    gap: 5px;
+    min-width: 0;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+  #workspace .topbar .brand img {
+    width: 22px;
+    height: 27px;
+  }
+  #workspace .topbar .brand small {
+    display: none;
+  }
+  #workspace .topbar .system-meta {
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  #workspace .topbar .system-meta > .icon-button {
+    width: 28px;
+    min-width: 28px;
+  }
+  #workspace .squad-quick-stats {
+    grid-template-columns: 1fr;
+  }
+  #workspace .squad-quick-stats button {
+    min-height: 23px;
+    padding: 4px 6px;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+  }
+  #workspace .squad-quick-stats button:first-child {
+    border-top: 0;
+  }
+  #workspace .squad-quick-stats span {
+    overflow-wrap: normal;
+  }
+  html[data-interface-theme='pixel'] #workspace .topbar .brand {
+    font-size: 12px;
+  }
+}

@@ -1,0 +1,86 @@
+<luma-modal [title]="'dashboard.operations' | t" (closed)="dialogs.close()">
+  <form (ngSubmit)="save()">
+    @if (draft) {
+      <div class="form-grid">
+        <label class="field">
+          {{ 'project.name' | t }}
+          <input name="name" [(ngModel)]="draft.name" required maxlength="70" />
+        </label>
+        <label class="field">
+          {{ 'project.code' | t }}
+          <input name="code" [(ngModel)]="draft.code" required maxlength="20" />
+        </label>
+        <label class="field full">
+          {{ 'project.squad' | t }}
+          <select name="squad" [(ngModel)]="draft.squadId" required>
+            @for (squad of store.workspace()?.squads; track squad.id) {
+              <option [value]="squad.id" [disabled]="!store.squadComplete(squad)">
+                {{ squad.name }} {{ store.squadComplete(squad) ? '' : ('squad.incomplete' | t) }}
+              </option>
+            }
+          </select>
+        </label>
+        <label class="field full">
+          {{ 'project.folder' | t }}
+          <input
+            name="folder"
+            [(ngModel)]="draft.folder"
+            required
+            pattern="[a-z0-9][a-z0-9-]{0,79}"
+            [readonly]="!!existing"
+          />
+        </label>
+        @for (field of fields; track field) {
+          <label class="field full">
+            {{ 'project.' + field | t }}
+            <luma-markdown-editor
+              [(value)]="draft[field]"
+              [label]="'project.' + field"
+              [rows]="field === 'briefing' ? 5 : 3"
+            />
+          </label>
+        }
+      </div>
+      <h3>{{ 'project.sprints' | t }}</h3>
+      @for (sprint of draft.sprints; track sprint.id) {
+        <div class="form-grid sprint-form">
+          <label class="field">
+            {{ 'project.name' | t }}
+            <input [name]="'sprintName-' + sprint.id" [(ngModel)]="sprint.name" required />
+          </label>
+          <label class="field">
+            {{ 'project.goal' | t }}
+            <input [name]="'sprintGoal-' + sprint.id" [(ngModel)]="sprint.goal" />
+          </label>
+          @if ($index > 0) {
+            <button type="button" class="btn sm" (click)="removeSprint(sprint.id)">
+              {{ 'action.delete' | t }}
+            </button>
+          }
+        </div>
+      }
+      <footer class="form-footer">
+        @if (existing) {
+          <button
+            type="button"
+            class="btn danger"
+            (click)="remove()"
+            [disabled]="store.workspace()!.projects.length < 2 || execution.busy()"
+          >
+            {{ 'action.delete' | t }}
+          </button>
+        }
+        <span class="grow"></span>
+        <button type="button" class="btn" (click)="dialogs.close()">
+          {{ 'action.cancel' | t }}
+        </button>
+        <button class="btn primary" [disabled]="execution.busy()">{{ 'action.save' | t }}</button>
+      </footer>
+    } @else {
+      <p>{{ 'project.noSquad' | t }}</p>
+      <button class="btn primary" type="button" (click)="dialogs.open('squad')">
+        {{ 'dashboard.newSquad' | t }}
+      </button>
+    }
+  </form>
+</luma-modal>

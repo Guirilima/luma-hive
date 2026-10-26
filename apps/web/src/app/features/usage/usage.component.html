@@ -1,0 +1,333 @@
+<button
+  #trigger
+  type="button"
+  class="usage-trigger"
+  (click)="open()"
+  popovertarget="usagePreview"
+  [attr.aria-label]="'usage.title' | t"
+  [attr.aria-expanded]="opened() || previewOpened()"
+  aria-haspopup="dialog"
+  aria-controls="usagePreview"
+  [title]="'usage.title' | t"
+>
+  <luma-icon name="chart" />
+  <span>{{ 'usage.short' | t }}</span>
+</button>
+<section
+  #preview
+  id="usagePreview"
+  popover="auto"
+  class="usage-preview"
+  role="dialog"
+  aria-labelledby="usagePreviewTitle"
+  (toggle)="previewToggled()"
+  (keydown)="$event.stopPropagation()"
+>
+  <header class="preview-head">
+    <div>
+      <strong id="usagePreviewTitle">{{ 'usage.previewTitle' | t }}</strong>
+      <span>{{ 'usage.previewTokens' | t }}</span>
+    </div>
+    <button
+      type="button"
+      class="usage-icon"
+      (click)="closePreview()"
+      [attr.aria-label]="'action.close' | t"
+    >
+      <luma-icon name="close" />
+    </button>
+  </header>
+  <div class="preview-body" [attr.aria-busy]="loading()">
+    @if (snapshot(); as data) {
+      @for (p of data.providers; track p.provider) {
+        <article class="preview-provider" [attr.data-provider]="p.provider">
+          <header>
+            <span class="preview-dot"></span>
+            <strong>
+              {{
+                p.provider === 'codex' ? 'Codex' : p.provider === 'devin' ? 'Devin' : 'Antigravity'
+              }}
+            </strong>
+            <span
+              class="preview-tokens"
+              [title]="number(p.local.week.totalTokens) + ' ' + ('usage.previewTokens' | t)"
+            >
+              {{ compactTokens(p.local.week.totalTokens) }}
+              <small>{{ 'usage.tokens' | t }}</small>
+            </span>
+          </header>
+          @if (p.quota.status === 'available') {
+            @for (group of quotaGroups(p.quota.windows); track group.name) {
+              @if (quotaGroups(p.quota.windows).length > 1) {
+                <p class="preview-group">{{ group.name }}</p>
+              }
+              @for (w of group.windows; track w.id) {
+                <div
+                  class="preview-window"
+                  [title]="w.resetsAt ? ('usage.resets' | t) + ' ' + date(w.resetsAt) : ''"
+                >
+                  <span>{{ shortWindow(w) }}</span>
+                  @if (w.remainingPercent != null) {
+                    <progress
+                      [value]="w.remainingPercent"
+                      max="100"
+                      [class.low]="w.remainingPercent < 20"
+                      [attr.aria-label]="
+                        group.name + ' · ' + windowLabel(w) + ' · ' + ('usage.remaining' | t)
+                      "
+                    ></progress>
+                  } @else {
+                    <span class="preview-no-bar">—</span>
+                  }
+                  <strong>
+                    {{
+                      w.remainingPercent != null
+                        ? percent(w.remainingPercent)
+                        : number(w.remainingAmount)
+                    }}
+                  </strong>
+                </div>
+              }
+            }
+          } @else {
+            <p class="preview-unavailable">{{ 'usage.status.' + p.quota.status | t }}</p>
+          }
+          @if (p.local.week.unreportedRuns) {
+            <p class="preview-partial">{{ 'usage.partial' | t }}</p>
+          }
+        </article>
+      }
+      <p class="preview-legend">{{ 'usage.previewLegend' | t }}</p>
+    } @else {
+      <p class="preview-unavailable" role="status">
+        {{ (loading() ? 'usage.loading' : 'usage.noData') | t }}
+      </p>
+    }
+    @if (error()) {
+      <p class="preview-partial" role="alert">{{ 'usage.previewError' | t }}</p>
+    }
+  </div>
+  <footer class="preview-footer">
+    <button
+      type="button"
+      class="usage-icon"
+      (click)="refresh()"
+      [disabled]="loading()"
+      [attr.aria-label]="'usage.refresh' | t"
+      [title]="(loading() ? 'usage.refreshing' : 'usage.refresh') | t"
+    >
+      <luma-icon name="rotate-right" />
+    </button>
+    <button type="button" class="preview-details" (click)="openDetails()">
+      {{ 'usage.details' | t }}
+      <luma-icon name="arrow" />
+    </button>
+  </footer>
+</section>
+<dialog
+  #panel
+  id="usageDialog"
+  class="usage-dialog"
+  aria-labelledby="usageTitle"
+  aria-describedby="usageDescription"
+  (close)="closed()"
+  (click)="backdrop($event)"
+  (keydown)="$event.stopPropagation()"
+>
+  <div class="usage-shell">
+    <header class="usage-head">
+      <div>
+        <span class="usage-eyebrow">LUMA / HIVE · {{ 'usage.integrations' | t }}</span>
+        <h2 id="usageTitle">{{ 'usage.title' | t }}</h2>
+      </div>
+      <button
+        type="button"
+        class="usage-icon"
+        (click)="close()"
+        [attr.aria-label]="'action.close' | t"
+        autofocus
+      >
+        <luma-icon name="close" />
+      </button>
+    </header>
+    <div class="usage-body">
+      <p id="usageDescription" class="usage-description">{{ 'usage.description' | t }}</p>
+      <div class="usage-toolbar">
+        <div class="usage-period" role="group" [attr.aria-label]="'usage.period' | t">
+          <button
+            type="button"
+            [class.active]="period() === 'week'"
+            [attr.aria-pressed]="period() === 'week'"
+            (click)="period.set('week')"
+          >
+            {{ 'usage.thisWeek' | t }}
+          </button>
+          <button
+            type="button"
+            [class.active]="period() === 'month'"
+            [attr.aria-pressed]="period() === 'month'"
+            (click)="period.set('month')"
+          >
+            {{ 'usage.thisMonth' | t }}
+          </button>
+        </div>
+        <button type="button" class="usage-refresh" (click)="refresh()" [disabled]="loading()">
+          <luma-icon name="rotate-right" />
+          {{ (loading() ? 'usage.refreshing' : 'usage.refresh') | t }}
+        </button>
+      </div>
+      @if (error()) {
+        <p class="usage-alert" role="alert">{{ 'usage.error' | t }}</p>
+      }
+      @if (snapshot(); as data) {
+        <section class="usage-summary" [attr.aria-label]="'usage.local' | t">
+          <div>
+            <span>{{ 'usage.localTokens' | t }}</span>
+            <strong>{{ number(total().tokens) }}</strong>
+          </div>
+          <div>
+            <span>{{ 'usage.executions' | t }}</span>
+            <strong>{{ number(total().runs) }}</strong>
+          </div>
+          <p>
+            {{ range() }}
+            <small>{{ data.timezone }}</small>
+          </p>
+        </section>
+        @if (total().missing) {
+          <p class="usage-coverage">{{ number(total().missing) }} {{ 'usage.missing' | t }}</p>
+        }
+        <div class="usage-cards">
+          @for (p of data.providers; track p.provider) {
+            <article class="usage-card" [attr.data-provider]="p.provider">
+              <header>
+                <span class="usage-provider-icon">
+                  <luma-icon
+                    [name]="
+                      p.provider === 'codex'
+                        ? 'code'
+                        : p.provider === 'devin'
+                          ? 'terminal'
+                          : 'globe'
+                    "
+                  />
+                </span>
+                <h3>
+                  {{
+                    p.provider === 'codex'
+                      ? 'Codex'
+                      : p.provider === 'devin'
+                        ? 'Devin'
+                        : 'Antigravity'
+                  }}
+                </h3>
+                <span class="usage-status" [class.available]="p.quota.status === 'available'">
+                  {{ 'usage.status.' + p.quota.status | t }}
+                </span>
+              </header>
+              <div class="usage-local-title">{{ 'usage.local' | t }}</div>
+              <dl class="usage-tokens">
+                <div>
+                  <dt>{{ 'usage.total' | t }}</dt>
+                  <dd>{{ number(p.local[period()].totalTokens) }}</dd>
+                </div>
+                <div>
+                  <dt>{{ 'usage.input' | t }}</dt>
+                  <dd>{{ number(p.local[period()].inputTokens) }}</dd>
+                </div>
+                <div>
+                  <dt>{{ 'usage.output' | t }}</dt>
+                  <dd>{{ number(p.local[period()].outputTokens) }}</dd>
+                </div>
+                <div>
+                  <dt>{{ 'usage.cache' | t }}</dt>
+                  <dd>{{ number(p.local[period()].cachedTokens) }}</dd>
+                </div>
+              </dl>
+              <p class="usage-run-count">
+                {{ number(p.local[period()].reportedRuns) }} / {{ number(p.local[period()].runs) }}
+                {{ 'usage.coverage' | t }}
+              </p>
+              <h4>{{ 'usage.account' | t }}</h4>
+              @if (p.quota.status === 'available') {
+                @for (w of p.quota.windows; track w.id) {
+                  <div class="usage-quota">
+                    <div class="usage-quota-title">
+                      <span>{{ w.group }} · {{ windowLabel(w) }}</span>
+                      <strong>
+                        {{
+                          w.remainingPercent != null
+                            ? percent(w.remainingPercent)
+                            : number(w.remainingAmount)
+                        }}
+                        <small>{{ 'usage.remaining' | t }}</small>
+                      </strong>
+                    </div>
+                    @if (w.remainingPercent != null) {
+                      <progress
+                        [value]="w.remainingPercent"
+                        max="100"
+                        [class.low]="w.remainingPercent < 20"
+                        [attr.aria-label]="
+                          w.group + ' · ' + windowLabel(w) + ' · ' + ('usage.remaining' | t)
+                        "
+                      ></progress>
+                    }
+                    @if (w.resetsAt) {
+                      <p>{{ 'usage.resets' | t }} {{ date(w.resetsAt) }}</p>
+                    }
+                  </div>
+                }
+                @if (!weekly(p.quota.windows).length) {
+                  <p class="usage-unavailable">
+                    {{ 'usage.week' | t }} · {{ 'usage.notReported' | t }}
+                  </p>
+                }
+                @if (!monthly(p.quota.windows).length) {
+                  <p class="usage-unavailable">
+                    {{ 'usage.month' | t }} · {{ 'usage.notReported' | t }}
+                  </p>
+                }
+              } @else {
+                <p class="usage-unavailable">
+                  {{
+                    'usage.reason.' +
+                      (p.quota.reason ||
+                        (p.quota.status === 'not-installed'
+                          ? 'notInstalled'
+                          : p.quota.status === 'not-checked'
+                            ? 'pending'
+                            : 'unavailable')) | t
+                  }}
+                </p>
+                <div class="usage-missing-windows">
+                  <span>
+                    {{ 'usage.week' | t }}
+                    <b>—</b>
+                  </span>
+                  <span>
+                    {{ 'usage.month' | t }}
+                    <b>—</b>
+                  </span>
+                </div>
+              }
+              @if (p.quota.checkedAt) {
+                <p class="usage-checked">{{ 'usage.checked' | t }} {{ date(p.quota.checkedAt) }}</p>
+              }
+            </article>
+          }
+        </div>
+      } @else {
+        <p class="usage-loading" role="status">
+          {{ (loading() ? 'usage.loading' : 'usage.noData') | t }}
+        </p>
+      }
+      <p class="usage-note">{{ 'usage.note' | t }}</p>
+    </div>
+    <footer class="usage-footer">
+      <button type="button" class="btn sm" (click)="observe()">{{ 'obs.consumption' | t }}</button>
+      <luma-icon name="info" />
+      <span>{{ 'usage.footer' | t }}</span>
+    </footer>
+  </div>
+</dialog>

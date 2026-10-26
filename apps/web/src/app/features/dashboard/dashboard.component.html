@@ -1,0 +1,369 @@
+<section id="homeView" class="home-view">
+  <div class="home-inner">
+    <!-- Header: PAINEL GERAL. -->
+    <header class="home-head">
+      <div>
+        <div class="eyebrow">LUMA HIVE / {{ today() }}</div>
+        <h1>
+          {{ 'dashboard.title' | t }}
+          <span>{{ 'dashboard.titleSuffix' | t }}</span>
+        </h1>
+        <p>
+          {{ store.workspace()?.projects?.length || 0 }} {{ 'ui.operation-s' | t }}
+          {{ store.agents().length }} {{ 'ui.agents-231' | t }}
+          @if (reviewCount() > 0) {
+            ,
+            <strong>{{ reviewCount() }} {{ 'ui.delivery-s-awaiting-approval' | t }}</strong>
+          }
+          .
+        </p>
+      </div>
+      <div class="flex wrap home-actions">
+        <button class="btn ghost" (click)="dialogs.open('agent')">
+          <luma-icon name="plus" />
+          {{ 'agent.new' | t }}
+        </button>
+        <button class="btn ghost" (click)="dialogs.open('project')">
+          <luma-icon name="project" />
+          {{ 'dashboard.newOperation' | t }}
+        </button>
+        <button class="btn primary" (click)="router.navigateByUrl('/squad')">
+          <luma-icon name="arrow" />
+          {{ 'dashboard.open-squad-network' | t }}
+        </button>
+      </div>
+    </header>
+
+    <!-- Seção OPERAÇÕES -->
+    <section class="home-section home-projects-wrap">
+      <div class="home-section-head">
+        <span>{{ 'dashboard.operations-161' | t }}</span>
+        <span>
+          {{ pad(filteredProjects().length) }} / {{ pad(store.workspace()?.projects?.length || 0) }}
+        </span>
+      </div>
+
+      <!-- Barra de Filtros MEL-010 -->
+      <div class="project-filters-bar">
+        <div class="search-box">
+          <luma-icon name="search" />
+          <input
+            type="search"
+            [placeholder]="'filters.searchPlaceholder' | t"
+            [value]="searchQuery()"
+            (input)="searchQuery.set($any($event.target).value)"
+            aria-label="Buscar operações"
+          />
+        </div>
+        <select
+          [value]="statusFilter()"
+          (change)="statusFilter.set($any($event.target).value)"
+          [attr.aria-label]="'filters.byStatus' | t"
+        >
+          <option value="all">{{ 'filters.status.all' | t }}</option>
+          <option value="running">{{ 'filters.status.in_progress' | t }}</option>
+          <option value="review">{{ 'filters.status.review' | t }}</option>
+          <option value="completed">{{ 'filters.status.completed' | t }}</option>
+        </select>
+        <select
+          [value]="squadFilter()"
+          (change)="squadFilter.set($any($event.target).value)"
+          [attr.aria-label]="'filters.bySquad' | t"
+        >
+          <option value="all">{{ 'filters.squad.all' | t }}</option>
+          @for (sq of store.workspace()?.squads; track sq.id) {
+            <option [value]="sq.id">{{ sq.name }}</option>
+          }
+        </select>
+        <select
+          [value]="sortFilter()"
+          (change)="sortFilter.set($any($event.target).value)"
+          [attr.aria-label]="'filters.sort' | t"
+        >
+          <option value="recent">{{ 'filters.sort.recent' | t }}</option>
+          <option value="name">{{ 'filters.sort.name' | t }}</option>
+        </select>
+        @if (hasActiveFilters()) {
+          <button class="btn ghost sm" (click)="clearFilters()">
+            <luma-icon name="close" />
+            {{ 'filters.clear' | t }}
+          </button>
+        }
+      </div>
+
+      <div class="home-projects">
+        @for (project of filteredProjects(); track project.id) {
+          <article
+            class="home-project"
+            [class.current]="project.id === store.project()?.id"
+            [class.completed]="isProjectCompleted(project)"
+          >
+            <div class="between">
+              <span class="eyebrow">{{ project.code }}</span>
+              <div class="flex gap-xs">
+                @if (project.id === store.project()?.id) {
+                  <span class="tag accent">{{ 'dashboard.active-162' | t }}</span>
+                }
+                @if (isProjectCompleted(project)) {
+                  <span class="tag success completed-badge">
+                    <luma-icon name="check" />
+                    {{ 'status.projectCompleted' | t }}
+                  </span>
+                }
+              </div>
+            </div>
+            <h3>{{ project.name }}</h3>
+            <p>{{ project.briefing.slice(0, 110) || ('ui.briefing-pending' | t) }}</p>
+            <div class="home-progress">
+              <div class="progress-rail">
+                <span [style.width.%]="progress(project)"></span>
+              </div>
+              <strong>{{ progress(project) }}%</strong>
+            </div>
+            <dl class="home-stats">
+              <div>
+                <dt>{{ 'dashboard.to-do' | t }}</dt>
+                <dd>{{ pad(aFazer(project)) }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'dashboard.ready' | t }}</dt>
+                <dd>{{ pad(prontas(project)) }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'dashboard.running' | t }}</dt>
+                <dd>{{ pad(rodando(project)) }}</dd>
+              </div>
+              <div [class.attention]="revisao(project) > 0">
+                <dt>{{ 'dashboard.review-166' | t }}</dt>
+                <dd>{{ pad(revisao(project)) }}</dd>
+              </div>
+              <div>
+                <dt>{{ 'dashboard.done' | t }}</dt>
+                <dd>{{ pad(feitas(project)) }}</dd>
+              </div>
+            </dl>
+            <div class="between home-project-foot">
+              <div class="mini-faces">
+                @for (agent of squadAgents(project); track agent.id) {
+                  <img [src]="portrait(agent)" [alt]="agent.name" [title]="agent.name" />
+                }
+              </div>
+              <div class="flex">
+                <button
+                  class="btn sm"
+                  [class.white]="project.id === store.project()?.id"
+                  (click)="openProject(project.id)"
+                >
+                  <luma-icon name="arrow" />
+                  {{ 'dashboard.open-project' | t }}
+                </button>
+                <button
+                  class="btn sm"
+                  (click)="openTeams(project.id)"
+                  [title]="'dashboard.agent-teams-online-meeting-to-co-write-documents' | t"
+                >
+                  <luma-icon name="video" />
+                  {{ 'dashboard.open-teams' | t }}
+                </button>
+              </div>
+            </div>
+          </article>
+        }
+        @if (filteredProjects().length === 0) {
+          <div class="project-filters-empty">
+            <luma-icon name="search" />
+            <p>{{ 'filters.noResults' | t }}</p>
+            <button class="btn ghost sm" (click)="clearFilters()">
+              {{ 'filters.clear' | t }}
+            </button>
+          </div>
+        }
+        <button class="home-project new" (click)="dialogs.open('project')">
+          <luma-icon name="plus" />
+          <strong>{{ 'dashboard.newOperation' | t }}</strong>
+          <small>{{ 'dashboard.project-name-and-squad' | t }}</small>
+        </button>
+      </div>
+    </section>
+
+    <!-- Seção SQUADS -->
+    <section class="home-section home-squads-wrap">
+      <div class="home-section-head">
+        <span>{{ 'dashboard.squads-172' | t }}</span>
+        <span class="flex">
+          {{ pad(store.workspace()?.squads?.length || 0) }}
+          <button class="link-button" (click)="dialogs.open('squad', store.project()?.squadId)">
+            {{ 'squad.studio' | t }}
+            <luma-icon name="chevron" />
+          </button>
+        </span>
+      </div>
+      <div class="home-squads">
+        @for (squad of store.workspace()?.squads; track squad.id) {
+          <button class="home-squad squad-card" (click)="dialogs.open('squad', squad.id)">
+            <luma-squad-card [squad]="squad" />
+          </button>
+        }
+        <button class="home-squad new" (click)="dialogs.open('squad', undefined, 'new')">
+          <luma-icon name="plus" />
+          <strong>{{ 'dashboard.newSquad' | t }}</strong>
+          <small>{{ 'dashboard.commander-adr-prd-and-operators' | t }}</small>
+        </button>
+      </div>
+    </section>
+
+    <!-- Grid inferior: OPERAÇÃO ATIVA + ATIVIDADE RECENTE -->
+    <div class="home-grid">
+      <!-- Coluna esquerda -->
+      <section class="home-section">
+        <div class="home-section-head">
+          <span>{{ 'dashboard.active-operation' | t }}</span>
+          @if (
+            execution.busy() ||
+            execution.planning() ||
+            (execution.planOrigin() === 'execution' && !!execution.plan())
+          ) {
+            <i class="dot"></i>
+          }
+        </div>
+
+        @if (execution.busy() || execution.planning()) {
+          <div class="home-run live">
+            <luma-icon name="radio" />
+            <div class="grow">
+              <span class="eyebrow">
+                {{
+                  execution.planning()
+                    ? ('ui.commander-planning' | t)
+                    : execution.plan()
+                      ? ('ui.plan-awaits-approval' | t)
+                      : execution.paused()
+                        ? ('ui.paused' | t)
+                        : ('ui.running-expr-31' | t)
+                }}
+                /
+                {{ store.settings()?.mode === 'live' ? store.providerLabel() + ' CLI' : 'DEMO' }}
+              </span>
+              <strong>
+                {{
+                  execution.planning()
+                    ? ('ui.the-commander-is-preparing-the-plan' | t)
+                    : execution.plan()
+                      ? ('ui.approve-the-plan-in-operation-chat' | t)
+                      : execution.label() || ('ui.selecting-the-next-feature-expr-34' | t)
+                }}
+              </strong>
+              <span>{{ store.project()?.name }}</span>
+            </div>
+            <div class="flex wrap">
+              <button class="btn ghost sm" (click)="execution.room.open()">
+                <luma-icon name="chat" />
+                {{ 'dashboard.chat' | t }}
+              </button>
+              <button class="btn ghost sm" (click)="dialogs.open('console')">
+                <luma-icon name="terminal" />
+                {{ 'console.console' | t }}
+              </button>
+              <button class="btn sm" (click)="execution.startCurrent()">
+                <luma-icon [name]="execution.busy() && !execution.paused() ? 'pause' : 'play'" />
+                {{
+                  execution.plan()
+                    ? ('features.execute-plan' | t)
+                    : execution.paused()
+                      ? ('run.resume' | t)
+                      : ('ui.pause' | t)
+                }}
+              </button>
+              <button class="btn danger sm" (click)="execution.stop()">
+                <luma-icon name="stop" />
+                {{ 'run.stop' | t }}
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div class="home-run idle">
+            <luma-icon name="clock" />
+            <div class="grow">
+              <strong>{{ 'dashboard.no-operation-in-progress' | t }}</strong>
+              <span>
+                {{ store.project()?.name }} / {{ currentSprint()?.name || 'sprint' }}:
+                {{ idleNote() | uiLabel }}
+              </span>
+            </div>
+            <button
+              class="btn sm"
+              [class.primary]="ready()"
+              [class.ghost]="!ready()"
+              (click)="runAction()"
+            >
+              <luma-icon [name]="ready() ? 'play' : canPlan() ? 'flow' : 'layers'" />
+              {{
+                ready()
+                  ? (store.settings()?.mode === 'live' ? 'Executar ' : 'Simular ') +
+                    (currentSprint()?.name || 'sprint')
+                  : canPlan()
+                    ? ('ui.plan' | t) + (currentSprint()?.name || 'sprint')
+                    : ('ui.view-sprints' | t)
+              }}
+            </button>
+          </div>
+        }
+
+        <!-- AGUARDANDO REVISÃO -->
+        <div class="home-section-head" style="margin-top: 22px">
+          <span>{{ 'dashboard.awaiting-review' | t }}</span>
+          <span>{{ pad(reviewCount()) }}</span>
+        </div>
+        <div class="home-list">
+          @for (item of reviews(); track item.feature.id) {
+            <button class="home-review" (click)="review(item.projectId, item.feature.id)">
+              <span class="tag accent">{{ item.feature.key }}</span>
+              <span class="grow">
+                <strong>{{ item.feature.title }}</strong>
+                <small>{{ projectName(item.projectId) }}</small>
+              </span>
+              <span class="tag">
+                {{ store.settings()?.mode === 'live' ? store.providerLabel() : 'DEMO' }}
+              </span>
+              <luma-icon name="chevron" />
+            </button>
+          } @empty {
+            <div class="home-empty">
+              <luma-icon name="check" />
+              {{ 'dashboard.no-deliveries-awaiting-approval' | t }}
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Coluna direita: ATIVIDADE RECENTE -->
+      <section class="home-section">
+        <div class="home-section-head">
+          <span>{{ 'dashboard.recent-activity' | t }}</span>
+          <button class="link-button" (click)="dialogs.open('console', undefined, 'logs')">
+            {{ 'dashboard.view-transmissions' | t }}
+          </button>
+        </div>
+        <div class="home-list home-activity-list">
+          @for (item of activity(); track item.l.id) {
+            <div class="home-activity">
+              <time>{{ clock(item.l.at) }}</time>
+              <span class="home-activity-body">
+                <strong>{{ item.p.code }} / {{ agentName(item.l.agentId) }}</strong>
+                <span>{{ item.l.message }}</span>
+              </span>
+              <span class="tag" [class.accent]="!item.l.simulated">
+                {{ item.l.simulated ? 'DEMO' : store.providerLabel(item.l.agentId) }}
+              </span>
+            </div>
+          } @empty {
+            <div class="home-empty">
+              <luma-icon name="radio" />
+              {{ 'dashboard.silent-channel' | t }}
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

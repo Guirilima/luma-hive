@@ -1,0 +1,117 @@
+<luma-modal
+  [title]="existing ? ('ui.edit-feature' | t) : ('ui.new-feature' | t)"
+  [subtitle]="
+    store.project()!.code + ' / ' + draft.key + (existing ? ' / ' + existing.status : ' / NOVA')
+  "
+  modalClass="wide feature-editor"
+  (closed)="dialogs.close()"
+>
+  <div class="fe-layout">
+    <form id="featureForm" class="fe-form" (ngSubmit)="save()">
+      <input
+        id="featureTitle"
+        class="fe-title"
+        name="title"
+        [(ngModel)]="draft.title"
+        maxlength="120"
+        [placeholder]="'features.feature-title' | t"
+        autocomplete="off"
+        autofocus
+        [attr.aria-label]="'features.feature-title' | t"
+      />
+      <div class="fe-meta">
+        <label class="fe-select">
+          <span>{{ 'features.area' | t }}</span>
+          <select id="featureScope" name="scope" [(ngModel)]="draft.scope">
+            @for (scope of scopes; track scope) {
+              @if (scope !== 'setup' || draft.setup) {
+                <option [value]="scope">{{ scopeLabel(scope) | uiLabel }}</option>
+              }
+            }
+          </select>
+        </label>
+        <label class="fe-select">
+          <span>{{ 'features.priority' | t }}</span>
+          <select id="featurePriority" name="priority" [(ngModel)]="draft.priority">
+            <option value="P0">{{ 'features.p0-essential' | t }}</option>
+            <option value="P1">{{ 'features.p1-important' | t }}</option>
+            <option value="P2">{{ 'features.p2-incremental' | t }}</option>
+          </select>
+        </label>
+        <label class="fe-select">
+          <span>SPRINT</span>
+          <select
+            id="featureSprint"
+            name="sprintId"
+            [(ngModel)]="draft.sprintId"
+            [disabled]="draft.setup"
+          >
+            @for (sprint of store.project()!.sprints; track sprint.id) {
+              <option [value]="sprint.id">S{{ pad($index + 1) }} / {{ sprint.name }}</option>
+            }
+          </select>
+        </label>
+      </div>
+      @for (field of fields; track field) {
+        <luma-markdown-editor
+          [(value)]="draft[field]"
+          [label]="fieldLabel(field)"
+          [field]="field"
+        />
+      }
+      <details class="fe-deps">
+        <summary>
+          {{ 'features.dependencies' | t }}
+          <small>{{ dependencyNames() || ('ui.none' | t) }}</small>
+        </summary>
+        <div class="fe-dep-list">
+          @if (draft.setup) {
+            <p class="hint">
+              {{ 'features.project-setup-is-the-first-feature-in-sprint-01-it-has-no-' | t }}
+            </p>
+          } @else {
+            @for (feature of store.project()!.features; track feature.id) {
+              @if (feature.id !== draft.id) {
+                <label class="fe-dep">
+                  <input
+                    type="checkbox"
+                    name="dependencies"
+                    [checked]="draft.dependencies.includes(feature.id)"
+                    [disabled]="feature.setup"
+                    (change)="toggleDep(feature.id)"
+                  />
+                  <span>
+                    <b>{{ feature.key }}</b>
+                    {{ feature.title }}
+                  </span>
+                </label>
+              }
+            }
+          }
+        </div>
+      </details>
+    </form>
+    <luma-feature-conversation
+      [draft]="draft"
+      (fieldRequested)="revealField($event)"
+      [initialMessage]="dialogs.current()?.data?.featurePrompt || ''"
+    />
+  </div>
+  <footer class="modal-footer" modal-footer>
+    @if (existing && !draft.setup) {
+      <button
+        class="btn danger square"
+        (click)="remove()"
+        [attr.aria-label]="'features.delete-feature' | t"
+      >
+        <luma-icon name="trash" />
+      </button>
+    }
+    <span class="grow"></span>
+    <button class="btn ghost" (click)="dialogs.close()">{{ 'action.cancel' | t }}</button>
+    <button class="btn primary" type="submit" form="featureForm" [disabled]="execution.busy()">
+      <luma-icon name="check" />
+      {{ 'features.save-feature' | t }}
+    </button>
+  </footer>
+</luma-modal>

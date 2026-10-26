@@ -1,0 +1,219 @@
+<section class="home-view workflow-page" aria-labelledby="memoryHeading">
+  <div class="home-inner">
+    <header class="home-head">
+      <div>
+        <div class="eyebrow">LUMA / HIVE</div>
+        <h1 id="memoryHeading">{{ 'memory.title' | t }}</h1>
+        <p>{{ 'memory.description' | t }}</p>
+      </div>
+      <div class="workflow-actions">
+        <button class="btn" (click)="load()">{{ 'action.refresh' | t }}</button>
+        <button class="btn" (click)="export()">{{ 'action.export' | t }}</button>
+      </div>
+    </header>
+    <div class="workflow-filters">
+      <label>
+        {{ 'obs.project' | t }}
+        <select [ngModel]="project()" (ngModelChange)="switchProject($event)">
+          @for (p of store.workspace()?.projects || []; track p.id) {
+            <option [value]="p.id">{{ p.name }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        {{ 'memory.state' | t }}
+        <select [ngModel]="status()" (ngModelChange)="status.set($event)">
+          <option value="">{{ 'obs.all' | t }}</option>
+          @for (s of ['proposed', 'approved', 'archived']; track s) {
+            <option [value]="s">{{ 'memory.state.' + s | t }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        {{ 'memory.search' | t }}
+        <input [ngModel]="search()" (ngModelChange)="search.set($event)" />
+      </label>
+    </div>
+    @if (error()) {
+      <p class="notice danger" role="alert">{{ error() }}</p>
+    }
+    <div class="workflow-grid memory-grid">
+      <section class="workflow-panel">
+        <h2>{{ (editing() ? 'memory.edit' : 'memory.new') | t }}</h2>
+        @if (editing()?.state === 'approved') {
+          <p class="notice warning">{{ 'memory.editNotice' | t }}</p>
+        }
+        <form (ngSubmit)="save()">
+          <label class="field">
+            {{ 'memory.entryTitle' | t }}
+            <input name="title" [(ngModel)]="draft.title" maxlength="160" required />
+          </label>
+          <label class="field">
+            {{ 'memory.kind' | t }}
+            <select name="kind" [(ngModel)]="draft.kind">
+              @for (k of ['decision', 'constraint', 'lesson']; track k) {
+                <option [value]="k">{{ 'memory.kind.' + k | t }}</option>
+              }
+            </select>
+          </label>
+          <label class="field">
+            {{ 'memory.source' | t }}
+            <select
+              name="sourceKind"
+              [(ngModel)]="draft.sourceKind"
+              [disabled]="!!editing()"
+              (ngModelChange)="draft.sourceRef = ''; sourceChanged()"
+            >
+              @for (k of ['manual', 'adr', 'run', 'chat']; track k) {
+                <option [value]="k">{{ 'memory.source.' + k | t }}</option>
+              }
+            </select>
+          </label>
+          @if (draft.sourceKind === 'adr') {
+            <label class="field">
+              {{ 'memory.sourceRef' | t }}
+              <select
+                name="sourceRef"
+                [(ngModel)]="draft.sourceRef"
+                [disabled]="!!editing()"
+                (ngModelChange)="sourceChanged()"
+              >
+                <option value="">{{ 'memory.selectSource' | t }}</option>
+                @for (a of currentProject()?.adrs || []; track a.id) {
+                  <option [value]="a.id">{{ a.title }}</option>
+                }
+              </select>
+            </label>
+          }
+          @if (draft.sourceKind === 'run') {
+            <label class="field">
+              {{ 'memory.sourceRef' | t }}
+              <select
+                name="sourceRun"
+                [(ngModel)]="draft.sourceRef"
+                [disabled]="!!editing()"
+                (ngModelChange)="sourceChanged()"
+              >
+                <option value="">{{ 'memory.selectSource' | t }}</option>
+                @for (r of runs(); track r.id) {
+                  <option [value]="r.id">
+                    {{ r.featureKey || r.kind }} · {{ r.agentName || r.agentId }} ·
+                    {{ i18n.date(r.startedAt) }}
+                  </option>
+                }
+              </select>
+            </label>
+          }
+          @if (draft.sourceKind === 'chat') {
+            <label class="field">
+              {{ 'memory.sourceRef' | t }}
+              <input
+                name="sourceChat"
+                [(ngModel)]="draft.sourceRef"
+                [disabled]="!!editing()"
+                (change)="sourceChanged()"
+              />
+              <small>{{ 'memory.chatSourceNote' | t }}</small>
+            </label>
+          }
+          <label class="field">
+            {{ 'memory.content' | t }}
+            <textarea
+              name="content"
+              [(ngModel)]="draft.content"
+              rows="10"
+              maxlength="12000"
+              required
+            ></textarea>
+          </label>
+          <div class="workflow-actions">
+            <button
+              type="submit"
+              class="btn primary"
+              [disabled]="busy() || !draft.title.trim() || !draft.content.trim()"
+            >
+              {{ 'memory.saveProposal' | t }}
+            </button>
+            @if (editing()) {
+              <button type="button" class="btn" (click)="reset()">{{ 'action.cancel' | t }}</button>
+            }
+          </div>
+          <p class="workflow-note">{{ 'memory.approvalNote' | t }}</p>
+        </form>
+      </section>
+      <section>
+        <div class="workflow-cards memory-entries">
+          @for (entry of visible(); track entry.id) {
+            <article
+              class="workflow-panel memory-card"
+              [class.selected]="selected() === entry.id"
+              [attr.data-state]="entry.state"
+            >
+              <div class="between">
+                <span class="tag">{{ 'memory.kind.' + entry.kind | t }}</span>
+                <strong>{{ 'memory.state.' + entry.state | t }}</strong>
+              </div>
+              <h2>{{ entry.title }}</h2>
+              <p class="workflow-prose memory-content">{{ entry.content }}</p>
+              <p class="workflow-note">
+                {{ 'memory.version' | t }} {{ entry.version }} · {{ i18n.date(entry.updatedAt) }}
+                @if (entry.approvedAt) {
+                  <br />
+                  {{ 'memory.approvedAt' | t }} {{ i18n.date(entry.approvedAt) }} ·
+                  {{ 'memory.localUser' | t }}
+                }
+              </p>
+              <details>
+                <summary>
+                  {{ 'memory.source' | t }} · {{ 'memory.source.' + entry.source.kind | t }}
+                </summary>
+                @if (entry.source.ref) {
+                  <code>{{ entry.source.ref }}</code>
+                }
+                <pre>{{ entry.source.excerpt || ('memory.manualSource' | t) }}</pre>
+              </details>
+              <div class="workflow-actions">
+                @if (entry.state === 'proposed') {
+                  <button
+                    class="btn primary"
+                    [disabled]="busy()"
+                    (click)="action(entry, 'approve')"
+                  >
+                    {{ 'memory.approve' | t }}
+                  </button>
+                }
+                @if (entry.state !== 'archived') {
+                  <button class="btn" [disabled]="busy()" (click)="edit(entry)">
+                    {{ 'action.edit' | t }}
+                  </button>
+                  <button class="btn" [disabled]="busy()" (click)="action(entry, 'archive')">
+                    {{ 'memory.archive' | t }}
+                  </button>
+                }
+              </div>
+              <details>
+                <summary>{{ 'memory.history' | t }}</summary>
+                @for (h of entry.history; track h.version) {
+                  <article class="memory-history">
+                    <strong>
+                      {{ 'memory.audit.' + h.action | t }} · {{ 'memory.version' | t }}
+                      {{ h.version }}
+                    </strong>
+                    <small>{{ i18n.date(h.at) }} · {{ 'memory.localUser' | t }}</small>
+                    <p>{{ h.title }}</p>
+                    <pre>{{ h.content }}</pre>
+                  </article>
+                }
+              </details>
+            </article>
+          } @empty {
+            <div class="workflow-panel workflow-empty">
+              <h2>{{ 'memory.empty' | t }}</h2>
+              <p>{{ 'memory.emptyDetail' | t }}</p>
+            </div>
+          }
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

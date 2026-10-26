@@ -1,0 +1,698 @@
+<luma-modal
+  [title]="isNew() ? ('ui.recruit-agent' | t) : ('ui.agent-studio' | t)"
+  [subtitle]="'agents.luma-hive-identity-capabilities' | t"
+  (closed)="close()"
+>
+  <form id="agentForm" (ngSubmit)="save()">
+    <div class="editor-layout">
+      <div class="editor-side">
+        <div class="editor-photo">
+          <img id="editorPortrait" [src]="portrait(draft)" [alt]="'agents.agent-portrait' | t" />
+          <span class="photo-code">IDENTITY // {{ rolesInfo[draft.role]?.short }}</span>
+          <span class="photo-stage">
+            STAGE // {{ ('stage.' + draft.productionStage | t).toUpperCase() }}
+          </span>
+        </div>
+        <p class="editor-side-note">
+          {{ 'agents.map-position' | t }}
+          <br />
+          Q {{ draft.hex.q }} / R {{ draft.hex.r }}
+          <br />
+          <br />
+          {{ 'ui.desk' | t }} {{ draft.desk || ('ui.automatic' | t) }}
+          <br />
+          {{ deskRoom() }}
+          <br />
+          <br />
+          ID: {{ draft.id.slice(-12) }}
+        </p>
+      </div>
+      <div>
+        <nav class="editor-nav" [attr.aria-label]="'agents.studio-tabs' | t">
+          @for (item of panes; track item.key) {
+            <button
+              type="button"
+              class="editor-tab"
+              [class.active]="tab() === item.key"
+              (click)="tab.set(item.key)"
+            >
+              {{ item.label | uiLabel }}
+            </button>
+          }
+        </nav>
+        <div class="editor-pane" [class.hidden]="tab() !== 'identity'" data-pane="general">
+          <div class="form-grid">
+            <div class="field full">
+              <label for="agentName">{{ 'agents.codename' | t }}</label>
+              <div class="input-action">
+                <input
+                  id="agentName"
+                  name="name"
+                  [(ngModel)]="draft.name"
+                  maxlength="32"
+                  autocomplete="off"
+                  style="text-transform: uppercase"
+                />
+                <button
+                  type="button"
+                  class="dice-button"
+                  (click)="rollName()"
+                  [title]="'agents.random-codename' | t"
+                  [attr.aria-label]="'agents.generate-random-codename' | t"
+                >
+                  <luma-icon name="dice" />
+                </button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="agentRole">{{ 'agents.specialty' | t }}</label>
+              <select
+                id="agentRole"
+                name="role"
+                [(ngModel)]="draft.role"
+                (ngModelChange)="roleChanged()"
+              >
+                @for (role of roles; track role) {
+                  <option [value]="role">{{ rolesInfo[role].label | uiLabel }}</option>
+                }
+              </select>
+            </div>
+            <div class="field">
+              <label for="agentSpecialty">{{ 'agents.specialty-title' | t }}</label>
+              <input
+                id="agentSpecialty"
+                name="specialty"
+                [(ngModel)]="draft.specialty"
+                (ngModelChange)="syncConventions()"
+                maxlength="40"
+                [placeholder]="rolesInfo[draft.role]?.label || ''"
+              />
+              <span class="hint">
+                {{ 'agents.optional-e-g-payments-tech-lead-kubernetes-sre-performance' | t }}
+              </span>
+            </div>
+            <div class="field full">
+              <label for="agentLink">{{ 'agents.connected-to' | t }}</label>
+              <select
+                id="agentLink"
+                name="linkId"
+                [(ngModel)]="draft.linkId"
+                [disabled]="draft.id === store.project()?.commanderId"
+              >
+                <option value="">
+                  {{
+                    draft.id === store.project()?.commanderId
+                      ? ('ui.squad-center' | t)
+                      : ('ui.operation-commander' | t)
+                  }}
+                </option>
+                @for (a of store.team(); track a.id) {
+                  @if (a.id !== draft.id) {
+                    <option [value]="a.id">
+                      {{ a.name }} / {{ rolesInfo[a.role]?.label | uiLabel }}
+                    </option>
+                  }
+                }
+              </select>
+              <span class="hint">
+                {{ 'agents.the-commander-stays-at-the-center-and-receives-connections' | t }}
+              </span>
+            </div>
+            <div class="field full">
+              <label for="agentDesk">{{ 'agents.office-desk' | t }}</label>
+              <select id="agentDesk" name="desk" [(ngModel)]="draft.desk">
+                <option value="">{{ 'agents.automatically-choose-a-free-desk' | t }}</option>
+                @for (slot of desks; track slot.id) {
+                  <option [value]="slot.id">{{ slot.id }}</option>
+                }
+              </select>
+              <span class="hint">
+                {{ 'agents.agent-position-in-the-office-you-can-also-drag-the-agent-o' | t }}
+              </span>
+            </div>
+            <div class="field full">
+              <span class="label">{{ 'agents.squad-desk-appearance' | t }}</span>
+              <div class="look-cards">
+                <button
+                  type="button"
+                  class="look-card"
+                  (click)="look.set('photo')"
+                  aria-haspopup="dialog"
+                >
+                  <img [src]="portrait(draft)" alt="" />
+                  <span class="grow">
+                    <strong>{{ 'agents.photo' | t }}</strong>
+                    <small>{{ draft.image ? ('ui.gallery' | t) : ('agents.automatic' | t) }}</small>
+                  </span>
+                  <luma-icon name="edit" />
+                </button>
+                <button
+                  type="button"
+                  class="look-card"
+                  (click)="look.set('icon')"
+                  aria-haspopup="dialog"
+                >
+                  <span class="look-diamond">
+                    <span class="node-diamond"></span>
+                    <span class="node-icon">
+                      <luma-icon [name]="draft.icon || rolesInfo[draft.role].icon" />
+                    </span>
+                  </span>
+                  <span class="grow">
+                    <strong>{{ 'agents.icon' | t }}</strong>
+                    <small>
+                      {{
+                        !draft.icon
+                          ? ('agents.automatic' | t)
+                          : iconLabels[draft.icon] || draft.icon
+                      }}
+                    </small>
+                  </span>
+                  <luma-icon name="edit" />
+                </button>
+              </div>
+              <span class="hint">
+                {{ 'agents.click-the-photo-or-icon-to-open-the-gallery-automatic-uses' | t }}
+              </span>
+            </div>
+            <div class="field">
+              <label for="agentProvider">{{ 'agents.provider' | t }}</label>
+              <select
+                id="agentProvider"
+                name="provider"
+                [(ngModel)]="draft.provider"
+                (ngModelChange)="providerChanged($event)"
+              >
+                <option value="codex">Codex CLI</option>
+                <option value="devin">Devin CLI</option>
+                <option value="antigravity">Antigravity CLI</option>
+              </select>
+              <span class="hint">
+                {{ 'agents.connection-and-permissions-are-in-the-provider-s-settings-' | t }}
+              </span>
+            </div>
+            <div class="field">
+              <label for="agentModel">{{ 'agents.model' | t }}</label>
+              <select
+                id="agentModel"
+                name="model"
+                [(ngModel)]="draft.model"
+                (ngModelChange)="modelChanged()"
+              >
+                <option value="inherit">
+                  {{ 'ui.default' | t }} {{ draft.provider.toUpperCase() }}
+                </option>
+                @for (model of providers.catalogs()[draft.provider] || []; track model.id) {
+                  <option [value]="model.id">{{ model.label }}</option>
+                }
+                @if (customModel()) {
+                  <option [value]="draft.model">{{ draft.model }} {{ 'ui.custom' | t }}</option>
+                }
+              </select>
+              <span class="hint">
+                {{ 'ui.uses-the-model-configured-in-the-cli' | t }}
+                {{ providers.errors()[draft.provider] }}
+              </span>
+              <button type="button" class="btn ghost sm" (click)="providers.check(draft.provider)">
+                {{ 'settings.models' | t }}
+              </button>
+            </div>
+            <div class="field">
+              <label for="agentStage">{{ 'agents.production-stage' | t }}</label>
+              <select id="agentStage" name="productionStage" [(ngModel)]="draft.productionStage">
+                @for (stage of stages; track stage) {
+                  <option [value]="stage">{{ 'stage.' + stage | t }}</option>
+                }
+              </select>
+            </div>
+            <div class="field full effort-field">
+              <span class="label">{{ 'agents.reasoning-effort' | t }}</span>
+              <div class="effort-pills" role="radiogroup" [attr.aria-label]="'agent.effort' | t">
+                @for (effort of efforts; track effort) {
+                  <label class="effort-pill">
+                    <input
+                      type="radio"
+                      name="effort"
+                      [value]="effort"
+                      [(ngModel)]="draft.effort"
+                      [disabled]="!providers.efforts(draft.provider, draft.model).includes(effort)"
+                    />
+                    <span>{{ effort ? effort.toUpperCase() : ('ui.default' | t) }}</span>
+                  </label>
+                }
+              </div>
+              <span class="hint">
+                {{ 'agents.uses-the-model-s-default-effort-default-the-session-model-' | t }}
+              </span>
+            </div>
+
+            <div class="field full">
+              <label for="agentDescription">{{ 'agents.responsibility-description' | t }}</label>
+              <textarea
+                id="agentDescription"
+                name="description"
+                [(ngModel)]="draft.description"
+                maxlength="400"
+              ></textarea>
+            </div>
+            <div class="field full">
+              <label for="agentSoul">{{ 'agents.soul-personality' | t }}</label>
+              <textarea
+                id="agentSoul"
+                name="soul"
+                [(ngModel)]="draft.soul"
+                maxlength="1200"
+              ></textarea>
+              <span class="label soul-hello">
+                {{ 'agents.opening-messages' | t }}
+                <small>{{ 'agents.one-is-chosen-at-random-for-each-conversation' | t }}</small>
+              </span>
+              <div class="hello-list">
+                @for (hello of helloLines(); track $index) {
+                  <div class="hello-row">
+                    <span class="hello-num">{{ $index + 1 }}</span>
+                    <input
+                      name="hello"
+                      [ngModel]="hello"
+                      (ngModelChange)="setHello($index, $event)"
+                      [ngModelOptions]="{ standalone: true }"
+                      maxlength="300"
+                      [attr.aria-label]="('ui.opening-message' | t) + ($index + 1)"
+                    />
+                    <button
+                      type="button"
+                      class="icon-button small"
+                      (click)="removeHello($index)"
+                      [attr.aria-label]="'agents.remove-variation' | t"
+                    >
+                      <luma-icon name="trash" />
+                    </button>
+                  </div>
+                }
+              </div>
+              <button
+                type="button"
+                class="btn ghost sm hello-add"
+                (click)="addHello()"
+                [disabled]="helloLines().length >= 8"
+              >
+                <luma-icon name="plus" />
+                {{ 'agents.add-variation' | t }}
+              </button>
+              <span class="hint">
+                {{ 'agents.shapes-how-the-agent-talks-and-starts-conversations-and-is' | t }}
+              </span>
+            </div>
+            <div class="field full">
+              <label for="agentNext">{{ 'agents.handoff-preference' | t }}</label>
+              <select id="agentNext" name="nextId" [(ngModel)]="draft.nextId">
+                <option value="">{{ 'agents.commander-decides' | t }}</option>
+                @for (a of store.agents(); track a.id) {
+                  @if (a.id !== draft.id) {
+                    <option [value]="a.id">
+                      {{ a.name }} / {{ rolesInfo[a.role]?.label | uiLabel }}
+                    </option>
+                  }
+                }
+              </select>
+              <span class="hint">
+                {{ 'agents.adds-the-destination-to-the-plan-when-it-belongs-to-the-sq' | t }}
+              </span>
+            </div>
+            <div class="field full">
+              <div class="notice" style="margin-bottom: 0">
+                <luma-icon name="board" />
+                {{ 'agents.the-agent-s-production-stage-also-appears-on-the-agent-kan' | t }}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="editor-pane" [class.hidden]="tab() !== 'instructions'" data-pane="prompt">
+          <div class="field">
+            <label for="agentPrompt">{{ 'agents.system-prompt-agent-instructions' | t }}</label>
+            <textarea
+              id="agentPrompt"
+              class="code"
+              name="prompt"
+              [(ngModel)]="draft.prompt"
+              maxlength="20000"
+            ></textarea>
+            <span class="hint">
+              {{ 'agents.define-the-role-limits-deliverables-and-context-for-the-ne' | t }}
+            </span>
+          </div>
+          <button
+            type="button"
+            class="btn ghost sm"
+            (click)="resetPrompt()"
+            style="margin-top: 10px"
+          >
+            <luma-icon name="file" />
+            {{ 'agents.use-specialty-instructions' | t }}
+          </button>
+        </div>
+        <div class="editor-pane" [class.hidden]="tab() !== 'tools'" data-pane="tools">
+          <p class="hint">
+            {{ 'agents.these-selections-describe-the-agent-s-specialty-the-cli-us' | t }}
+          </p>
+          <div class="eyebrow" style="margin: 15px 0">{{ 'agents.requested-tools' | t }}</div>
+          <div class="check-grid">
+            @for (tool of tools; track tool) {
+              <label class="check-card">
+                <input
+                  type="checkbox"
+                  [checked]="draft.tools.includes(tool)"
+                  (change)="toggleTool(tool)"
+                />
+                <span>
+                  <strong>{{ tool }}</strong>
+                  <small>{{ toolInfo[tool] | uiLabel }}</small>
+                </span>
+              </label>
+            }
+          </div>
+          <div class="notice warning">
+            <luma-icon name="lock" />
+            <span>
+              {{ 'agents.global-permissions-still-apply-in-headless-mode-any-action' | t }}
+            </span>
+          </div>
+        </div>
+        <div class="editor-pane" [class.hidden]="tab() !== 'advanced'" data-pane="advanced">
+          <div class="conv-head">
+            <div>
+              <div class="eyebrow">{{ 'agents.agent-guidelines' | t }}</div>
+              <p class="hint">
+                {{ 'agents.markdown-conventions-and-practices-the-agent-follows-on-ev' | t }}
+              </p>
+            </div>
+            <span class="tag accent">{{ familyLabel() | uiLabel }}</span>
+          </div>
+          <div class="field conv-tpl-field">
+            <label for="convTemplateSelect">{{ 'agents.base-template' | t }}</label>
+            <div class="conv-tpl-row">
+              <select
+                id="convTemplateSelect"
+                name="template"
+                [ngModel]="templateSelection()"
+                (ngModelChange)="selectTemplate($event)"
+              >
+                @if (templateSelection() === '__custom') {
+                  <option value="__custom">
+                    {{
+                      draft.conventions.base.trim()
+                        ? ('ui.custom-edited' | t)
+                        : ('ui.no-base-guide' | t)
+                    }}
+                  </option>
+                }
+                @for (template of templates(); track template.key) {
+                  <option [value]="template.key">{{ template.name }}</option>
+                }
+              </select>
+              @if (templateSelection().startsWith('lib:')) {
+                <button
+                  type="button"
+                  class="icon-button small"
+                  (click)="deleteTemplate()"
+                  [attr.aria-label]="'agents.delete-library-template' | t"
+                >
+                  <luma-icon name="trash" />
+                </button>
+              }
+            </div>
+          </div>
+          @if (canUndoConventions()) {
+            <div class="conv-undo">
+              <luma-icon name="check" />
+              <span>{{ 'agents.template-applied' | t }}</span>
+              <button type="button" class="link-button" (click)="undoConventions()">
+                {{ 'agents.undo' | t }}
+              </button>
+            </div>
+          }
+          <div class="field">
+            <label for="convBase">{{ 'agents.base-guide-markdown' | t }}</label>
+            <textarea
+              id="convBase"
+              class="code conv-base"
+              name="convBase"
+              [(ngModel)]="draft.conventions.base"
+              maxlength="20000"
+              spellcheck="false"
+            ></textarea>
+          </div>
+          <div class="conv-save">
+            <input
+              name="templateName"
+              [(ngModel)]="templateName"
+              maxlength="60"
+              [placeholder]="'agents.library-template-name' | t"
+              [attr.aria-label]="'agents.template-name' | t"
+            />
+            <button type="button" class="btn ghost sm" (click)="saveTemplate()">
+              <luma-icon name="upload" />
+              {{ 'agents.save-as-template' | t }}
+            </button>
+          </div>
+          <div class="conv-sub-head">
+            <div>
+              <div class="eyebrow">SUBSETS</div>
+              <span class="hint">
+                {{ 'agents.extra-rule-blocks-appended-after-the-base-guide-each-block' | t }}
+              </span>
+            </div>
+            <button
+              type="button"
+              class="btn ghost sm"
+              (click)="subsetPicker.update(toggle)"
+              [attr.aria-expanded]="subsetPicker()"
+            >
+              <luma-icon name="search" />
+              {{ 'agents.add-subset' | t }}
+            </button>
+          </div>
+          @if (subsetPicker()) {
+            <luma-convention-picker
+              [family]="draft.conventions.family"
+              [library]="store.workspace()!.conventionLibrary.subsets"
+              [used]="usedSubsets()"
+              (selected)="pickSubset($event)"
+              (deleted)="deleteLibrarySubset($event)"
+              (closed)="closeSubsetPicker()"
+            />
+          }
+          <div class="conv-subsets">
+            @for (subset of draft.conventions.subsets; track subset.id) {
+              <div class="conv-subset">
+                <div class="conv-subset-head">
+                  <span class="conv-subset-icon"><luma-icon name="file" /></span>
+                  <input
+                    [name]="'subsetName' + $index"
+                    [(ngModel)]="subset.name"
+                    maxlength="60"
+                    [attr.aria-label]="'agents.subset-name' | t"
+                  />
+                  <button
+                    type="button"
+                    class="icon-button small"
+                    (click)="saveSubset($index)"
+                    [attr.aria-label]="'agents.save-subset-to-library' | t"
+                  >
+                    <luma-icon name="upload" />
+                  </button>
+                  <button
+                    type="button"
+                    class="icon-button small"
+                    (click)="draft.conventions.subsets.splice($index, 1)"
+                    [attr.aria-label]="'agents.remove-subset' | t"
+                  >
+                    <luma-icon name="trash" />
+                  </button>
+                </div>
+                <textarea
+                  class="code conv-sub-content"
+                  [name]="'subset' + $index"
+                  [(ngModel)]="subset.content"
+                  maxlength="8000"
+                  spellcheck="false"
+                ></textarea>
+              </div>
+            }
+          </div>
+          <details class="conv-preview">
+            <summary>
+              {{ 'agents.final-preview' | t }}
+              <span>{{ finalConventions().length }} {{ 'ui.characters' | t }}</span>
+            </summary>
+            <div class="conv-md" [innerHTML]="render(finalConventions())"></div>
+          </details>
+        </div>
+        <div class="editor-pane" [class.hidden]="tab() !== 'squads'" data-pane="projects">
+          <div class="eyebrow" style="margin-bottom: 15px">{{ 'agents.squad-positions' | t }}</div>
+          <div class="check-grid">
+            @for (q of memberships(); track q.id) {
+              <div class="check-card">
+                <span class="sq-chip"><luma-icon name="squad" /></span>
+                <span>
+                  <strong>{{ q.name }}</strong>
+                  <small>{{ membership(q) }}</small>
+                </span>
+              </div>
+            } @empty {
+              <p class="hint">{{ 'agents.this-agent-has-no-squad-positions-yet' | t }}</p>
+            }
+          </div>
+          <div class="notice">
+            <luma-icon name="link" />
+            {{ 'agents.squads-are-assembled-in-squad-studio-using-the-command-tre' | t }}
+            <button
+              type="button"
+              class="link-button"
+              (click)="dialogs.open('squad', store.project()?.squadId)"
+            >
+              {{ 'agents.open-squad-studio' | t }}
+              <luma-icon name="chevron" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    @if (look()) {
+      <div class="look-picker">
+        <div class="look-picker-backdrop" (click)="look.set(null)"></div>
+        <div
+          class="look-picker-panel"
+          role="dialog"
+          [attr.aria-label]="look() === 'photo' ? ('ui.choose-photo' | t) : ('ui.choose-icon' | t)"
+        >
+          <header class="look-picker-head">
+            <span class="eyebrow">
+              {{ look() === 'photo' ? ('ui.choose-photo' | t) : ('ui.choose-icon' | t) }}
+            </span>
+            <button
+              type="button"
+              class="icon-button small"
+              (click)="look.set(null)"
+              [attr.aria-label]="'agents.close-gallery' | t"
+            >
+              <luma-icon name="close" />
+            </button>
+          </header>
+          @if (look() === 'photo') {
+            <div class="portrait-grid look-grid">
+              <button
+                type="button"
+                class="portrait-choice"
+                [class.selected]="!draft.image"
+                (click)="draft.image = ''; look.set(null)"
+              >
+                <img [src]="autoPortrait()" [alt]="'agents.automatic' | t" />
+                <span>AUTO</span>
+              </button>
+              @for (photo of photos; track photo[0]) {
+                <button
+                  type="button"
+                  class="portrait-choice"
+                  [class.selected]="draft.image === photo[1]"
+                  (click)="draft.image = photo[1]; look.set(null)"
+                  [title]="photoLabel(photo[0])"
+                >
+                  <img
+                    [src]="portraitSource(photo[1])"
+                    [alt]="photoLabel(photo[0])"
+                    loading="lazy"
+                  />
+                  <span>{{ photoShort(photo[0]) }}</span>
+                </button>
+              }
+            </div>
+            <label class="btn ghost sm">
+              {{ 'agents.import-photo' | t }}
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                (change)="upload($event)"
+                hidden
+              />
+            </label>
+          } @else {
+            <div class="icon-group-label">{{ 'agents.general' | t }}</div>
+            <div class="icon-picker look-grid">
+              <button
+                type="button"
+                class="icon-choice auto"
+                [class.selected]="!draft.icon"
+                (click)="draft.icon = ''; look.set(null)"
+                [attr.aria-label]="'agents.automatic' | t"
+              >
+                <luma-icon [name]="rolesInfo[draft.role].icon" />
+                <small>AUTO</small>
+              </button>
+              @for (icon of generalIcons; track icon) {
+                <button
+                  type="button"
+                  class="icon-choice"
+                  [class.selected]="draft.icon === icon"
+                  (click)="draft.icon = icon; syncConventions(); look.set(null)"
+                  [title]="iconLabels[icon]"
+                  [attr.aria-label]="iconLabels[icon]"
+                >
+                  <luma-icon [name]="icon" />
+                </button>
+              }
+            </div>
+            <div class="icon-group-label">{{ 'agents.technologies' | t }}</div>
+            <div class="icon-picker look-grid">
+              @for (icon of techIcons; track icon) {
+                <button
+                  type="button"
+                  class="icon-choice"
+                  [class.selected]="draft.icon === icon"
+                  (click)="draft.icon = icon; look.set(null)"
+                  [title]="iconLabels[icon]"
+                  [attr.aria-label]="iconLabels[icon]"
+                >
+                  <luma-icon [name]="icon" />
+                </button>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </form>
+  <footer class="modal-footer" modal-footer>
+    @if (!isNew()) {
+      <button
+        class="btn danger square"
+        (click)="remove()"
+        [attr.aria-label]="'agents.delete-agent' | t"
+      >
+        <luma-icon name="trash" />
+      </button>
+      <button class="btn ghost" (click)="duplicate()">
+        <luma-icon name="copy" />
+        {{ 'agents.duplicate' | t }}
+      </button>
+      <button class="btn ghost" (click)="exportAgent()">
+        <luma-icon name="download" />
+        .md
+      </button>
+      @if (canReset()) {
+        <button class="btn ghost" (click)="reset()">
+          <luma-icon name="rotate-left" />
+          {{ 'agents.restore-default' | t }}
+        </button>
+      }
+      <span class="grow"></span>
+    } @else {
+      <span class="footer-note">{{ 'agents.local-no-execution' | t }}</span>
+    }
+    <button class="btn ghost" (click)="close()">{{ 'action.cancel' | t }}</button>
+    <button class="btn primary" type="submit" form="agentForm">
+      <luma-icon name="check" />
+      {{ 'agents.save-agent' | t }}
+    </button>
+  </footer>
+</luma-modal>

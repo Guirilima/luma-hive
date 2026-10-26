@@ -1,0 +1,132 @@
+@for (dialog of dialogs.current() ? [dialogs.current()!] : []; track dialog) {
+  @switch (dialog.kind) {
+    @case ('operation-picker') {
+      <luma-modal
+        [title]="'shell.view-squad' | t"
+        [subtitle]="'shell.choose-an-operation' | t"
+        modalClass="narrow"
+        (closed)="dialogs.close()"
+      >
+        <p class="op-new-ask">{{ 'shell.which-operation-s-squad-would-you-like-to-see' | t }}</p>
+        <div class="op-pick-list">
+          @for (p of store.workspace()!.projects; track p.id) {
+            <button
+              type="button"
+              class="ops-item"
+              [class.active]="p.id === store.project()?.id"
+              [attr.aria-pressed]="p.id === store.project()?.id"
+              (click)="selectOperation(p.id)"
+            >
+              <span class="between">
+                <span class="eyebrow">{{ p.code }}</span>
+                @if (p.id === store.project()?.id) {
+                  <span class="tag accent">{{ 'shell.active' | t }}</span>
+                }
+              </span>
+              <strong>{{ p.name }}</strong>
+              <small>
+                {{ squadName(p.squadId) }} · {{ p.agentIds.length }} {{ 'ui.agents' | t }}
+              </small>
+              <span class="mini-faces">
+                @for (id of p.agentIds.slice(0, 8); track id) {
+                  @if (store.agent(id); as a) {
+                    <img [src]="portrait(a)" alt="" [title]="a.name" />
+                  }
+                }
+              </span>
+            </button>
+          }
+        </div>
+        <footer class="modal-footer" modal-footer>
+          <span class="grow"></span>
+          <button type="button" class="btn ghost" (click)="dialogs.close()">
+            {{ 'action.cancel' | t }}
+          </button>
+        </footer>
+      </luma-modal>
+    }
+    @case ('agent') {
+      <ng-container><luma-agent-editor /></ng-container>
+    }
+    @case ('catalog') {
+      <luma-catalog />
+    }
+
+    @case ('project') {
+      <luma-project-editor />
+    }
+    @case ('feature') {
+      <luma-feature-editor />
+    }
+    @case ('review') {
+      <luma-review />
+    }
+    @case ('doc') {
+      <luma-document-editor />
+    }
+    @case ('settings') {
+      <luma-settings />
+    }
+    @case ('chat') {
+      <luma-chat />
+    }
+    @case ('console') {
+      <luma-console />
+    }
+    @case ('handoff') {
+      <luma-handoff-editor />
+    }
+    @case ('meeting') {
+      <luma-meeting />
+    }
+    @case ('spawn') {
+      <luma-spawn />
+    }
+    @case ('help') {
+      <luma-modal
+        [title]="'shell.network-controls' | t"
+        [subtitle]="'shell.game-menu-ui-development-workspace' | t"
+        (closed)="dialogs.close()"
+      >
+        <div class="shortcut-grid">
+          @for (shortcut of shortcuts; track shortcut[0]) {
+            <div class="shortcut-row">
+              <kbd>{{ shortcut[0] | uiLabel }}</kbd>
+              <span>{{ shortcut[1] | uiLabel }}</span>
+            </div>
+          }
+        </div>
+        <div class="notice">
+          <luma-icon name="info" />
+          {{ 'shell.click-an-agent-to-select-it-double-click-to-chat-use-edit-' | t }}
+        </div>
+        <div class="notice purple">
+          <luma-icon name="flow" />
+          {{ 'shell.try-the-full-flow-briefing-features-distribute-apply-plan-' | t }}
+        </div>
+      </luma-modal>
+    }
+  }
+}
+
+@if (dialogs.confirmation(); as confirmation) {
+  <luma-modal
+    [title]="confirmation.title"
+    modalClass="narrow"
+    [subtitle]="'shell.operator-confirmation' | t"
+    (closed)="dialogs.answer(false)"
+  >
+    <p class="confirm-copy">{{ confirmation.message }}</p>
+    <footer class="modal-footer" modal-footer>
+      <button class="btn" (click)="dialogs.answer(false)">{{ 'action.cancel' | t }}</button>
+      <button
+        class="btn"
+        [class.danger]="confirmation.danger"
+        [class.primary]="!confirmation.danger"
+        (click)="dialogs.answer(true)"
+      >
+        {{ confirmation.label }}
+      </button>
+    </footer>
+  </luma-modal>
+}

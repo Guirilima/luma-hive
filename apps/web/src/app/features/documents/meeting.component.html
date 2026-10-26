@@ -1,0 +1,448 @@
+<div class="overlay" (keydown.escape)="$event.stopPropagation(); close()">
+  <section class="modal agent-teams" role="dialog" aria-modal="true" aria-label="Agent Teams">
+    <div class="modal-body">
+      <div
+        class="at"
+        id="atRoot"
+        [attr.data-tab]="tab()"
+        [style.--at-side]="sideWidth() ? sideWidth() + 'px' : null"
+      >
+        <header class="at-bar">
+          <div class="at-brand">
+            <span class="at-logo"><luma-icon name="video" /></span>
+            <div>
+              <strong>Agent Teams</strong>
+              <small>Kickoff · {{ draft.code }} {{ draft.name }}</small>
+            </div>
+          </div>
+          <span class="at-clock" [title]="'documents.meeting-duration' | t">{{ clock() }}</span>
+          <nav class="at-agenda" [attr.aria-label]="'documents.meeting-agenda' | t">
+            @for (item of agenda; track item.key) {
+              <button
+                class="at-chip"
+                [class.done]="agendaDone(item.key)"
+                (click)="openDocument(item.key)"
+              >
+                <i></i>
+                {{ item.label | uiLabel }}
+              </button>
+            }
+          </nav>
+          <div class="at-actions">
+            <div class="at-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                [class.on]="tab() === 'chat'"
+                [attr.aria-selected]="tab() === 'chat'"
+                (click)="tab.set('chat'); scrollMessages()"
+              >
+                <luma-icon name="chat" />
+                {{ 'dashboard.chat' | t }}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                [class.on]="tab() === 'docs'"
+                [attr.aria-selected]="tab() === 'docs'"
+                (click)="tab.set('docs')"
+              >
+                <luma-icon name="file" />
+                {{ 'project.documents' | t }}
+                <em>{{ completedDocs() }}/5</em>
+              </button>
+            </div>
+            <button class="btn primary sm" (click)="save()" [disabled]="working()">
+              <luma-icon name="check" />
+              {{ 'documents.save-to-project' | t }}
+            </button>
+            <button class="btn sm at-leave" (click)="close()">
+              <luma-icon name="leave" />
+              {{ 'meeting.leave' | t }}
+            </button>
+          </div>
+          @if (confirmLeave()) {
+            <div class="at-confirm">
+              <span>{{ 'documents.leave-without-saving-documents' | t }}</span>
+              <button class="btn primary sm" (click)="save(true)" [disabled]="working()">
+                {{ 'meeting.saveLeave' | t }}
+              </button>
+              <button class="btn danger sm" (click)="forceLeave()">
+                {{ 'meeting.discard' | t }}
+              </button>
+              <button class="btn ghost sm" (click)="confirmLeave.set(false)">
+                {{ 'run.resume' | t }}
+              </button>
+            </div>
+          }
+        </header>
+        <section
+          class="at-stage"
+          id="atStage"
+          [attr.data-mode]="sharing() ? 'share' : 'gallery'"
+          [attr.aria-label]="'meeting.target' | t"
+        >
+          <div
+            class="at-tiles"
+            [attr.data-n]="members().length + 1"
+            [style.--n]="members().length + 1"
+          >
+            @for (agent of members(); track agent.id) {
+              <figure
+                class="at-tile"
+                [class.guest]="guests().includes(agent.id)"
+                [attr.data-agent]="agent.id"
+                [attr.data-state]="agentState(agent.id)"
+                [style.--i]="$index"
+                (click)="mention(agent.name)"
+                [title]="('ui.mention' | t) + agent.name + ('ui.in-chat' | t)"
+              >
+                <img class="at-tile-bg" [src]="portrait(agent)" alt="" />
+                <img class="at-tile-face" [src]="portrait(agent)" [alt]="agent.name" />
+                <span class="at-tile-state">
+                  @if (speaker() === agent.id) {
+                    @if (stream()) {
+                      <span class="at-eq">
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                        <i></i>
+                      </span>
+                      {{ 'documents.speaking' | t }}
+                    } @else {
+                      {{ 'documents.thinking' | t }}
+                    }
+                  }
+                </span>
+                <span class="at-tile-typing" aria-hidden="true">
+                  <i></i>
+                  <i></i>
+                  <i></i>
+                </span>
+                @if (guests().includes(agent.id)) {
+                  <span class="at-guest-tag">{{ 'documents.guest' | t }}</span>
+                }
+                <figcaption class="at-plate">
+                  <strong>{{ agent.name }}</strong>
+                  <small>{{ plateRoleTag(agent) }}</small>
+                </figcaption>
+              </figure>
+            }
+            <figure
+              class="at-tile you"
+              [attr.data-state]="message.trim() ? 'typing' : 'idle'"
+              [style.--i]="members().length"
+            >
+              <span class="at-you"><luma-icon name="user" /></span>
+              <span class="at-tile-state">
+                @if (message.trim()) {
+                  {{ 'documents.typing' | t }}
+                }
+              </span>
+              <figcaption class="at-plate">
+                <strong>{{ 'documents.you' | t }}</strong>
+                <small>{{ draft.code }}</small>
+              </figcaption>
+            </figure>
+          </div>
+          @if (sharing()) {
+            <div class="at-screen">
+              <header class="at-screen-head">
+                <img [src]="portrait(getAgent(speaker() || currentCommander()?.id)!)" alt="" />
+                <span>
+                  <b>{{ getAgent(speaker() || currentCommander()?.id)?.name }}</b>
+                  {{ 'documents.shared' | t }}
+                </span>
+                <em>{{ 'project.' + sharing() | t }}</em>
+              </header>
+              <div class="at-screen-body conv-md" [innerHTML]="render(shareContent())"></div>
+              <button class="btn ghost sm at-unshare" (click)="sharing.set(null)">
+                {{ 'meeting.gallery' | t }}
+              </button>
+            </div>
+          }
+        </section>
+        <div
+          class="at-split"
+          role="separator"
+          tabindex="0"
+          aria-orientation="vertical"
+          aria-controls="atSide"
+          [attr.aria-label]="'documents.chat-width' | t"
+          (pointerdown)="resizeStart($event)"
+          (keydown)="resizeKey($event)"
+          (dblclick)="resetWidth()"
+        ></div>
+        <aside class="at-side" id="atSide">
+          <div
+            class="at-pane at-chat fe-chat"
+            [hidden]="tab() !== 'chat'"
+            [attr.aria-label]="'documents.meeting-chat' | t"
+          >
+            <div
+              class="fe-msgs"
+              id="feMsgs"
+              #msgBox
+              aria-live="polite"
+              (scroll)="chatScroll.onScroll($event)"
+            >
+              <div class="fe-time">{{ 'ui.today' | t }} {{ openingTime }}</div>
+              @for (msg of messages(); track msg.id) {
+                @if (msg.role === 'system') {
+                  <div class="fe-row system">
+                    <p class="fe-note" [class.error]="msg.kind === 'error' || !!msg.retry">
+                      {{ msg.text }}
+                      @if (msg.retry) {
+                        <button class="link-button fe-retry" (click)="retry(msg)">
+                          {{ 'chat.try-again' | t }}
+                        </button>
+                      }
+                    </p>
+                  </div>
+                } @else {
+                  <div [class]="'fe-row ' + (msg.role === 'user' ? 'user' : 'agent')">
+                    @if (msg.role !== 'user') {
+                      <span class="fe-sender">
+                        @if (senderAgent(msg); as a) {
+                          <img [src]="portrait(a)" alt="" />
+                        }
+                        {{ senderName(msg) }}
+                        @if ($index >= 3) {
+                          <time>{{ msgTime(msg) }}</time>
+                        }
+                      </span>
+                    }
+                    <div [class]="'fe-bubble ' + (msg.role === 'user' ? 'user' : 'agent')">
+                      <div
+                        class="fe-bubble-md"
+                        [innerHTML]="renderMessage(msg.text)"
+                        (click)="messageClick($event)"
+                      ></div>
+                    </div>
+                    @if (msg.options?.length && !msg.used) {
+                      <div class="fe-options ac-options">
+                        @for (opt of msg.options; track $index) {
+                          <button
+                            type="button"
+                            class="fe-option ac-opt"
+                            [disabled]="working()"
+                            (click)="answer(msg.id, opt.label)"
+                          >
+                            {{ opt.label }}
+                          </button>
+                        }
+                      </div>
+                    }
+                    @if (msg.updated?.length) {
+                      <div class="fe-foot">
+                        <span class="fe-edits">
+                          @for (field of msg.updated || []; track field) {
+                            <button
+                              type="button"
+                              class="fe-field-chip"
+                              (click)="openDocument(field)"
+                            >
+                              {{ fieldLabel(field) }}
+                            </button>
+                          }
+                          @if (undoByMessage()[msg.id]) {
+                            <button class="link-button" (click)="undoMessage(msg.id)">
+                              {{ 'documents.undo' | t }}
+                            </button>
+                          } @else {
+                            <em>{{ 'documents.undone' | t }}</em>
+                          }
+                        </span>
+                      </div>
+                    }
+                  </div>
+                }
+              }
+              @if (working()) {
+                <div class="fe-row agent fe-typing-row" [attr.data-who]="speaker()">
+                  @if (getAgent(speaker()); as agent) {
+                    <span class="fe-sender fe-typing-who">
+                      <img [src]="portrait(agent)" alt="" />
+                      {{ agent.name }}
+                    </span>
+                  }
+                  <div class="fe-typing fe-bubble agent">
+                    @if (stream()) {
+                      <div class="fe-bubble-md" [innerHTML]="render(stream())"></div>
+                    } @else {
+                      <i></i>
+                      <i></i>
+                      <i></i>
+                    }
+                  </div>
+                  <button class="link-button fe-stop" (click)="stop()">
+                    {{ 'chat.stop' | t }}
+                  </button>
+                </div>
+              }
+              @if (receipt(); as text) {
+                <div class="fe-receipt">{{ text }}</div>
+              }
+            </div>
+            <button
+              type="button"
+              class="fe-jump"
+              [hidden]="!chatScroll.unread()"
+              (click)="chatScroll.jump('.at-chat .fe-msgs')"
+            >
+              {{ 'chat.new-message' | t }}
+            </button>
+            <div class="fe-compose">
+              <div class="fe-suggest" [hidden]="hasUserMessages()">
+                <button (click)="quickSend('Seguir a pauta da reunião')">
+                  {{ 'documents.follow-the-agenda' | t }}
+                </button>
+                <button (click)="quickSend('Criar a primeira versão de todos os documentos')">
+                  {{ 'documents.first-draft-of-everything' | t }}
+                </button>
+                <button (click)="quickSend('Revisar o que já existe nos documentos')">
+                  {{ 'documents.review-existing-documents' | t }}
+                </button>
+              </div>
+              @if (allMentions().length) {
+                <div
+                  class="at-mention-menu"
+                  role="listbox"
+                  [attr.aria-label]="'documents.mention-participant' | t"
+                >
+                  @for (a of mentionHere(); track a.id) {
+                    <button
+                      type="button"
+                      role="option"
+                      class="at-mention-item"
+                      [class.on]="mentionIndex() === $index"
+                      (click)="pickMention(a.name)"
+                      [attr.aria-selected]="mentionIndex() === $index"
+                    >
+                      <img [src]="portrait(a)" alt="" />
+                      <b>@{{ a.name }}</b>
+                      <small>{{ roleBadgeTag(a) }}</small>
+                    </button>
+                  }
+                  @if (mentionInvite().length) {
+                    <div class="at-mention-head">{{ 'documents.invite-to-meeting' | t }}</div>
+                    @for (a of mentionInvite(); track a.id) {
+                      <button
+                        type="button"
+                        role="option"
+                        class="at-mention-item"
+                        [class.on]="mentionIndex() === mentionHere().length + $index"
+                        (click)="pickMention(a.name)"
+                        [attr.aria-selected]="mentionIndex() === mentionHere().length + $index"
+                      >
+                        <img [src]="portrait(a)" alt="" />
+                        <b>@{{ a.name }}</b>
+                        <small>{{ roleBadgeTag(a) }}</small>
+                      </button>
+                    }
+                  }
+                </div>
+              }
+              <div class="at-to" [innerHTML]="targetLine()" aria-live="polite"></div>
+              <div class="fe-pill">
+                <textarea
+                  #composer
+                  id="feChatInput"
+                  rows="1"
+                  maxlength="4000"
+                  [(ngModel)]="message"
+                  (ngModelChange)="mentionChanged()"
+                  (keydown)="composerKey($event)"
+                  [placeholder]="'documents.type-a-message-use-to-mention-someone' | t"
+                  [attr.aria-label]="'documents.message-for-the-meeting' | t"
+                ></textarea>
+                <button
+                  class="fe-send"
+                  (click)="send()"
+                  [disabled]="!message.trim()"
+                  [attr.aria-label]="'chat.send' | t"
+                  [title]="'chat.send-enter' | t"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="at-pane at-docs" [hidden]="tab() !== 'docs'">
+            <form class="fe-form doc-form" id="docForm">
+              <p class="hint doc-hint">
+                {{ 'documents.goes-to' | t }}
+                <code>docs/project/</code>
+                e
+                <code>docs/architecture/</code>
+                {{ 'documents.when-exporting-for-codex-cli-edit-freely-agents-start-from' | t }}
+              </p>
+              @for (field of fields; track field) {
+                <luma-markdown-editor
+                  [(value)]="draft[field]"
+                  [label]="'project.' + field"
+                  [field]="field"
+                />
+              }
+              <div class="field full doc-adrs">
+                <span class="label adr-label">
+                  {{ 'documents.architecture-decisions-adr' | t }}
+                </span>
+                <div class="adr-list">
+                  @for (adr of draft.adrs; track adr.id) {
+                    <div class="adr-block">
+                      <div class="adr-head">
+                        <span class="adr-num">ADR-{{ pad($index + 1) }}</span>
+                        <input
+                          name="adrTitle"
+                          [(ngModel)]="adr.title"
+                          [ngModelOptions]="{ standalone: true }"
+                          maxlength="120"
+                          [attr.aria-label]="'documents.adr-title' | t"
+                        />
+                        <select
+                          name="adrStatus"
+                          [(ngModel)]="adr.status"
+                          [ngModelOptions]="{ standalone: true }"
+                        >
+                          @for (status of adrStatuses; track status) {
+                            <option [value]="status">{{ status | uiLabel }}</option>
+                          }
+                        </select>
+                        <button
+                          type="button"
+                          class="icon-button small"
+                          (click)="removeAdr(adr.id)"
+                          [attr.aria-label]="'documents.remove-adr' | t"
+                        >
+                          <luma-icon name="trash" />
+                        </button>
+                      </div>
+                      <textarea
+                        class="code"
+                        [(ngModel)]="adr.content"
+                        [ngModelOptions]="{ standalone: true }"
+                        [attr.aria-label]="'documents.context-decision-and-consequences' | t"
+                      ></textarea>
+                    </div>
+                  }
+                </div>
+                <button type="button" class="btn ghost sm" (click)="addAdr()">
+                  <luma-icon name="plus" />
+                  {{ 'documents.add-adr' | t }}
+                </button>
+              </div>
+              @if (undoAvailable()) {
+                <button type="button" class="btn ghost sm" (click)="undoProposal()">
+                  {{ 'documents.undo-document-changes' | t }}
+                </button>
+              }
+            </form>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+</div>

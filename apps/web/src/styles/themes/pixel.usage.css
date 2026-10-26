@@ -1,0 +1,156 @@
+/* Native popover and dialog live in the top layer, outside the page panels. */
+html[data-interface-theme='pixel'] .usage-trigger {
+  background: #20434f;
+  border: 2px solid #b48e53;
+  border-radius: 0;
+  box-shadow:
+    inset 1px 1px #d9be7a66,
+    2px 2px 0 #061823;
+  color: #f2d79e;
+  font-family: var(--pixel-font);
+  font-size: 13px;
+}
+html[data-interface-theme='pixel'] .usage-trigger:hover {
+  background: #31574f;
+  color: #ffe7ac;
+}
+html[data-interface-theme='pixel'] :is(.usage-preview, .usage-dialog) {
+  background: #173544;
+  color: #f1e7ce;
+  border: 3px solid #b89258;
+  border-radius: 0;
+  box-shadow:
+    inset 0 0 0 2px #e8c88755,
+    5px 5px 0 #061823;
+  font-family: var(--pixel-font);
+}
+html[data-interface-theme='pixel'] .usage-dialog::backdrop {
+  background: #071b2bcc;
+  backdrop-filter: none;
+}
+html[data-interface-theme='pixel']
+  :is(#usagePreview, #usageDialog)
+  :is(.preview-head, .usage-head, .preview-footer, .usage-footer) {
+  background: #102c3a;
+  border-color: #a38653;
+}
+html[data-interface-theme='pixel'] :is(#usagePreview, #usageDialog) .preview-head strong {
+  font-family: var(--pixel-font);
+  font-size: 17px;
+  color: #efd49a;
+}
+html[data-interface-theme='pixel']
+  :is(#usagePreview, #usageDialog)
+  :is(
+    .preview-head div > span,
+    .preview-legend,
+    .preview-unavailable,
+    .usage-description,
+    .usage-note
+  ) {
+  color: #b5c3b8;
+}
+html[data-interface-theme='pixel'] :is(#usagePreview, #usageDialog) .preview-provider {
+  border-color: #9b835455;
+}
+html[data-interface-theme='pixel']
+  :is(#usagePreview, #usageDialog)
+  .preview-provider
+  > header
+  > strong {
+  font-family: var(--pixel-font);
+  font-size: 16px;
+  color: #efdcb7;
+}
+html[data-interface-theme='pixel'] :is(#usagePreview, #usageDialog) .preview-dot {
+  border-radius: 0;
+  box-shadow: 1px 1px 0 #061823;
+}
+html[data-interface-theme='pixel']
+  :is(#usagePreview, #usageDialog)
+  :is(.preview-tokens, .preview-window > strong, .preview-group) {
+  color: #cbd7c1;
+}
+html[data-interface-theme='pixel'] :is(#usagePreview, #usageDialog) .preview-window progress {
+  height: 6px;
+  box-shadow: 1px 1px 0 #061823;
+}
+html[data-interface-theme='pixel'] :is(#usagePreview, #usageDialog) .preview-details {
+  font-family: var(--pixel-font);
+  font-size: 15px;
+  color: #f0cf89;
+}
+html[data-interface-theme='pixel'] :is(#usagePreview, #usageDialog) .usage-head h2 {
+  color: #f1d398;
+  font-family: var(--pixel-font);
+  font-size: 29px;
+}
+html[data-interface-theme='pixel']
+  :is(#usagePreview, #usageDialog)
+  :is(.usage-summary, .usage-card) {
+  background: #15313f;
+  border: 2px solid #9d7d4a;
+  box-shadow:
+    inset 0 0 0 1px #ceb57633,
+    3px 3px 0 #061823;
+}
+html[data-interface-theme='pixel'] :is(#usagePreview, #usageDialog) .usage-summary strong {
+  color: #efd49a;
+}
+html[data-interface-theme='pixel'] :is(#usagePreview, #usageDialog) .usage-card h3 {
+  color: #f0d79f;
+  font-family: var(--pixel-font);
+  font-size: 19px;
+}
+html[data-interface-theme='pixel']
+  :is(#usagePreview, #usageDialog)
+  :is(
+    .usage-card h4,
+    .usage-local-title,
+    .usage-tokens dt,
+    .usage-summary div span,
+    .usage-quota-title
+  ) {
+  color: #b8c9b9;
+}
+html[data-interface-theme='pixel']
+  :is(#usagePreview, #usageDialog)
+  :is(.usage-status, .usage-missing-windows, .usage-unavailable, .usage-checked, .usage-quota p) {
+  color: #acbfb5;
+}
+html[data-interface-theme='pixel'] :is(#usagePreview, #usageDialog) .usage-status {
+  background: #203e48;
+  border-color: #8b7950;
+}
+html[data-interface-theme='pixel'] :is(#usagePreview, #usageDialog) .usage-status.available {
+  background: #285340;
+  color: #b2e0aa;
+  border-color: #7eac75;
+}
+html[data-interface-theme='pixel']
+  :is(#usagePreview, #usageDialog)
+  :is(.usage-period button, .usage-refresh) {
+  background: #244652;
+  border: 2px solid #9f804c;
+  color: #dfd9b5;
+  font-family: var(--pixel-font);
+  font-size: 15px;
+  box-shadow: 2px 2px 0 #061823;
+}
+html[data-interface-theme='pixel'] :is(#usagePreview, #usageDialog) .usage-period button.active {
+  background: #e2bf7a;
+  color: #193441;
+  box-shadow:
+    inset 2px 2px #ffe2a9,
+    2px 2px 0 #061823;
+}
+html[data-interface-theme='pixel']
+  :is(#usagePreview, #usageDialog)
+  :is(.usage-tokens dd, .usage-tokens div:first-child dd, .usage-quota-title strong) {
+  color: #e4d69e;
+}
+html[data-interface-theme='pixel'] :is(#usagePreview, #usageDialog) .usage-quota progress {
+  height: 7px;
+  border: 1px solid #8a8157;
+  border-radius: 0;
+}

@@ -1,0 +1,55 @@
+@if (showHistory()) {
+  <luma-modal
+    [title]="'handoffs.handoff-network' | t"
+    [subtitle]="store.project()!.code + ('ui.specialist-transmissions' | t)"
+    (closed)="showHistory.set(false)"
+  >
+    <div class="modal-toolbar">
+      <p>
+        {{ 'handoffs.the-task-moves-between-agents-while-context-travels-with-t' | t }}
+      </p>
+      <button class="btn primary" (click)="showHistory.set(false); dialogs.open('handoff')">
+        <luma-icon name="plus" />
+        {{ 'handoffs.new-handoff-268' | t }}
+      </button>
+    </div>
+    @if (handoffs().length) {
+      <div class="timeline">
+        @for (handoff of handoffs(); track handoff.id) {
+          <article class="timeline-row">
+            <time>{{ clock(handoff.at) }}</time>
+            <luma-icon name="flow" />
+            <div>
+              <h3>
+                {{ store.agent(handoff.from)?.name || ('ui.removed' | t) }} →
+                {{ store.agent(handoff.to)?.name || ('ui.removed' | t) }}
+                <span class="muted">
+                  / {{ store.feature(handoff.featureId)?.key || ('ui.archived' | t) }}
+                </span>
+              </h3>
+              <p>{{ handoff.context.slice(0, 600) }}</p>
+            </div>
+            <span class="tag">
+              {{
+                handoff.manual
+                  ? ('ui.manual' | t)
+                  : handoff.simulated
+                    ? 'DEMO'
+                    : store.providerLabel(handoff.from)
+              }}
+            </span>
+          </article>
+        }
+      </div>
+    } @else {
+      <div class="empty-panel">
+        <luma-icon name="flow" />
+        <h3>{{ 'handoffs.no-transfers-yet' | t }}</h3>
+        <p>{{ 'handoffs.distribute-features-and-start-the-demo-or-configure-a-manu' | t }}</p>
+        <button class="btn primary" (click)="showHistory.set(false); dialogs.open('handoff')">
+          {{ 'handoffs.configure-handoff' | t }}
+        </button>
+      </div>
+    }
+  </luma-modal>
+}

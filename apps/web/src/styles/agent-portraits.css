@@ -1,0 +1,10 @@
+/* Portrait choice is independent of the interface/map theme. */
+html[data-agent-appearance='pixel'] img[src*='/assets/portraits/pixel/'] {
+  image-rendering: pixelated;
+  /* Legacy portrait treatments must not remove the generated palette. */
+  filter: none !important;
+}
+html[data-agent-appearance='pixel'] .editor-photo:before,
+html[data-agent-appearance='pixel'] .editor-photo:after {
+  display: none;
+}

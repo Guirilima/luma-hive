@@ -1,0 +1,163 @@
+<section class="home-view workflow-page" aria-labelledby="recoveryHeading">
+  <div class="home-inner">
+    <header class="home-head">
+      <div>
+        <div class="eyebrow">LUMA / HIVE</div>
+        <h1 id="recoveryHeading">{{ 'recovery.title' | t }}</h1>
+        <p>{{ 'recovery.description' | t }}</p>
+      </div>
+      <button class="btn" (click)="workflow.refresh()">{{ 'action.refresh' | t }}</button>
+    </header>
+    @if (workflow.error()) {
+      <p class="notice warning" role="status">{{ workflow.error() | t }}</p>
+    }
+    <div class="workflow-filters">
+      <label>
+        {{ 'obs.project' | t }}
+        <select [ngModel]="project()" (ngModelChange)="project.set($event); selected.set('')">
+          <option value="">{{ 'obs.all' | t }}</option>
+          @for (p of store.workspace()?.projects || []; track p.id) {
+            <option [value]="p.id">{{ p.name }}</option>
+          }
+        </select>
+      </label>
+    </div>
+    <div class="workflow-grid">
+      <aside class="workflow-list">
+        @for (op of operations(); track op.id) {
+          <button
+            class="workflow-panel workflow-list-item"
+            [class.selected]="current()!.id === op.id"
+            (click)="select(op.id)"
+          >
+            <strong>{{ name(op.projectId) }}</strong>
+            <span>{{ 'recovery.state.' + op.state | t }}</span>
+            <small>
+              {{ confirmed(op) }} / {{ op.stages.length }} {{ 'recovery.confirmedCount' | t }}
+            </small>
+            <time>{{ i18n.date(op.updatedAt) }}</time>
+          </button>
+        } @empty {
+          <p class="workflow-panel">{{ 'recovery.empty' | t }}</p>
+        }
+      </aside>
+      @if (current(); as op) {
+        <section class="workflow-panel recovery-detail">
+          <div class="between">
+            <h2>{{ name(op.projectId) }}</h2>
+            <span class="tag">{{ 'recovery.state.' + op.state | t }}</span>
+          </div>
+          <p>{{ 'recovery.approvedAt' | t }} {{ i18n.date(op.approvedAt) }}</p>
+          <progress
+            class="workflow-progress"
+            [value]="confirmed(op)"
+            [max]="op.stages.length"
+          ></progress>
+          <p>{{ confirmed(op) }} / {{ op.stages.length }} {{ 'recovery.confirmedCount' | t }}</p>
+          @if (op.reason) {
+            <p class="notice warning">{{ op.reason | t }}</p>
+          }
+          @if (op.detail) {
+            <details>
+              <summary>{{ 'recovery.diagnostic' | t }}</summary>
+              <pre>{{ op.detail }}</pre>
+            </details>
+          }
+          @if (error()) {
+            <p class="notice danger" role="alert">{{ error() }}</p>
+          }
+          <div class="workflow-actions">
+            @if (op.state === 'running' || op.state === 'pausing') {
+              <button
+                class="btn"
+                [disabled]="busy() || op.state === 'pausing'"
+                (click)="act('pause')"
+              >
+                {{ 'ui.pause' | t }}
+              </button>
+            }
+            @if (op.state === 'paused' || op.state === 'interrupted' || op.state === 'blocked') {
+              <button
+                class="btn primary"
+                [disabled]="
+                  busy() ||
+                  op.stages[op.current]?.state === 'uncertain' ||
+                  op.stages[op.current]?.state === 'failed'
+                "
+                (click)="act('resume')"
+              >
+                {{ 'recovery.resume' | t }}
+              </button>
+            }
+            @if (op.state !== 'completed' && op.state !== 'cancelled') {
+              <button class="btn danger" [disabled]="busy()" (click)="act('cancel')">
+                {{ 'recovery.cancel' | t }}
+              </button>
+            }
+          </div>
+          @if (
+            op.stages[op.current]?.state === 'uncertain' ||
+            op.stages[op.current]?.state === 'failed'
+          ) {
+            <section class="workflow-retry">
+              <p>{{ 'recovery.uncertainNote' | t }}</p>
+              <label class="workflow-check">
+                <input
+                  type="checkbox"
+                  [ngModel]="retryAcknowledged()"
+                  (ngModelChange)="retryAcknowledged.set($event)"
+                />
+                {{ 'recovery.retryAcknowledgement' | t }}
+              </label>
+              <button
+                class="btn"
+                [disabled]="busy() || !retryAcknowledged()"
+                (click)="act('retry')"
+              >
+                {{ 'recovery.prepareRetry' | t }}
+              </button>
+            </section>
+          }
+          <ol class="checkpoint-list">
+            @for (stage of op.stages; track stage.id) {
+              <li [attr.data-state]="stage.state">
+                <div>
+                  <strong>{{ stage.featureKey }} · {{ agent(stage.agentId) }}</strong>
+                  <span>
+                    {{ 'recovery.stage' | t }} {{ stage.index + 1 }} ·
+                    {{ 'recovery.stage.' + stage.state | t }}
+                  </span>
+                  @if (stage.confirmedAt) {
+                    <time>{{ i18n.date(stage.confirmedAt) }}</time>
+                  }
+                </div>
+                @if (stage.runId) {
+                  <button class="btn sm" (click)="inspect(stage.runId)">
+                    {{ 'obs.open' | t }}
+                  </button>
+                }
+                @if (stage.attempts.length) {
+                  <details>
+                    <summary>{{ 'recovery.attempts' | t }} {{ stage.attempts.length }}</summary>
+                    @for (attempt of stage.attempts; track attempt.runId) {
+                      <button class="workflow-attempt" (click)="inspect(attempt.runId)">
+                        {{ 'recovery.stage.' + attempt.state | t }} · {{ i18n.date(attempt.at) }}
+                      </button>
+                    }
+                  </details>
+                }
+              </li>
+            }
+          </ol>
+          <details>
+            <summary>{{ 'recovery.audit' | t }}</summary>
+            @for (event of op.audit; track $index) {
+              <p>{{ i18n.date(event.at) }} · {{ 'recovery.audit.' + event.action | t }}</p>
+            }
+          </details>
+          <p class="workflow-note">{{ 'recovery.note' | t }}</p>
+        </section>
+      }
+    </div>
+  </div>
+</section>

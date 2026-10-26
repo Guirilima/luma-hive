@@ -1,0 +1,127 @@
+/* The map DOM uses the reference IDs so the original scene chrome applies directly. */
+luma-map {
+  display: contents;
+}
+.map-surface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  touch-action: none;
+  cursor: grab;
+}
+.map-surface canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.map-markers,
+.office-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.office-label {
+  pointer-events: none;
+}
+.office-label.war {
+  pointer-events: auto;
+}
+.map-surface .map-node .node-icon {
+  pointer-events: none;
+}
+.map-transition {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  z-index: 9;
+  pointer-events: none;
+  animation: map-perspective-out 0.36s ease-out forwards;
+}
+@keyframes map-perspective-out {
+  to {
+    opacity: 0;
+    transform: scale(0.98) rotateX(4deg);
+  }
+}
+.map-move-banner {
+  position: absolute;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #071116ef;
+  border: 1px solid var(--cyan);
+  padding: 10px;
+  z-index: 8;
+  font: 10px var(--mono);
+}
+.map-moving {
+  cursor: crosshair;
+}
+.life-badge {
+  position: absolute;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font: 8px var(--mono);
+  background: #061a15e6;
+  color: #7fe4aa;
+  border: 1px solid #49bd7866;
+  padding: 3px 5px;
+}
+.pixel-layout .node-diamond,
+.pixel-layout .node-icon,
+.pixel-layout .office-labels {
+  display: none;
+}
+.pixel-layout .map-grain,
+.pixel-layout .map-vignette {
+  display: none;
+}
+.pixel-layout .map-node {
+  width: 45px;
+  height: 20px;
+}
+.pixel-layout .node-caption {
+  top: -20px;
+}
+.map-note {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  font: 9px var(--mono);
+  color: var(--muted);
+}
+.map-page:has(.map-surface.focused) .bottom-hud,
+.map-page:has(.map-surface.focused) .map-side-controls {
+  opacity: 0;
+  pointer-events: none;
+}
+.map-surface.background .map-markers {
+  pointer-events: none;
+}
+
+.pixel-layout {
+  background: radial-gradient(ellipse at 45% 40%, #123347 0%, #071726 60%, #030c17 100%);
+}
+.pixel-marker {
+  margin: 0;
+  transform-origin: 50% 100%;
+}
+.pixel-mode .msc-rot-l,
+.pixel-mode .msc-rot-r {
+  display: none;
+}
+
+.pixel-mode > .corner-check {
+  display: none;
+}
+
+/* Keep the two-line instruction hint footprint of the reference editor. */
+.editor-pane[data-pane='prompt'] .hint {
+  min-height: 32px;
+}

@@ -1,0 +1,86 @@
+<section class="home-view workflow-page" aria-labelledby="attentionHeading">
+  <div class="home-inner">
+    <header class="home-head">
+      <div>
+        <div class="eyebrow">LUMA / HIVE</div>
+        <h1 id="attentionHeading">{{ 'attention.title' | t }}</h1>
+        <p>{{ 'attention.description' | t }}</p>
+      </div>
+      <button class="btn" (click)="workflow.refresh()">{{ 'action.refresh' | t }}</button>
+    </header>
+    @if (workflow.error()) {
+      <p class="notice warning" role="status">{{ workflow.error() | t }}</p>
+    }
+    <div class="workflow-filters">
+      <label>
+        {{ 'obs.project' | t }}
+        <select [ngModel]="project()" (ngModelChange)="project.set($event)">
+          <option value="">{{ 'obs.all' | t }}</option>
+          @for (p of store.workspace()?.projects || []; track p.id) {
+            <option [value]="p.id">{{ p.name }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        {{ 'attention.type' | t }}
+        <select [ngModel]="kind()" (ngModelChange)="kind.set($event)">
+          <option value="">{{ 'obs.all' | t }}</option>
+          @for (k of kinds; track k) {
+            <option [value]="k">{{ 'attention.kind.' + k | t }}</option>
+          }
+        </select>
+      </label>
+      <label class="workflow-check">
+        <input
+          type="checkbox"
+          [ngModel]="acknowledged()"
+          (ngModelChange)="acknowledged.set($event)"
+        />
+        {{ 'attention.showAcknowledged' | t }}
+      </label>
+      <strong aria-live="polite">{{ items().length }} {{ 'attention.pendingCount' | t }}</strong>
+    </div>
+    <div class="workflow-cards">
+      @for (item of items(); track item.id) {
+        <article class="workflow-panel attention-card" [attr.data-kind]="item.kind">
+          <div class="between">
+            <span class="tag">{{ 'attention.kind.' + item.kind | t }}</span>
+            <small>{{ i18n.date(item.at) }}</small>
+          </div>
+          <p class="eyebrow">{{ item.projectName }}</p>
+          <h2>{{ item.title }}</h2>
+          <p class="workflow-prose">{{ text(item.detail) }}</p>
+          @if (item.acknowledgedAt) {
+            <small>{{ 'attention.acknowledged' | t }} · {{ i18n.date(item.acknowledgedAt) }}</small>
+          }
+          <div class="workflow-actions">
+            <button class="btn primary" (click)="open(item)">
+              {{ 'attention.openOrigin' | t }}
+            </button>
+            @if (item.kind === 'permission') {
+              <button class="btn" (click)="configure(item)">
+                {{ 'attention.permissions' | t }}
+              </button>
+            }
+            @if (
+              (item.kind === 'failure' || item.kind === 'permission') &&
+              !item.operationId &&
+              !item.acknowledgedAt
+            ) {
+              <button class="btn" [disabled]="busy() === item.id" (click)="acknowledge(item)">
+                {{ 'attention.acknowledge' | t }}
+              </button>
+            }
+          </div>
+        </article>
+      } @empty {
+        <div class="workflow-panel workflow-empty">
+          <luma-icon name="check" />
+          <h2>{{ 'attention.empty' | t }}</h2>
+          <p>{{ 'attention.emptyDetail' | t }}</p>
+        </div>
+      }
+    </div>
+    <p class="workflow-note">{{ 'attention.note' | t }}</p>
+  </div>
+</section>

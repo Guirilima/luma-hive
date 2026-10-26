@@ -1,0 +1,523 @@
+#workspace {
+  --squad-summary-height: 0px;
+}
+/* Squad monitoring is shared by both map renderers; the interface theme stays independent. */
+#workspace .squad-quick-stats {
+  position: static;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+  height: auto;
+  flex-shrink: 0;
+  margin: 0 0 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  pointer-events: auto;
+}
+.squad-quick-stats button {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 8px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: 10px var(--sans);
+  cursor: pointer;
+}
+.squad-quick-stats button + button {
+  border-left: 1px solid var(--line);
+}
+.squad-quick-stats strong {
+  color: var(--ink);
+  font: 600 22px var(--sans);
+}
+.squad-quick-stats button.active {
+  border-bottom-color: var(--cyan);
+  background: color-mix(in srgb, var(--cyan) 9%, transparent);
+}
+.squad-quick-stats [data-count='working'] strong {
+  color: #67d3ad;
+}
+.squad-quick-stats [data-count='waiting'] strong {
+  color: #f4c168;
+}
+.squad-quick-stats [data-count='helpers'] strong {
+  color: #c0a4ef;
+}
+#workspace.map-page:not(:has(.handoffs-map)) .left-hud {
+  left: 28px;
+  right: auto;
+  top: calc(var(--topbar-h) + var(--squad-summary-height) + 28px);
+  bottom: 115px !important;
+  width: 286px;
+  max-height: none;
+  display: flex;
+  flex-direction: column !important;
+  align-items: stretch;
+  gap: 0;
+  padding: 14px 10px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+}
+#workspace.map-page:not(:has(.handoffs-map)) .left-hud .project-topline {
+  display: flex;
+  margin-bottom: 8px;
+}
+#workspace.map-page:not(:has(.handoffs-map)) .left-hud .project-chip {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+}
+#workspace.map-page:not(:has(.handoffs-map)) .left-hud .project-chip strong {
+  max-width: none;
+}
+#workspace.map-page:not(:has(.handoffs-map)) .left-hud .squad-head {
+  display: flex;
+  margin: 18px 0 10px;
+}
+#workspace.map-page:not(:has(.handoffs-map)) .left-hud .roster {
+  display: block;
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  max-height: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  margin: 0;
+  border: 0;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+}
+#workspace.map-page:not(:has(.handoffs-map)) .roster-item {
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  min-height: 76px;
+  padding: 10px 7px;
+  gap: 9px;
+  align-items: flex-start;
+  border: 0;
+  border-left: 2px solid transparent;
+  background: transparent;
+}
+#workspace.map-page:not(:has(.handoffs-map)) .roster-item.selected {
+  background: color-mix(in srgb, var(--cyan) 9%, transparent);
+  border-left-color: var(--cyan);
+}
+#workspace.map-page:not(:has(.handoffs-map)) .roster-avatar {
+  width: 36px;
+  height: 40px;
+  flex-shrink: 0;
+}
+#workspace .roster-member-copy {
+  flex: 1;
+  min-width: 0;
+  display: block;
+}
+#workspace .roster-member-copy .roster-name {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.7px;
+}
+#workspace .roster-member-copy .roster-role {
+  display: block;
+  font-size: 9px;
+}
+#workspace .roster-state {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 7px;
+  color: var(--muted);
+  font: 9px/1.4 var(--sans);
+}
+.roster-state i,
+.roster-child-dot {
+  display: inline-block;
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #74868c;
+}
+.roster-state[data-state='working'] {
+  color: #67d3ad;
+}
+.roster-state[data-state='working'] i,
+.roster-consultation[data-state='running'] .roster-child-dot {
+  background: #67d3ad;
+  box-shadow: 0 0 6px #67d3ad55;
+}
+.roster-state[data-state='waiting'],
+.roster-state[data-state='paused'] {
+  color: #f4c168;
+}
+.roster-state[data-state='waiting'] i,
+.roster-state[data-state='paused'] i {
+  background: #f4c168;
+}
+#workspace .roster-activity {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: var(--muted);
+  font: 10px/1.5 var(--sans);
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+}
+#workspace.map-page:not(:has(.handoffs-map)) .roster-end {
+  display: flex;
+  flex-shrink: 0;
+  gap: 7px;
+  padding-top: 2px;
+}
+.roster-member {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 5px;
+}
+.roster-consultations-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: calc(100% - 16px);
+  margin: 0 8px 6px;
+  padding: 7px 3px;
+  border: 0;
+  background: transparent;
+  color: var(--purple);
+  cursor: pointer;
+  text-align: left;
+  font: 10px var(--sans);
+}
+.roster-consultations-toggle span {
+  margin-left: auto;
+  font-size: 9px;
+}
+.roster-consultations-toggle .icon,
+.roster-run-link .icon {
+  width: 11px;
+  height: 11px;
+}
+.roster-consultations-toggle[aria-expanded='true'] > .icon:last-child {
+  transform: rotate(90deg);
+}
+.roster-consultations {
+  margin: 0 7px 5px 19px;
+  padding-left: 8px;
+  border-left: 1px solid color-mix(in srgb, var(--purple) 45%, transparent);
+}
+.roster-consultation {
+  display: flex;
+  align-items: flex-start;
+  width: auto;
+  max-width: 100%;
+  gap: 7px;
+  padding: 8px 4px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+.roster-consultation:hover,
+.roster-run-link:hover,
+.roster-consultations-toggle:hover {
+  background: color-mix(in srgb, var(--cyan) 9%, transparent);
+}
+.roster-consultation img {
+  width: 26px;
+  height: 30px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.roster-consultation > .icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  color: var(--purple);
+}
+.roster-child-copy {
+  display: block;
+  min-width: 0;
+}
+.roster-child-copy strong {
+  display: block;
+  font: 600 10px var(--sans);
+  overflow-wrap: anywhere;
+}
+.roster-child-copy small {
+  display: block;
+  font: 9px var(--sans);
+  color: var(--muted);
+  margin: 3px 0;
+}
+.roster-child-copy > span {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font: 10px/1.5 var(--sans);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+.roster-child-dot {
+  margin: 4px 0 0 auto;
+}
+.roster-consultation[data-state='failed'] .roster-child-dot {
+  background: #e98d8d;
+}
+.roster-run-link {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 8px 2px 52px;
+  padding: 5px 0;
+  border: 0;
+  background: transparent;
+  color: var(--cyan);
+  cursor: pointer;
+  font: 9px var(--sans);
+}
+#workspace .left-hud .roster-add {
+  display: flex;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  margin-top: 8px;
+  padding-top: 8px;
+  gap: 5px;
+}
+#workspace .left-hud .roster-add button {
+  font-size: 8px;
+}
+.roster-empty,
+.roster-sync-note {
+  padding: 10px 6px;
+  font: 10px/1.5 var(--sans);
+  color: var(--muted);
+}
+.roster-sync-note {
+  color: #f4c168;
+  margin: 0;
+}
+.roster-filter-clear {
+  color: var(--cyan);
+  font: 10px var(--sans);
+  background: transparent;
+  border: 0;
+  margin: 0 0 8px;
+  padding: 6px 0;
+  text-align: left;
+  cursor: pointer;
+}
+#workspace.pixel-mode .pixel-heading {
+  top: calc(var(--squad-summary-height) + 28px);
+  left: 334px;
+  max-width: calc(100% - 670px);
+}
+#workspace.pixel-mode .pixel-note {
+  left: 334px;
+  right: 330px;
+  bottom: 58px;
+}
+#workspace.pixel-mode .pixel-actions {
+  left: 334px;
+  bottom: 22px;
+}
+#workspace.ops-chat-on:not(.ops-chat-dock) .left-hud {
+  display: flex;
+}
+#workspace.ops-chat-dock .left-hud {
+  display: none;
+}
+#workspace.ops-chat-dock .squad-quick-stats {
+  left: calc(var(--oc-w, 380px) + 16px);
+  right: 28px;
+}
+#workspace.pixel-mode.ops-chat-dock .pixel-heading {
+  left: calc(var(--oc-w, 380px) + 28px);
+}
+#workspace.pixel-mode.focus-mode .pixel-heading {
+  left: 28px;
+  top: 20px;
+  max-width: calc(100% - 60px);
+}
+#workspace.pixel-mode.focus-mode .pixel-note,
+#workspace.pixel-mode.focus-mode .pixel-actions {
+  left: 28px;
+}
+html[data-interface-theme='pixel'] .squad-quick-stats,
+html[data-interface-theme='pixel'] #workspace.map-page:not(:has(.handoffs-map)) .left-hud {
+  border: 2px solid var(--pixel-border);
+  box-shadow: var(--pixel-frame);
+}
+html[data-interface-theme='pixel'] .squad-quick-stats button {
+  font-size: 14px;
+}
+html[data-interface-theme='pixel'] .squad-quick-stats strong {
+  font-size: 25px;
+}
+html[data-interface-theme='pixel'] #workspace .roster-member-copy .roster-name {
+  font-size: 16px;
+}
+html[data-interface-theme='pixel'] #workspace .roster-member-copy .roster-role,
+html[data-interface-theme='pixel'] #workspace .roster-state {
+  font-size: 13px;
+}
+html[data-interface-theme='pixel'] #workspace .roster-activity,
+html[data-interface-theme='pixel'] .roster-child-copy > span,
+html[data-interface-theme='pixel'] .roster-child-copy small,
+html[data-interface-theme='pixel'] .roster-consultations-toggle,
+html[data-interface-theme='pixel'] .roster-consultations-toggle span,
+html[data-interface-theme='pixel'] .roster-run-link {
+  font-size: 13px;
+}
+html[data-interface-theme='pixel'] .roster-child-copy strong {
+  font-size: 14px;
+}
+@media (max-width: 1100px) {
+  #workspace {
+    --squad-summary-height: 0px;
+  }
+  #workspace .squad-quick-stats {
+    left: 16px;
+    right: 16px;
+  }
+  .squad-quick-stats button {
+    flex-direction: column;
+    gap: 2px;
+    min-height: 0;
+    text-align: center;
+  }
+}
+@media (max-width: 900px) {
+  #workspace.map-page:not(:has(.handoffs-map)) .left-hud {
+    left: 16px;
+    top: calc(var(--topbar-h) + var(--squad-summary-height) + 28px);
+    width: 220px;
+    bottom: 100px !important;
+  }
+  #workspace .squad-quick-stats {
+    top: calc(var(--topbar-h) + 12px);
+  }
+  #workspace.pixel-mode .pixel-heading {
+    left: 254px;
+    top: calc(var(--squad-summary-height) + 28px);
+    max-width: calc(100% - 306px);
+  }
+  #workspace.pixel-mode .pixel-note,
+  #workspace.pixel-mode .pixel-actions {
+    left: 254px;
+    right: 55px;
+    bottom: 78px;
+  }
+  #workspace.pixel-mode .pixel-actions {
+    bottom: 20px;
+  }
+  #workspace .squad-quick-stats button {
+    font-size: 9px;
+    padding: 6px 3px;
+  }
+  #workspace .squad-quick-stats strong {
+    font-size: 20px;
+  }
+}
+@media (max-width: 560px) {
+  #workspace {
+    --squad-summary-height: 0px;
+  }
+  #workspace .squad-quick-stats {
+    left: 8px;
+    right: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .squad-quick-stats button {
+    min-height: 0;
+    flex-direction: row;
+    gap: 5px;
+  }
+  .squad-quick-stats button:nth-child(4) {
+    border-left: 0;
+  }
+  #workspace.map-page:not(:has(.handoffs-map)) .left-hud {
+    left: 8px;
+    width: 162px;
+    top: calc(var(--topbar-h) + var(--squad-summary-height) + 28px);
+    bottom: 116px !important;
+    padding: 9px 5px;
+  }
+  #workspace .left-hud .project-chip strong {
+    font-size: 11px;
+  }
+  #workspace.map-page:not(:has(.handoffs-map)) .roster-item {
+    padding: 8px 3px;
+    gap: 6px;
+  }
+  #workspace.map-page:not(:has(.handoffs-map)) .roster-avatar {
+    width: 26px;
+    height: 30px;
+  }
+  #workspace .roster-member-copy .roster-name {
+    font-size: 10px;
+  }
+  #workspace .roster-end {
+    display: none !important;
+  }
+  #workspace .left-hud .squad-head {
+    letter-spacing: 0.4px;
+    font-size: 8px;
+  }
+  #workspace .left-hud .roster-add button {
+    font-size: 8px;
+  }
+  #workspace .roster-run-link {
+    margin-left: 8px;
+  }
+  .roster-consultations {
+    margin-left: 7px;
+    padding-left: 4px;
+  }
+  #workspace.pixel-mode .pixel-heading {
+    left: 184px;
+    top: calc(var(--squad-summary-height) + 28px);
+    max-width: calc(100% - 200px);
+  }
+  #workspace.pixel-mode .pixel-summary,
+  #workspace.pixel-mode .pixel-kicker {
+    display: none;
+  }
+  #workspace.pixel-mode .pixel-note {
+    left: 184px;
+    right: 10px;
+    bottom: 110px;
+  }
+  #workspace.pixel-mode .pixel-actions {
+    left: 184px;
+    right: 10px;
+    bottom: 70px;
+    flex-wrap: wrap;
+    gap: 3px;
+  }
+  #workspace.pixel-mode .pixel-actions button {
+    padding: 4px;
+    font-size: 8px;
+  }
+  #workspace.ops-chat-dock .squad-quick-stats {
+    display: none;
+  }
+}
+
+#workspace.map-page:not(:has(.handoffs-map)) .right-hud {
+  top: calc(var(--topbar-h) + var(--squad-summary-height) + 34px);
+  max-height: calc(100% - var(--topbar-h) - 220px);
+}
+
+#workspace .squad-quick-stats span {
+  line-height: 1.2;
+}

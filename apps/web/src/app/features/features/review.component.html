@@ -1,0 +1,73 @@
+<ng-template #body>
+  @if (feature(); as f) {
+    <div class="between" style="margin-bottom: 20px">
+      <span class="tag">{{ f.key }} / {{ scope(f.scope) }}</span>
+      <span [class]="'status-label ' + f.status">{{ status(f.status) }}</span>
+    </div>
+    <h3 style="font-size: 20px; font-weight: 450; margin-bottom: 18px">{{ f.title }}</h3>
+    <div class="eyebrow" style="margin-bottom: 8px">{{ 'features.acceptance-criteria' | t }}</div>
+    <p class="prose" style="margin-bottom: 25px">{{ f.criteria }}</p>
+    <div class="eyebrow" style="margin-bottom: 18px">
+      {{ 'features.specialist-deliveries' | t }}
+    </div>
+    @for (o of f.outputs; track $index) {
+      <article class="review-output">
+        <h3>
+          {{ store.agent(o.agentId)?.name || ('ui.removed-agent' | t) }} /
+          {{
+            o.simulated
+              ? ('ui.simulated-record' | t)
+              : o.error
+                ? ('ui.execution-failed' | t)
+                : store.providerLabel(o.agentId) + ' CLI'
+          }}
+        </h3>
+        <time>
+          {{ clock(o.at) }}
+          @if (o.costUsd != null) {
+            / US$ {{ o.costUsd?.toFixed(4) }}
+          }
+          @if (o.durationMs) {
+            / {{ Math.round(o.durationMs / 1000) }}s
+          }
+          @if (o.sessionId) {
+            {{ 'ui.session-272' | t }} {{ o.sessionId.slice(0, 8) }}
+          }
+        </time>
+        <p>{{ o.text }}</p>
+        @if (o.runId && !o.simulated) {
+          <button class="btn sm" (click)="remember(o.runId)">{{ 'memory.remember' | t }}</button>
+        }
+      </article>
+    } @empty {
+      <p class="prose">{{ 'features.no-delivery-records-yet' | t }}</p>
+    }
+    <div class="notice warning">
+      <luma-icon name="info" />
+      {{
+        real(f)
+          ? ('ui.cli-records-review-changed-files-in-the-repository-befo' | t)
+          : ('ui.these-records-are-simulated-approval-only-changes-the-d' | t)
+      }}
+    </div>
+    @if (f.status === 'review') {
+      <div class="ops-detail-actions">
+        <button class="btn ghost" [disabled]="store.saving()" (click)="review(false)">
+          <luma-icon name="edit" />
+          {{ 'action.reject' | t }}
+        </button>
+        <button class="btn primary" [disabled]="store.saving()" (click)="review(true)">
+          <luma-icon name="check" />
+          {{ real(f) ? ('ui.approve-delivery' | t) : ('ui.approve-delivery-demo' | t) }}
+        </button>
+      </div>
+    }
+  }
+</ng-template>
+@if (inline()) {
+  <ng-container [ngTemplateOutlet]="body" />
+} @else {
+  <luma-modal [title]="'features.delivery-review' | t" (closed)="close()">
+    <ng-container [ngTemplateOutlet]="body" />
+  </luma-modal>
+}

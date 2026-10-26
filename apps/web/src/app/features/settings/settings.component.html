@@ -1,0 +1,505 @@
+<luma-modal
+  [title]="'settings.workspace-settings' | t"
+  [subtitle]="
+    store.settings()?.mode === 'live'
+      ? ('ui.live-execution-codex-devin-and-antigravity' | t)
+      : ('ui.local-first-runtime-disconnected' | t)
+  "
+  (closed)="cancel()"
+>
+  <nav class="editor-nav" [attr.aria-label]="'settings.settings-sections' | t">
+    @for (item of tabs; track item) {
+      <button
+        type="button"
+        class="editor-tab"
+        [class.active]="tab() === item"
+        (click)="tab.set(item)"
+      >
+        {{ tabLabel(item) | uiLabel }}
+      </button>
+    }
+  </nav>
+  <div class="editor-pane" [class.hidden]="tab() !== 'workspace'" data-pane="workspace">
+    @for (item of toggles; track item.key) {
+      <div class="settings-row">
+        <div>
+          <h3>{{ item.title | uiLabel }}</h3>
+          <p>{{ item.description | uiLabel }}</p>
+        </div>
+        <button
+          class="toggle"
+          role="switch"
+          [attr.aria-label]="item.aria | uiLabel"
+          [attr.aria-checked]="toggleValue(item.key)"
+          (click)="toggleSetting(item.key)"
+        ></button>
+      </div>
+    }
+    <div class="settings-row">
+      <div>
+        <h3>
+          <label for="interfaceLocale">{{ 'settings.locale' | t }}</label>
+        </h3>
+        <p>{{ 'settings.workspace-interface-language' | t }}</p>
+      </div>
+      <select
+        id="interfaceLocale"
+        [ngModel]="draft.locale"
+        (ngModelChange)="setLocale($event)"
+        [attr.aria-label]="'settings.locale' | t"
+      >
+        @for (language of i18n.languages; track language.id) {
+          <option [value]="language.id">{{ language.label }}</option>
+        }
+      </select>
+    </div>
+    <div class="settings-row appearance-setting">
+      <div>
+        <h3>
+          <label for="interfaceTheme">{{ i18n.text('appearance.title') }}</label>
+        </h3>
+        <p>{{ i18n.text('appearance.description') }}</p>
+        <p class="hint">{{ i18n.text('appearance.saved') }}</p>
+      </div>
+      <select
+        id="interfaceTheme"
+        [ngModel]="appearance.theme()"
+        (ngModelChange)="appearance.setTheme($event)"
+      >
+        @for (theme of appearance.themes; track theme) {
+          <option [value]="theme">{{ i18n.text('appearance.' + theme) }}</option>
+        }
+      </select>
+    </div>
+    <div class="settings-row agent-appearance-setting">
+      <div>
+        <h3>
+          <label for="agentAppearance">{{ i18n.text('appearance.agents.title') }}</label>
+        </h3>
+        <p>{{ i18n.text('appearance.agents.description') }}</p>
+        <p class="hint">{{ i18n.text('appearance.saved') }}</p>
+      </div>
+      <select
+        id="agentAppearance"
+        [ngModel]="appearance.agents()"
+        (ngModelChange)="appearance.setAgentAppearance($event)"
+      >
+        @for (style of appearance.agentAppearances; track style) {
+          <option [value]="style">{{ i18n.text('appearance.agents.' + style) }}</option>
+        }
+      </select>
+    </div>
+    <div class="settings-row">
+      <div>
+        <h3>{{ 'settings.export-workspace' | t }}</h3>
+        <p>
+          {{ 'settings.json-backup-with-agents-portraits-prompts-projects-feature' | t }}
+        </p>
+      </div>
+      <button class="btn" (click)="export()">
+        <luma-icon name="download" />
+        {{ 'action.export' | t }}
+      </button>
+    </div>
+    <div class="settings-row">
+      <div>
+        <h3>{{ 'setup.backup' | t }}</h3>
+        <p>
+          {{ 'settings.restores-a-json-backup-after-confirmation-replaces-current' | t }}
+        </p>
+      </div>
+      <button class="btn" (click)="importInput.click()" [disabled]="store.projectLocked()">
+        <luma-icon name="upload" />
+        {{ 'action.import' | t }}
+      </button>
+      <input
+        #importInput
+        type="file"
+        accept="application/json,.json"
+        (change)="import($event)"
+        hidden
+      />
+    </div>
+    <div class="settings-row">
+      <div>
+        <h3>{{ 'settings.reset-workspace' | t }}</h3>
+        <p>{{ 'settings.removes-changes-in-this-workspace-and-restores-the-atlas-c' | t }}</p>
+      </div>
+      <button class="btn danger" (click)="reset()" [disabled]="store.projectLocked()">
+        <luma-icon name="trash" />
+        {{ 'settings.reset' | t }}
+      </button>
+    </div>
+    <div class="settings-row ws-versions-row">
+      <div>
+        <h3>{{ 'settings.saved-versions' | t }}</h3>
+        <p>{{ 'settings.the-database-saves-workspace-versions-before-imports-and-r' | t }}</p>
+        <div class="ws-versions">
+          @for (version of snapshots(); track version.id) {
+            <div class="ws-version">
+              <div>
+                <strong>{{ i18n.date(version.createdAt) }}</strong>
+                <span>{{ version.label }}</span>
+              </div>
+              <button
+                class="btn sm"
+                (click)="restore(version.id)"
+                [disabled]="store.projectLocked()"
+              >
+                <luma-icon name="upload" />
+                {{ 'action.restore' | t }}
+              </button>
+            </div>
+          } @empty {
+            <span class="hint">{{ 'settings.no-versions-yet' | t }}</span>
+          }
+        </div>
+      </div>
+    </div>
+    <div class="notice" style="margin-bottom: 0">
+      <luma-icon name="lock" />
+      <span>
+        {{ 'settings.the-workspace-operation-room-conversations-and-run-history' | t }}
+        <code>{{ store.path() }}</code>
+        {{ 'settings.do-not-put-credentials-in-prompts-or-the-briefing' | t }}
+      </span>
+    </div>
+  </div>
+  <div class="editor-pane" [class.hidden]="tab() !== 'execution'" data-pane="execution">
+    <form id="executionForm" (ngSubmit)="save()">
+      <div class="notice" style="margin-top: 0">
+        <luma-icon name="info" />
+        <span>
+          {{ 'settings.these-settings-apply-to-all-agents-codex-devin-and-antigra' | t }}
+        </span>
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label for="rtMode">{{ 'settings.agent-execution' | t }}</label>
+          <select id="rtMode" name="mode" [(ngModel)]="draft.mode">
+            <option value="live">
+              {{ 'settings.live-execution-codex-devin-and-antigravity' | t }}
+            </option>
+            <option value="demo">{{ 'settings.local-simulation-demo' | t }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="rtTimeout">{{ 'settings.time-limit-per-stage-s' | t }}</label>
+          <input
+            id="rtTimeout"
+            name="timeoutSec"
+            type="number"
+            min="10"
+            max="7200"
+            step="10"
+            [(ngModel)]="draft.timeoutSec"
+          />
+        </div>
+        <div class="field">
+          <label for="rtConc">{{ 'settings.concurrent-bridge-runs' | t }}</label>
+          <input
+            id="rtConc"
+            name="concurrency"
+            type="number"
+            min="1"
+            max="8"
+            [(ngModel)]="draft.concurrency"
+          />
+        </div>
+        <div class="field">
+          <label for="execStepMs">{{ 'settings.delay-between-stages' | t }}</label>
+          <select id="execStepMs" name="stepMs" [(ngModel)]="draft.stepMs">
+            <option [ngValue]="600">{{ 'settings.fast-0-6-s' | t }}</option>
+            <option [ngValue]="1000">{{ 'settings.agile-1-s' | t }}</option>
+            <option [ngValue]="1800">{{ 'settings.normal-1-8-s' | t }}</option>
+            <option [ngValue]="3200">{{ 'settings.slow-3-2-s' | t }}</option>
+          </select>
+          <span class="hint">
+            {{ 'settings.pause-between-stages-in-simulation-defines-each-stage-s-du' | t }}
+          </span>
+        </div>
+        <div class="field full">
+          <span class="label">{{ 'settings.projects-folder' | t }}</span>
+          <div class="hint" style="margin-top: 10px; word-break: break-all">
+            {{ 'settings.each-operation-works-in-its-own-folder-inside' | t }}
+            <code>{{ providers.health().codex?.projectsDir || 'projects/' }}</code>
+            {{ 'settings.created-on-the-first-run-agents-read-and-write-files-there' | t }}
+            <code>projects/{{ store.project()?.folder }}</code>
+            .
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+  <div class="editor-pane" [class.hidden]="tab() !== 'permissions'" data-pane="permissions">
+    <form id="permissionsForm" (ngSubmit)="save()">
+      <h3>{{ 'permissions.title' | t }}</h3>
+      <p>{{ 'permissions.layers' | t }}</p>
+      <div class="notice">
+        <luma-icon name="info" />
+        <span>{{ 'permissions.headless' | t }}</span>
+      </div>
+      @for (cli of providerKeys; track cli) {
+        <div class="settings-row permission-provider">
+          <div>
+            <h3>{{ cli.toUpperCase() }}</h3>
+            <p>{{ 'permissions.providerScope' | t }}</p>
+          </div>
+          <div class="field">
+            <label [for]="cli + 'Policy'">{{ 'ui.permission-mode' | t }}</label>
+            <select
+              [id]="cli + 'Policy'"
+              [name]="cli + 'Policy'"
+              [(ngModel)]="draft.providers[cli].permission"
+            >
+              @for (permission of permissions[cli]; track permission) {
+                <option [value]="permission">{{ permissionLabel(permission) }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      }
+      @if (draft.providers.antigravity.permission === 'unattended') {
+        <div class="notice warning">
+          <luma-icon name="lock" />
+          <span>{{ 'permissions.confirmBody' | t }}</span>
+        </div>
+      }
+      <p class="hint">{{ 'permissions.autoAvailability' | t }}</p>
+      <h3>{{ 'permissions.profiles' | t }}</h3>
+      <p>{{ 'permissions.profileHint' | t }}</p>
+      @for (agent of store.team(); track agent.id) {
+        <div class="settings-row permission-profile">
+          <div>
+            <h3>{{ agent.name }} · {{ agent.provider.toUpperCase() }}</h3>
+            <p>{{ policyTools(agent).join(' · ') || ('permissions.noTools' | t) }}</p>
+          </div>
+          <button
+            type="button"
+            class="btn ghost sm"
+            (click)="editProfile(agent.id)"
+            [disabled]="store.projectLocked()"
+          >
+            {{ 'permissions.editProfile' | t }}
+          </button>
+        </div>
+      }
+      <div class="notice warning">
+        <luma-icon name="info" />
+        <span>{{ 'permissions.terminalBoundary' | t }}</span>
+      </div>
+      <p class="hint">{{ 'permissions.localOnly' | t }}</p>
+    </form>
+  </div>
+  @for (cli of providerKeys; track cli) {
+    <div class="editor-pane" [class.hidden]="tab() !== cli" [attr.data-pane]="cli">
+      <div class="notice" [class.warning]="!providers.health()[cli]?.version" style="margin-top: 0">
+        <luma-icon [name]="providers.health()[cli]?.version ? 'check' : 'info'" />
+        <span>
+          @if (providers.health()[cli]?.version) {
+            {{ 'settings.bridge-connected-to' | t }}
+            <strong>{{ cli.toUpperCase() }} CLI {{ providers.health()[cli]?.version }}</strong>
+            <br />
+            <small>{{ providers.health()[cli]?.executable }}</small>
+          } @else {
+            {{ 'ui.the-bridge-responded-but-the-cli-was-not-found' | t }}
+            {{ providers.errors()[cli] || ('ui.checking-connection' | t) }}
+          }
+        </span>
+      </div>
+      <form [id]="cli + 'Form'" (ngSubmit)="save()">
+        <div class="form-grid">
+          <div class="field">
+            <label [for]="cli + 'Path'">
+              {{ 'ui.executable-for' | t }} {{ cli.toUpperCase() }}
+            </label>
+            <input
+              [id]="cli + 'Path'"
+              [name]="cli + 'Path'"
+              [(ngModel)]="draft.providers[cli].path"
+              maxlength="400"
+              [placeholder]="
+                cli === 'antigravity'
+                  ? ('ui.agy-exe-automatically-detected' | t)
+                  : cli + ('ui.bridge-default' | t)
+              "
+              autocomplete="off"
+            />
+            <span class="hint">
+              @if (cli === 'devin') {
+                {{ 'settings.name-in-path-or-full-path-e-g-devin-exe-from-devin-desktop' | t }}
+              } @else if (cli === 'antigravity') {
+                {{ 'settings.use-the-agy-exe-cli-antigravity-exe-is-the-desktop-applica' | t }}
+              } @else {
+                {{ 'settings.name-in-path-or-full-path-empty-bridge-default' | t }}
+              }
+            </span>
+          </div>
+          <div class="field">
+            <label [for]="cli + 'Permission'">
+              {{ cli === 'antigravity' ? ('ui.execution-mode' | t) : ('ui.permission-mode' | t) }}
+            </label>
+            <select
+              [id]="cli + 'Permission'"
+              [name]="cli + 'Permission'"
+              [(ngModel)]="draft.providers[cli].permission"
+            >
+              @for (permission of permissions[cli]; track permission) {
+                <option [value]="permission">{{ permissionLabel(permission) | uiLabel }}</option>
+              }
+            </select>
+            @if (cli === 'devin') {
+              <span class="hint">
+                {{ 'settings.native-devin-cli-mode-permission-mode-used-by-devin-agents' | t }}
+              </span>
+            } @else if (cli === 'antigravity') {
+              <span class="hint">
+                {{ 'settings.antigravity-policy-note' | t }}
+              </span>
+            }
+          </div>
+          @if (cli === 'codex') {
+            <div class="field">
+              <label for="rtModel">{{ 'settings.model-overrides-codex-agents' | t }}</label>
+              <input
+                id="rtModel"
+                name="model"
+                [(ngModel)]="draft.providers.codex.model"
+                list="rtModels"
+                maxlength="80"
+                [placeholder]="'settings.empty-each-agent-s-model' | t"
+              />
+              <datalist id="rtModels">
+                @for (model of providers.catalogs().codex || []; track model.id) {
+                  <option [value]="model.id"></option>
+                }
+              </datalist>
+            </div>
+            <div class="field">
+              <label for="rtEffort">{{ 'settings.effort-overrides-codex-agents' | t }}</label>
+              <select id="rtEffort" name="effort" [(ngModel)]="draft.providers.codex.effort">
+                <option value="">{{ 'settings.empty-each-agent-s-effort' | t }}</option>
+                @for (effort of efforts; track effort) {
+                  <option [value]="effort">{{ effort.toUpperCase() }}</option>
+                }
+              </select>
+            </div>
+            <div class="field full">
+              <label for="rtDirs">{{ 'settings.additional-directories-add-dir' | t }}</label>
+              <input
+                id="rtDirs"
+                name="addDirs"
+                [(ngModel)]="directories"
+                maxlength="2000"
+                [placeholder]="'settings.comma-separated' | t"
+              />
+            </div>
+          } @else {
+            <div class="field full">
+              <span class="label">{{ 'settings.model-catalog' | t }}</span>
+              @if (cli === 'devin') {
+                <div class="hint" style="margin-top: 10px">
+                  {{ (providers.catalogs()[cli] || []).length }}
+                  {{ 'ui.models-loaded-from-devin-cli' | t }}
+                  {{ providers.errors()[cli] }}
+                </div>
+              } @else {
+                <p class="hint">
+                  {{ (providers.catalogs()[cli] || []).length }}
+                  {{ 'ui.models-loaded-from-the-cli' | t }}
+                  {{ providers.errors()[cli] }}
+                </p>
+              }
+              <button
+                type="button"
+                class="btn ghost sm"
+                (click)="providers.load(cli, draft.providers[cli].path, true)"
+              >
+                {{ 'settings.models' | t }}
+              </button>
+              <span class="hint">
+                @if (cli === 'devin') {
+                  {{ 'settings.models-appear-in-the-model-field-of-each-agent-using-devin' | t }}
+                } @else {
+                  {{ 'settings.select-provider-model-and-compatible-effort-in-the-agent-s' | t }}
+                }
+              </span>
+            </div>
+          }
+        </div>
+        <div class="notice">
+          <luma-icon name="info" />
+          <span>{{ providerDescription(cli) | uiLabel }}</span>
+        </div>
+        @if (cli === 'codex') {
+          <div class="cmd-preview">
+            <div class="cmd-preview-head">
+              <span class="eyebrow">{{ 'settings.terminal-call-preview' | t }}</span>
+              <div class="flex wrap">
+                <select
+                  id="cmdAgent"
+                  name="previewAgent"
+                  [attr.aria-label]="'settings.preview-agent' | t"
+                  [(ngModel)]="previewAgent"
+                >
+                  @for (a of store.team(); track a.id) {
+                    <option [value]="a.id">{{ a.name }} / {{ roleShort(a.role) }}</option>
+                  }
+                </select>
+                <select
+                  id="cmdShell"
+                  name="previewShell"
+                  [attr.aria-label]="'settings.preview-shell' | t"
+                  [(ngModel)]="previewShell"
+                >
+                  <option value="powershell">PowerShell</option>
+                  <option value="bash">Bash</option>
+                </select>
+                <button type="button" class="btn ghost sm" (click)="copyCommand(cli)">
+                  <luma-icon name="copy" />
+                  {{ 'settings.copy' | t }}
+                </button>
+              </div>
+            </div>
+            <pre id="cmdPreview" class="cmd-lines">{{ commandPreview(cli) }}</pre>
+            <span class="hint" id="cmdNote">
+              {{ 'settings.preview-of-the-call-and-its-options-the-stage-prompt-and-p' | t }}
+            </span>
+          </div>
+        }
+      </form>
+    </div>
+  }
+  <div class="editor-pane" [class.hidden]="tab() !== 'config'" data-pane="settingsjson">
+    <div class="notice">
+      {{ 'settings.codex-cli-uses-existing-authentication-and-codex-config-to' | t }}
+    </div>
+  </div>
+  @if (tab() !== 'workspace' && tab() !== 'config') {
+    <footer class="modal-footer" modal-footer>
+      @if (tab() !== 'execution' && tab() !== 'permissions') {
+        <button class="btn ghost" (click)="check()">
+          <luma-icon name="radio" />
+          {{ 'settings.test' | t }}
+        </button>
+        <span class="grow"></span>
+      }
+      <button class="btn ghost" (click)="cancel()">{{ 'action.cancel' | t }}</button>
+      <button
+        class="btn primary"
+        type="submit"
+        [attr.form]="
+          tab() === 'permissions'
+            ? 'permissionsForm'
+            : tab() === 'execution'
+              ? 'executionForm'
+              : provider() + 'Form'
+        "
+        [disabled]="store.projectLocked()"
+      >
+        <luma-icon name="check" />
+        {{ tab() === 'execution' ? ('ui.save-execution' | t) : ('ui.save-settings' | t) }}
+      </button>
+    </footer>
+  }
+</luma-modal>

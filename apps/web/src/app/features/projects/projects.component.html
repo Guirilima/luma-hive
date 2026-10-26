@@ -1,0 +1,756 @@
+@if (store.project(); as project) {
+  <section
+    id="projectsView"
+    class="home-view projects-view"
+    [attr.aria-label]="'projects.projects-and-operations' | t"
+  >
+    <div class="home-inner ops-inner">
+      <header class="home-head">
+        <div>
+          <div class="eyebrow">LUMA HIVE / WORKSPACE</div>
+          <h1>
+            {{ 'nav.projects' | t }}
+            <span>{{ 'projects.operations' | t }}</span>
+          </h1>
+          <p>{{ 'projects.create-operations-write-the-briefing-and-define-the-featur' | t }}</p>
+        </div>
+        <div class="flex wrap home-actions">
+          <button
+            class="btn primary"
+            (click)="dialogs.open('project')"
+            [disabled]="store.projectLocked()"
+          >
+            <luma-icon name="plus" />
+            {{ 'dashboard.newOperation' | t }}
+          </button>
+        </div>
+      </header>
+      <div class="ops-layout">
+        <aside class="ops-list" id="opsList" [attr.aria-label]="'dashboard.operations' | t">
+          <div class="ops-list-head">
+            <span>{{ 'dashboard.operations-161' | t }}</span>
+            <span>
+              {{ pad(filteredOperations().length) }} / {{ pad(store.workspace()!.projects.length) }}
+            </span>
+          </div>
+
+          <!-- Filtros de Operações MEL-010 -->
+          <div class="ops-list-filters">
+            <div class="search-box">
+              <luma-icon name="search" />
+              <input
+                type="search"
+                [placeholder]="'filters.searchPlaceholder' | t"
+                [value]="opsSearch()"
+                (input)="opsSearch.set($any($event.target).value)"
+                [attr.aria-label]="'filters.searchPlaceholder' | t"
+              />
+            </div>
+            <div class="ops-filter-row">
+              <select
+                [value]="opsStatusFilter()"
+                (change)="opsStatusFilter.set($any($event.target).value)"
+                [attr.aria-label]="'filters.byStatus' | t"
+              >
+                <option value="all">{{ 'filters.status.all' | t }}</option>
+                <option value="running">{{ 'filters.status.in_progress' | t }}</option>
+                <option value="review">{{ 'filters.status.review' | t }}</option>
+                <option value="completed">{{ 'filters.status.completed' | t }}</option>
+              </select>
+              <select
+                [value]="opsSquadFilter()"
+                (change)="opsSquadFilter.set($any($event.target).value)"
+                [attr.aria-label]="'filters.bySquad' | t"
+              >
+                <option value="all">{{ 'filters.squad.all' | t }}</option>
+                @for (squad of store.workspace()?.squads; track squad.id) {
+                  <option [value]="squad.id">{{ squad.name }}</option>
+                }
+              </select>
+              <select
+                [value]="opsSortFilter()"
+                (change)="opsSortFilter.set($any($event.target).value)"
+                [attr.aria-label]="'filters.sort' | t"
+              >
+                <option value="recent">{{ 'filters.sort.recent' | t }}</option>
+                <option value="name">{{ 'filters.sort.name' | t }}</option>
+              </select>
+              @if (hasOpsFilters()) {
+                <button
+                  class="btn ghost sm"
+                  (click)="clearOpsFilters()"
+                  [title]="'filters.clear' | t"
+                >
+                  <luma-icon name="close" />
+                </button>
+              }
+            </div>
+          </div>
+
+          @for (operation of filteredOperations(); track operation.id) {
+            <button
+              class="ops-item"
+              [class.active]="operation.id === project.id"
+              [class.completed]="isProjectCompleted(operation)"
+              [attr.aria-pressed]="operation.id === project.id"
+              (click)="switchProject(operation.id)"
+            >
+              <span class="between">
+                <span class="eyebrow">{{ operation.code }}</span>
+                <span class="flex gap-xs">
+                  @if (operation.id === project.id) {
+                    <span class="tag accent">{{ 'shell.active' | t }}</span>
+                  }
+                  @if (isProjectCompleted(operation)) {
+                    <span class="tag success completed-badge sm">
+                      <luma-icon name="check" />
+                      {{ 'status.projectCompleted' | t }}
+                    </span>
+                  }
+                </span>
+              </span>
+              <strong>{{ operation.name }}</strong>
+              <small>
+                {{ squadName(operation.squadId) }} · {{ done(operation) }}/{{
+                  operation.features.length
+                }}
+                FEATURES
+              </small>
+              <i class="ops-progress"><b [style.width.%]="progress(operation)"></b></i>
+            </button>
+          }
+          @if (filteredOperations().length === 0) {
+            <div class="project-filters-empty sm">
+              <luma-icon name="search" />
+              <p>{{ 'filters.noResults' | t }}</p>
+              <button class="btn ghost sm" (click)="clearOpsFilters()">
+                {{ 'filters.clear' | t }}
+              </button>
+            </div>
+          }
+          <button class="ops-item new" (click)="dialogs.open('project')">
+            <luma-icon name="plus" />
+            <strong>{{ 'projects.new-operation-374' | t }}</strong>
+          </button>
+        </aside>
+        <div class="ops-main">
+          <div id="opsHeader">
+            <div class="ops-title">
+              <div>
+                <span class="eyebrow">{{ project.code }} {{ 'ui.active-operation' | t }}</span>
+                <h2>{{ project.name }}</h2>
+                <div class="ops-badges">
+                  <span class="tag accent">{{ squadName(project.squadId) }}</span>
+                  <span class="tag">{{ project.agentIds.length }} {{ 'ui.agents' | t }}</span>
+                  <span class="tag">{{ project.features.length }} FEATURES</span>
+                  <span class="tag">{{ 'ui.folder-projects' | t }}{{ project.folder }}</span>
+                  @if (execution.busy()) {
+                    <span class="tag accent">{{ 'projects.running' | t }}</span>
+                  }
+                </div>
+              </div>
+              <div class="flex wrap">
+                <button class="btn primary" (click)="router.navigateByUrl('/squad')">
+                  <luma-icon name="squad" />
+                  {{ 'projects.open-in-squad' | t }}
+                </button>
+                <button
+                  class="btn"
+                  (click)="router.navigate(['/memory'], { queryParams: { project: project.id } })"
+                >
+                  {{ 'memory.title' | t }}
+                </button>
+                <button class="btn" (click)="exportProject()">
+                  <luma-icon name="download" />
+                  {{ 'action.export' | t }}
+                </button>
+                <button class="btn danger" (click)="removeProject()">
+                  <luma-icon name="trash" />
+                  {{ 'action.delete' | t }}
+                </button>
+              </div>
+            </div>
+          </div>
+          <section class="ops-section" id="opsBriefing" [attr.aria-label]="'project.briefing' | t">
+            <div class="ops-section-head">
+              <div>
+                <span class="eyebrow">{{ 'projects.01-briefing' | t }}</span>
+                <h3>{{ 'projects.operation-context' | t }}</h3>
+              </div>
+              <luma-teams-cta
+                [squadId]="documentDraft()?.squadId || project.squadId"
+                (opened)="openMeeting()"
+              />
+            </div>
+            @if (documentDraft(); as documents) {
+              <form id="projectForm" class="ops-form" (ngSubmit)="saveDocuments()">
+                <luma-project-form [draft]="documents" (meeting)="openMeeting($event)" />
+              </form>
+              <div class="ops-form-actions">
+                <button
+                  class="btn primary"
+                  type="submit"
+                  form="projectForm"
+                  [disabled]="store.projectLocked()"
+                >
+                  <luma-icon name="check" />
+                  {{ 'projects.save-project' | t }}
+                </button>
+              </div>
+            }
+          </section>
+          <section class="ops-section" id="opsFeatures" [attr.aria-label]="'project.features' | t">
+            <div id="opsFeaturesHead">
+              <div class="ops-section-head">
+                <div>
+                  <span class="eyebrow">{{ 'projects.02-sprints-and-features' | t }}</span>
+                  <h3>{{ 'projects.what-will-be-developed' | t }}</h3>
+                </div>
+                <div class="flex wrap">
+                  <button class="btn" (click)="newSprint()" [disabled]="store.projectLocked()">
+                    <luma-icon name="plus" />
+                    {{ 'projects.new-sprint' | t }}
+                  </button>
+                  <button
+                    class="btn"
+                    (click)="newFeature(currentSprint()?.id || project.sprints[0].id)"
+                    [disabled]="store.projectLocked()"
+                  >
+                    <luma-icon name="plus" />
+                    {{ 'feature.new' | t }}
+                  </button>
+                  <button
+                    class="btn"
+                    (click)="execution.distribute()"
+                    [disabled]="store.projectLocked()"
+                  >
+                    <luma-icon name="flow" />
+                    {{ 'projects.distribute-features' | t }}
+                  </button>
+                  <button class="btn primary" (click)="runCurrent()">
+                    <luma-icon
+                      [name]="
+                        execution.planning()
+                          ? 'radio'
+                          : execution.plan() && execution.planOrigin() === 'execution'
+                            ? 'check'
+                            : execution.busy()
+                              ? execution.paused()
+                                ? 'play'
+                                : 'pause'
+                              : 'play'
+                      "
+                    />
+                    {{
+                      execution.planning()
+                        ? ('operation-room.planning' | t)
+                        : execution.plan() && execution.planOrigin() === 'execution'
+                          ? ('operation-room.approve-plan' | t)
+                          : execution.busy()
+                            ? execution.paused()
+                              ? ('run.resume' | t)
+                              : ('ui.pause' | t)
+                            : (store.settings()?.mode === 'live'
+                                ? ('action.runPrefix' | t)
+                                : ('action.simulatePrefix' | t)) +
+                              (currentSprint()?.name || 'sprint')
+                    }}
+                  </button>
+                  @if (execution.busy()) {
+                    <button class="btn danger" (click)="execution.stop()">
+                      <luma-icon name="stop" />
+                      {{ 'run.stop' | t }}
+                    </button>
+                  }
+                  @if (execution.busy() || execution.room.messages().length) {
+                    <button class="btn ghost" (click)="execution.room.open()">
+                      <luma-icon name="chat" />
+                      {{ 'room.title' | t }}
+                    </button>
+                  }
+                </div>
+              </div>
+              @if (gaps().length && !execution.busy()) {
+                <div class="notice warning ops-run-gate">
+                  <luma-icon name="lock" />
+                  <span>
+                    <strong>{{ 'projects.execution-blocked' | t }}</strong>
+                    {{ 'ui.no-sprint-or-feature-runs-until-all-project-fields-are-' | t }}
+                    {{ gaps().join(', ') }}.
+                  </span>
+                  <button class="btn ghost sm" (click)="briefing()">
+                    <luma-icon name="edit" />
+                    {{ 'projects.complete-project' | t }}
+                  </button>
+                </div>
+              }
+              <div class="ops-feature-tools">
+                <div class="search-box">
+                  <luma-icon name="search" />
+                  <input
+                    id="featureSearch"
+                    type="search"
+                    [ngModel]="search()"
+                    (ngModelChange)="search.set($event)"
+                    [placeholder]="'projects.search-features' | t"
+                    [attr.aria-label]="'projects.search-features-392' | t"
+                  />
+                </div>
+                <div
+                  class="ops-segmented"
+                  role="group"
+                  [attr.aria-label]="'projects.view-mode' | t"
+                >
+                  <button
+                    [class.active]="!board()"
+                    (click)="board.set(false)"
+                    [attr.aria-pressed]="!board()"
+                  >
+                    <luma-icon name="settings" />
+                    {{ 'feature.list' | t }}
+                  </button>
+                  <button
+                    [class.active]="board()"
+                    (click)="board.set(true)"
+                    [attr.aria-pressed]="board()"
+                  >
+                    <luma-icon name="board" />
+                    {{ 'feature.board' | t }}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div id="opsPlan">
+              @if (execution.plan() && execution.planOrigin() === 'distribution') {
+                <luma-plan />
+              }
+            </div>
+            <div class="ops-features-body" id="opsFeatBody" [class.with-detail]="!!reviewId()">
+              <div id="opsFeatureList" class="ops-feature-list">
+                @if (board()) {
+                  <div class="kanban ops-kanban">
+                    @for (status of boardStatuses; track status) {
+                      <section class="kanban-column" [attr.data-status]="status">
+                        <div class="kanban-head">
+                          <span>{{ boardLabel(status) | uiLabel }}</span>
+                          <span>{{ pad(boardFeatures(status).length) }}</span>
+                        </div>
+                        @for (feature of boardFeatures(status); track feature.id) {
+                          <button
+                            [class]="'feature-card ' + feature.status"
+                            (click)="openFeature(feature.id)"
+                          >
+                            <div class="feature-card-top">
+                              <span>
+                                {{ feature.key }}
+                                <small class="card-sprint">
+                                  {{ sprintCode(feature.sprintId) }}
+                                </small>
+                              </span>
+                              <span [class]="'priority ' + feature.priority.toLowerCase()">
+                                {{ feature.priority }}
+                              </span>
+                            </div>
+                            <h3>{{ feature.title }}</h3>
+                            <div class="feature-card-bottom">
+                              <luma-icon
+                                [name]="
+                                  feature.status === 'blocked'
+                                    ? 'lock'
+                                    : feature.status === 'review'
+                                      ? 'eye'
+                                      : feature.status === 'done'
+                                        ? 'check'
+                                        : 'layers'
+                                "
+                              />
+                              {{
+                                (feature.status === 'blocked'
+                                  ? 'Aguarda dependência'
+                                  : feature.status === 'review'
+                                    ? 'Sua aprovação'
+                                    : scopeLabel(feature.scope)
+                                ) | uiLabel
+                              }}
+                            </div>
+                            @if (feature.route.length) {
+                              <div class="feature-card-route">
+                                {{ feature.route.map(agentName).join(' › ') }}
+                              </div>
+                            }
+                          </button>
+                        } @empty {
+                          <div class="column-empty">{{ 'projects.no-features' | t }}</div>
+                        }
+                      </section>
+                    }
+                  </div>
+                } @else {
+                  <div class="ops-sprints">
+                    @if (search() && !filtered().length) {
+                      <div class="mission-empty">
+                        {{ 'projects.no-features-match-your-search' | t }}
+                      </div>
+                    }
+                    @for (sprint of project.sprints; track sprint.id) {
+                      @if (!search() || visibleSprint(sprint.id).length) {
+                        <section
+                          class="sprint"
+                          [class.collapsed]="!isOpen(sprint.id)"
+                          [class.running]="sprintRunning(sprint.id)"
+                          [class.complete]="
+                            sprintFeatures(sprint.id).length > 0 &&
+                            sprintDone(sprint.id) === sprintFeatures(sprint.id).length
+                          "
+                          [attr.data-sprint]="sprint.id"
+                          (dragover)="$event.preventDefault()"
+                          (drop)="transfer($event, sprint.id)"
+                        >
+                          <header class="sprint-head">
+                            <button
+                              class="sprint-toggle"
+                              (click)="toggleSprint(sprint.id)"
+                              [attr.aria-expanded]="isOpen(sprint.id)"
+                            >
+                              <svg class="sprint-cube" viewBox="0 0 64 64" aria-hidden="true">
+                                <path
+                                  d="M32 4 57 18v28L32 60 7 46V18Z M7 18l25 15 25-15M32 33v27"
+                                  fill="none"
+                                  stroke="currentColor"
+                                />
+                              </svg>
+                              <span class="fe-chev"></span>
+                              <span class="sprint-code">{{ sprintCode(sprint.id) }}</span>
+                              <span class="sprint-title">
+                                <strong>{{ sprint.name }}</strong>
+                                @if (sprint.goal) {
+                                  <small>{{ sprint.goal }}</small>
+                                }
+                              </span>
+                            </button>
+                            <span class="sprint-meta">
+                              @if (sprintRunning(sprint.id)) {
+                                <span class="tag accent">
+                                  {{
+                                    execution.paused()
+                                      ? ('ui.paused' | t)
+                                      : ('projects.running' | t)
+                                  }}
+                                </span>
+                              }
+                              @if (sprintReviews(sprint.id)) {
+                                <span class="tag">
+                                  {{ pad(sprintReviews(sprint.id)) }} {{ 'ui.in-review-323' | t }}
+                                </span>
+                              }
+                              @if (sprint.id === currentSprint()?.id && !execution.busy()) {
+                                <span class="tag accent">{{ 'projects.current' | t }}</span>
+                              }
+                              @if (isSprintCompleted(sprint.id)) {
+                                <span class="tag success completed-badge sm">
+                                  <luma-icon name="check" />
+                                  {{ 'status.sprintCompleted' | t }}
+                                </span>
+                              }
+                              <span class="sprint-count">
+                                {{ pad(sprintDone(sprint.id)) }}/{{
+                                  pad(sprintFeatures(sprint.id).length)
+                                }}
+                              </span>
+                              <i class="ops-progress">
+                                <b
+                                  [style.width.%]="
+                                    (100 * sprintDone(sprint.id)) /
+                                    Math.max(1, sprintFeatures(sprint.id).length)
+                                  "
+                                ></b>
+                              </i>
+                            </span>
+                            <span class="sprint-actions">
+                              <button
+                                class="btn sm"
+                                [class.ghost]="!isSprintCompleted(sprint.id)"
+                                [disabled]="
+                                  !isSprintCompleted(sprint.id) && !hasDeliveryGuide(sprint.id)
+                                "
+                                (click)="openDeliveryGuide(sprint.id)"
+                                [title]="getDeliveryGuideTitle(sprint.id)"
+                              >
+                                <luma-icon
+                                  [name]="isGuideGenerating(sprint.id) ? 'clock' : 'book'"
+                                />
+                                {{
+                                  isGuideGenerating(sprint.id)
+                                    ? ('delivery.guideGenerating' | t)
+                                    : ('delivery.guide' | t)
+                                }}
+                              </button>
+                              @if (sprintRunning(sprint.id)) {
+                                <button class="btn sm" (click)="execution.startCurrent()">
+                                  <luma-icon [name]="execution.paused() ? 'play' : 'pause'" />
+                                  {{ execution.paused() ? ('run.resume' | t) : ('ui.pause' | t) }}
+                                </button>
+                              } @else {
+                                <button
+                                  class="btn sm"
+                                  [class.primary]="
+                                    sprint.id === currentSprint()?.id && !execution.busy()
+                                  "
+                                  (click)="execution.preparePlan(undefined, sprint.id)"
+                                  [disabled]="
+                                    store.projectLocked() ||
+                                    !sprintFeatures(sprint.id).length ||
+                                    sprintDone(sprint.id) === sprintFeatures(sprint.id).length
+                                  "
+                                >
+                                  <luma-icon name="play" />
+                                  {{ 'feature.runSprint' | t }}
+                                </button>
+                              }
+                              <button
+                                class="icon-button small"
+                                (click)="newFeature(sprint.id)"
+                                [attr.aria-label]="('ui.new-feature-in' | t) + sprint.name"
+                                [title]="'projects.new-feature-in-this-sprint' | t"
+                                [disabled]="store.projectLocked()"
+                              >
+                                <luma-icon name="plus" />
+                              </button>
+                              <button
+                                class="icon-button small"
+                                (click)="editSprint(sprint.id)"
+                                [attr.aria-label]="('action.edit' | t) + sprint.name"
+                                [title]="'projects.edit-sprint' | t"
+                                [disabled]="store.projectLocked()"
+                              >
+                                <luma-icon name="edit" />
+                              </button>
+                              <button
+                                class="icon-button small"
+                                (click)="removeSprint(sprint.id)"
+                                [attr.aria-label]="('action.delete' | t) + sprint.name"
+                                [title]="'projects.delete-sprint-empty-only' | t"
+                                [disabled]="store.projectLocked() || project.sprints.length < 2"
+                              >
+                                <luma-icon name="trash" />
+                              </button>
+                            </span>
+                          </header>
+                          <div class="sprint-body" [style.--n]="visibleSprint(sprint.id).length">
+                            @for (feature of visibleSprint(sprint.id); track feature.id) {
+                              <div
+                                [class]="'sprint-node st-' + feature.status"
+                                [style.--i]="$index"
+                              >
+                                <div
+                                  class="ops-feature"
+                                  [class.selected]="reviewId() === feature.id"
+                                  [draggable]="!feature.setup && !store.projectLocked()"
+                                  (dragstart)="drag($event, feature.id)"
+                                  (dragover)="$event.preventDefault()"
+                                  (drop)="transfer($event, sprint.id, feature.id)"
+                                >
+                                  <span class="ops-key">{{ feature.key }}</span>
+                                  <button
+                                    class="grow ops-feature-open"
+                                    (click)="openFeature(feature.id)"
+                                  >
+                                    <strong>{{ feature.title }}</strong>
+                                    <small>
+                                      {{ scopeLabel(feature.scope) | uiLabel }}
+                                      @if (feature.dependencies.length) {
+                                        · {{ feature.dependencies.length }}
+                                        {{ 'ui.dependency-s' | t }}
+                                      }
+                                    </small>
+                                  </button>
+                                  <span class="tag">{{ feature.priority }}</span>
+                                  <span [class]="'ops-status s-' + feature.status">
+                                    {{ statusLabel(feature.status) | uiLabel }}
+                                  </span>
+                                  <div class="mini-faces">
+                                    @for (id of feature.route.slice(0, 6); track $index) {
+                                      @if (store.agent(id); as a) {
+                                        <img [src]="portrait(a)" [alt]="a.name" [title]="a.name" />
+                                      }
+                                    } @empty {
+                                      <small class="muted">{{ 'projects.no-route' | t }}</small>
+                                    }
+                                  </div>
+                                  @if (['backlog', 'ready', 'blocked'].includes(feature.status)) {
+                                    <button
+                                      class="icon-button small ops-run"
+                                      [class.is-blocked]="feature.status === 'blocked'"
+                                      (click)="execution.preparePlan(feature.id)"
+                                      [attr.aria-label]="('feature.run' | t) + feature.key"
+                                      [title]="
+                                        'projects.run-this-feature-shows-the-distribution-plan-first'
+                                          | t
+                                      "
+                                      [disabled]="store.projectLocked()"
+                                    >
+                                      <luma-icon
+                                        [name]="feature.status === 'blocked' ? 'lock' : 'play'"
+                                      />
+                                    </button>
+                                  }
+                                  <button
+                                    class="icon-button small"
+                                    (click)="openFeature(feature.id)"
+                                    [attr.aria-label]="('action.open' | t) + feature.key"
+                                    [title]="'projects.edit-details' | t"
+                                  >
+                                    <luma-icon
+                                      [name]="
+                                        ['done', 'review', 'running'].includes(feature.status)
+                                          ? 'eye'
+                                          : 'edit'
+                                      "
+                                    />
+                                  </button>
+                                  @if (!feature.setup) {
+                                    <button
+                                      class="icon-button small"
+                                      (click)="removeFeature(feature.id)"
+                                      [attr.aria-label]="('action.delete' | t) + feature.key"
+                                      [title]="'action.delete' | t"
+                                      [disabled]="store.projectLocked()"
+                                    >
+                                      <luma-icon name="trash" />
+                                    </button>
+                                  }
+                                </div>
+                              </div>
+                            } @empty {
+                              <div class="sprint-empty">
+                                {{
+                                  'projects.drag-features-here-or-create-one-with-the-button' | t
+                                }}
+                              </div>
+                            }
+                          </div>
+                        </section>
+                      }
+                    }
+                  </div>
+                }
+              </div>
+              <aside
+                id="opsFeatureDetail"
+                class="ops-detail"
+                [attr.aria-label]="'projects.feature-details' | t"
+              >
+                @if (reviewId()) {
+                  <div class="ops-detail-head">
+                    <div>
+                      <span class="eyebrow">
+                        {{ project.code }} / {{ store.feature(reviewId())?.key }}
+                      </span>
+                      <h3>{{ 'projects.delivery-review' | t }}</h3>
+                    </div>
+                    <button
+                      class="icon-button small"
+                      (click)="reviewId.set('')"
+                      [attr.aria-label]="'projects.close-details' | t"
+                    >
+                      <luma-icon name="close" />
+                    </button>
+                  </div>
+                  <luma-review
+                    [featureId]="reviewId()"
+                    [inline]="true"
+                    (closed)="reviewId.set('')"
+                  />
+                }
+              </aside>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </section>
+}
+@if (sprintDraft(); as sprint) {
+  <luma-modal
+    [title]="sprintExists(sprint.id || '') ? ('ui.edit-sprint' | t) : ('ui.new-sprint' | t)"
+    [subtitle]="
+      store.project()!.code +
+      ' / ' +
+      (sprintExists(sprint.id)
+        ? sprintCode(sprint.id)
+        : 'S' + pad(store.project()!.sprints.length + 1))
+    "
+    modalClass="narrow"
+    (closed)="sprintDraft.set(null)"
+  >
+    <form id="sprintForm" (ngSubmit)="saveSprint()">
+      <div class="field">
+        <label for="sprintName">{{ 'projects.sprint-name' | t }}</label>
+        <input id="sprintName" name="name" [(ngModel)]="sprint.name" maxlength="70" required />
+      </div>
+      <div class="field">
+        <label for="sprintGoal">{{ 'projects.goal' | t }}</label>
+        <textarea id="sprintGoal" name="goal" [(ngModel)]="sprint.goal" maxlength="2000"></textarea>
+      </div>
+    </form>
+    <footer class="modal-footer" modal-footer>
+      <button class="btn ghost" (click)="sprintDraft.set(null)">{{ 'action.cancel' | t }}</button>
+      <button class="btn primary" type="submit" form="sprintForm" [disabled]="!sprint.name.trim()">
+        <luma-icon name="check" />
+        {{ 'projects.save-sprint' | t }}
+      </button>
+    </footer>
+  </luma-modal>
+}
+
+@if (selectedGuide(); as guide) {
+  <luma-modal
+    [title]="
+      ('delivery.guide' | t) + ' · ' + sprintCode(guide.sprintId) + ' (v' + guide.version + ')'
+    "
+    (closed)="closeDeliveryGuide()"
+  >
+    <div class="delivery-guide-modal">
+      @if (guide.outdatedReason || guide.status === 'outdated') {
+        <div class="callout warning">
+          <luma-icon name="info" />
+          <p>{{ 'delivery.outdatedNotice' | t }}</p>
+        </div>
+      }
+      <div class="between mb-sm">
+        <span class="eyebrow">
+          {{ 'delivery.documenter' | t }}:
+          <strong>{{ guide.documenterName }}</strong>
+        </span>
+        <span class="eyebrow">{{ guide.updatedAt || guide.createdAt }}</span>
+      </div>
+
+      @if (guide.source === 'manual') {
+        <div class="notice warning">
+          <luma-icon name="info" />
+          <span>{{ 'delivery.manualNotice' | t }}</span>
+        </div>
+      }
+      <div class="delivery-guide-section">
+        <h4>{{ 'delivery.runAndValidate' | t }}</h4>
+        <pre class="code-block delivery-guide-content"><code>{{ guideMarkdown(guide) }}</code></pre>
+      </div>
+    </div>
+
+    <footer class="modal-footer flex between w-100" modal-footer>
+      <button class="btn ghost" (click)="exportDeliveryGuideMarkdown(guide.sprintId)">
+        <luma-icon name="download" />
+        {{ 'action.export' | t }} Markdown
+      </button>
+      <div class="flex gap-sm">
+        <button class="btn ghost" (click)="updateDeliveryGuide(guide.sprintId)">
+          <luma-icon name="sparkle" />
+          {{ 'delivery.refreshSnapshot' | t }}
+        </button>
+        <button class="btn primary" (click)="closeDeliveryGuide()">
+          {{ 'action.close' | t }}
+        </button>
+      </div>
+    </footer>
+  </luma-modal>
+}

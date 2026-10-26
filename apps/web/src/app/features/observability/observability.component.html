@@ -1,0 +1,422 @@
+<section class="home-view obs-page" aria-labelledby="obsHeading">
+  <div class="home-inner">
+    <header class="home-head">
+      <div>
+        <div class="eyebrow">LUMA / HIVE · {{ 'obs.eyebrow' | t }}</div>
+        <h1 id="obsHeading">{{ 'obs.title' | t }}</h1>
+        <p>{{ 'obs.description' | t }}</p>
+      </div>
+      <button class="btn" (click)="retry()" [disabled]="loading()">
+        <luma-icon name="refresh" />
+        {{ 'action.refresh' | t }}
+      </button>
+    </header>
+    <div class="obs-filters">
+      <label>
+        {{ 'obs.project' | t }}
+        <select
+          id="obsProject"
+          [ngModel]="filters().projectId || ''"
+          (ngModelChange)="filter('projectId', $event)"
+        >
+          <option value="">{{ 'obs.all' | t }}</option>
+          @for (p of snapshot()?.options?.projects || []; track p.id) {
+            <option [value]="p.id">{{ p.label }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        {{ 'obs.period' | t }}
+        <select
+          id="obsPeriod"
+          [ngModel]="filters().period"
+          (ngModelChange)="filter('period', $event)"
+        >
+          <option value="week">{{ 'obs.thisWeek' | t }}</option>
+          <option value="month">{{ 'obs.thisMonth' | t }}</option>
+          <option value="all">{{ 'obs.allTime' | t }}</option>
+        </select>
+      </label>
+      <label>
+        {{ 'obs.sprint' | t }}
+        <select
+          id="obsSprint"
+          [ngModel]="filters().sprintId || ''"
+          (ngModelChange)="filter('sprintId', $event)"
+        >
+          <option value="">{{ 'obs.all' | t }}</option>
+          @for (p of snapshot()?.options?.sprints || []; track p.id) {
+            <option [value]="p.id">{{ label(p.label) }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        {{ 'obs.agent' | t }}
+        <select
+          id="obsAgent"
+          [ngModel]="filters().agentId || ''"
+          (ngModelChange)="filter('agentId', $event)"
+        >
+          <option value="">{{ 'obs.all' | t }}</option>
+          @for (p of snapshot()?.options?.agents || []; track p.id) {
+            <option [value]="p.id">{{ p.label }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        {{ 'obs.provider' | t }}
+        <select
+          id="obsProvider"
+          [ngModel]="filters().provider || ''"
+          (ngModelChange)="filter('provider', $event)"
+        >
+          <option value="">{{ 'obs.all' | t }}</option>
+          <option value="codex">Codex</option>
+          <option value="devin">Devin</option>
+          <option value="antigravity">Antigravity</option>
+        </select>
+      </label>
+      <label>
+        {{ 'obs.model' | t }}
+        <select
+          id="obsModel"
+          [ngModel]="filters().model || ''"
+          (ngModelChange)="filter('model', $event)"
+        >
+          <option value="">{{ 'obs.all' | t }}</option>
+          @for (p of snapshot()?.options?.models || []; track p.id) {
+            <option [value]="p.id">{{ label(p.label) }}</option>
+          }
+        </select>
+      </label>
+    </div>
+    @if (error()) {
+      <div class="notice danger" role="alert">
+        {{ error() }}
+        <button class="btn sm" (click)="retry()">{{ 'obs.retry' | t }}</button>
+      </div>
+    }
+    @if (snapshot(); as data) {
+      <div class="obs-metrics" aria-live="polite">
+        <div>
+          <small>{{ 'obs.runs' | t }}</small>
+          <strong>{{ number(data.totals.runs) }}</strong>
+        </div>
+        <div>
+          <small>{{ 'obs.tokens' | t }}</small>
+          <strong>{{ number(data.totals.tokens.total) }}</strong>
+        </div>
+        <div>
+          <small>{{ 'obs.duration' | t }}</small>
+          <strong>{{ duration(data.totals.durationMs) }}</strong>
+        </div>
+        <div>
+          <small>{{ 'obs.helpers' | t }}</small>
+          <strong>{{ number(data.totals.subagents) }}</strong>
+        </div>
+        <div>
+          <small>{{ 'obs.failures' | t }}</small>
+          <strong>{{ number(data.totals.failed) }}</strong>
+        </div>
+        <div>
+          <small>{{ 'obs.missingUsage' | t }}</small>
+          <strong>{{ number(data.totals.unreported) }}</strong>
+        </div>
+      </div>
+      <div class="obs-tabs" role="tablist" [attr.aria-label]="'obs.views' | t">
+        <button
+          role="tab"
+          [attr.aria-selected]="tab() === 'execution'"
+          [class.active]="tab() === 'execution'"
+          (click)="tab.set('execution')"
+        >
+          {{ 'obs.execution' | t }}
+        </button>
+        <button
+          role="tab"
+          [attr.aria-selected]="tab() === 'consumption'"
+          [class.active]="tab() === 'consumption'"
+          (click)="tab.set('consumption')"
+        >
+          {{ 'obs.consumption' | t }}
+        </button>
+      </div>
+      @if (tab() === 'consumption') {
+        <section class="obs-panel" aria-labelledby="obsConsumption">
+          <header class="obs-section-head">
+            <h2 id="obsConsumption">{{ 'obs.consumption' | t }}</h2>
+            <label>
+              {{ 'obs.groupBy' | t }}
+              <select id="obsGroup" [ngModel]="group()" (ngModelChange)="group.set($event)">
+                @for (axis of axes; track axis) {
+                  <option [value]="axis">{{ 'obs.group.' + axis | t }}</option>
+                }
+              </select>
+            </label>
+          </header>
+          <p class="hint">
+            {{ (group() === 'subagent' ? 'obs.childUsageNote' : 'obs.rootUsageNote') | t }}
+          </p>
+          <div class="obs-table-scroll">
+            <table class="obs-table">
+              <thead>
+                <tr>
+                  <th>{{ 'obs.group.' + group() | t }}</th>
+                  <th>{{ 'obs.runs' | t }}</th>
+                  <th>{{ 'obs.input' | t }}</th>
+                  <th>{{ 'obs.output' | t }}</th>
+                  <th>{{ 'obs.cached' | t }}</th>
+                  <th>{{ 'obs.tokens' | t }}</th>
+                  <th>{{ 'obs.duration' | t }}</th>
+                  <th>{{ 'obs.coverage' | t }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of groups(); track row.id) {
+                  <tr>
+                    <th>
+                      <span>{{ label(row.label) }}</span>
+                      <i class="obs-bar"><b [style.width.%]="percent(row)"></b></i>
+                    </th>
+                    <td>{{ number(row.runs) }}</td>
+                    <td>{{ number(row.tokens.input) }}</td>
+                    <td>{{ number(row.tokens.output) }}</td>
+                    <td>{{ number(row.tokens.cached) }}</td>
+                    <td>{{ number(row.tokens.total) }}</td>
+                    <td>{{ duration(row.durationMs) }}</td>
+                    <td>{{ row.reported }} / {{ row.runs }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="8">{{ 'obs.empty' | t }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+          <p class="hint">{{ 'obs.cacheNote' | t }}</p>
+        </section>
+      } @else {
+        <div class="obs-layout">
+          <aside class="obs-panel obs-run-list" [attr.aria-label]="'obs.runs' | t">
+            <header class="obs-section-head">
+              <h2>{{ 'obs.runs' | t }}</h2>
+              <small>{{ data.totalRuns }}</small>
+            </header>
+            @for (run of data.runs; track run.id) {
+              <button
+                class="obs-run"
+                [class.active]="selectedRun() === run.id"
+                [attr.aria-pressed]="selectedRun() === run.id"
+                (click)="openRun(run.id)"
+              >
+                <span class="between">
+                  <b>{{ run.agentName || run.agentId }}</b>
+                  <span [class]="'obs-state ' + run.status">
+                    {{ 'obs.state.' + run.status | t }}
+                  </span>
+                </span>
+                <strong>
+                  {{ run.featureKey || run.kind }} · {{ run.featureName || ('obs.noFeature' | t) }}
+                </strong>
+                <small>{{ date(run.startedAt) }} · {{ run.provider }}</small>
+                <small>{{ run.sprintName || ('obs.unassigned' | t) }}</small>
+              </button>
+            } @empty {
+              <p class="obs-empty">{{ 'obs.empty' | t }}</p>
+            }
+            <div class="obs-pagination">
+              <button
+                class="btn sm"
+                (click)="page(-1)"
+                [disabled]="!offset() || loading()"
+                [attr.aria-label]="'obs.previous' | t"
+              >
+                ←
+              </button>
+              <small>
+                {{ number(data.totalRuns ? offset() + 1 : 0) }}–{{
+                  number(offset() + data.shownRuns)
+                }}
+                / {{ number(data.totalRuns) }}
+              </small>
+              <button
+                class="btn sm"
+                (click)="page(1)"
+                [disabled]="offset() + data.shownRuns >= data.totalRuns || loading()"
+                [attr.aria-label]="'obs.next' | t"
+              >
+                →
+              </button>
+            </div>
+          </aside>
+          <section class="obs-panel obs-run-detail">
+            @if (trace(); as current) {
+              <header class="obs-section-head">
+                <div>
+                  <span class="eyebrow">
+                    {{ current.run.provider }} · {{ current.run.model || ('obs.defaultModel' | t) }}
+                  </span>
+                  <h2>
+                    {{ current.run.featureKey || current.run.kind }} · {{ current.run.agentName }}
+                  </h2>
+                </div>
+                <button class="btn sm" (click)="export()">
+                  <luma-icon name="download" />
+                  {{ 'obs.export' | t }}
+                </button>
+              </header>
+              @if (current.partial) {
+                <p class="notice">{{ 'obs.partial' | t }}</p>
+              }
+              <div class="obs-investigation">
+                <aside class="obs-tree" [attr.aria-label]="'obs.tree' | t">
+                  <h3>{{ 'obs.tree' | t }}</h3>
+                  @for (row of tree(); track row.agent.id) {
+                    <button
+                      class="obs-tree-node"
+                      [class.active]="selectedAgent() === row.agent.id"
+                      [style.padding-left.px]="10 + row.depth * 16"
+                      [attr.aria-pressed]="selectedAgent() === row.agent.id"
+                      (click)="chooseAgent(row.agent.id)"
+                    >
+                      @if (store.agent(row.agent.agentId || ''); as a) {
+                        <img [src]="portraits.source(a)" alt="" />
+                      } @else {
+                        <luma-icon name="agent" />
+                      }
+                      <span>
+                        <b>{{ row.agent.name }}</b>
+                        <small>
+                          {{ row.depth ? ('obs.helper' | t) : ('obs.owner' | t) }} ·
+                          {{ 'obs.state.' + row.agent.state | t }}
+                        </small>
+                        <small>{{ duration(row.agent.durationMs) }}</small>
+                      </span>
+                    </button>
+                  }
+                </aside>
+                <div class="obs-agent-view">
+                  @if (selected(); as agent) {
+                    <section class="obs-agent-summary">
+                      <div class="between">
+                        <h3>{{ agent.name }}</h3>
+                        <span [class]="'obs-state ' + agent.state">
+                          {{ 'obs.state.' + agent.state | t }}
+                        </span>
+                      </div>
+                      <p>{{ agent.task || ('obs.taskMissing' | t) }}</p>
+                      <dl>
+                        <div>
+                          <dt>{{ 'obs.model' | t }}</dt>
+                          <dd>{{ agent.model || ('obs.unavailable' | t) }}</dd>
+                        </div>
+                        <div>
+                          <dt>{{ 'obs.tokens' | t }}</dt>
+                          <dd>{{ number(agent.tokens.total) }}</dd>
+                        </div>
+                        <div>
+                          <dt>{{ 'obs.tools' | t }}</dt>
+                          <dd>{{ number(agent.tools) }}</dd>
+                        </div>
+                        <div>
+                          <dt>{{ 'obs.duration' | t }}</dt>
+                          <dd>{{ duration(agent.durationMs) }}</dd>
+                        </div>
+                      </dl>
+                      @if (agent.parentId) {
+                        <p class="hint">{{ 'obs.childUsageNote' | t }}</p>
+                      }
+                    </section>
+                  }
+                  <div class="obs-section-head obs-timeline-head">
+                    <h3>{{ 'obs.timeline' | t }}</h3>
+                    <label class="obs-follow">
+                      <input
+                        type="checkbox"
+                        [ngModel]="following()"
+                        (ngModelChange)="following.set($event)"
+                      />
+                      {{ 'obs.follow' | t }}
+                    </label>
+                  </div>
+                  <div class="obs-event-filters">
+                    <label>
+                      {{ 'obs.eventType' | t }}
+                      <select
+                        id="obsEventType"
+                        [ngModel]="kind()"
+                        (ngModelChange)="kind.set($event)"
+                      >
+                        @for (k of kinds; track k) {
+                          <option [value]="k">{{ 'obs.event.' + (k || 'all') | t }}</option>
+                        }
+                      </select>
+                    </label>
+                    <label>
+                      {{ 'action.search' | t }}
+                      <input
+                        id="obsSearch"
+                        [ngModel]="search()"
+                        (ngModelChange)="search.set($event)"
+                        [placeholder]="'obs.search' | t"
+                      />
+                    </label>
+                  </div>
+                  <div
+                    class="obs-timeline"
+                    #timelineElement
+                    tabindex="0"
+                    [attr.aria-label]="'obs.timeline' | t"
+                  >
+                    @for (entry of entries(); track entry.event.seq) {
+                      <button
+                        class="obs-event"
+                        [class.error]="entry.event.error"
+                        [class.active]="selectedEvent() === entry.event.seq"
+                        (click)="selectedEvent.set(entry.event.seq); following.set(false)"
+                      >
+                        <time>{{ date(entry.event.at) }}</time>
+                        <span class="tag">{{ 'obs.event.' + entry.event.type | t }}</span>
+                        <span>
+                          <b>{{ eventOwner(entry) }}</b>
+                          <small>{{ eventText(entry) }}</small>
+                        </span>
+                      </button>
+                    } @empty {
+                      <p class="obs-empty">{{ 'obs.noEvents' | t }}</p>
+                    }
+                  </div>
+                  @if (detail(); as entry) {
+                    <section class="obs-event-detail">
+                      <div class="between">
+                        <h3>{{ 'obs.eventDetails' | t }} #{{ entry.event.seq }}</h3>
+                        <button class="btn sm" (click)="selectedEvent.set(null)">
+                          {{ 'action.close' | t }}
+                        </button>
+                      </div>
+                      <pre>{{ details(entry) }}</pre>
+                    </section>
+                  }
+                  @if (selected()?.result) {
+                    <details class="obs-result">
+                      <summary>{{ 'obs.result' | t }}</summary>
+                      <pre>{{ selected()!.result }}</pre>
+                    </details>
+                  }
+                </div>
+              </div>
+            } @else {
+              <p class="obs-empty" role="status">
+                {{ (loading() ? 'app.loading' : 'obs.selectRun') | t }}
+              </p>
+            }
+          </section>
+        </div>
+      }
+      <p class="obs-footnote">{{ 'obs.footer' | t }} · {{ date(data.generatedAt) }}</p>
+    } @else if (loading()) {
+      <p class="obs-empty" role="status">{{ 'app.loading' | t }}</p>
+    }
+  </div>
+</section>

@@ -1,0 +1,56 @@
+<luma-modal
+  [title]="'handoffs.new-handoff' | t"
+  [subtitle]="'handoffs.activity-transfer-explicit-context' | t"
+  (closed)="dialogs.close()"
+>
+  <form id="handoffForm" (ngSubmit)="save()">
+    <div class="form-grid">
+      <div class="field">
+        <label for="handoffFrom">{{ 'handoffs.source-agent' | t }}</label>
+        <select id="handoffFrom" name="from" [(ngModel)]="from">
+          @for (a of store.team(); track a.id) {
+            <option [value]="a.id">{{ a.name }}</option>
+          }
+        </select>
+      </div>
+      <div class="field">
+        <label for="handoffTo">{{ 'handoffs.destination-agent' | t }}</label>
+        <select id="handoffTo" name="to" [(ngModel)]="to">
+          @for (a of store.team(); track a.id) {
+            <option [value]="a.id">{{ a.name }} / {{ roleLabel(a) | uiLabel }}</option>
+          }
+        </select>
+      </div>
+      <div class="field full">
+        <label for="handoffFeature">{{ 'handoffs.feature-activity' | t }}</label>
+        <select id="handoffFeature" name="featureId" [(ngModel)]="featureId">
+          @for (f of candidates(); track f.id) {
+            <option [value]="f.id">{{ f.key }} / {{ f.title }}</option>
+          }
+        </select>
+      </div>
+      <div class="field full">
+        <label for="handoffContext">{{ 'handoffs.context-for-the-next-agent' | t }}</label>
+        <textarea
+          id="handoffContext"
+          name="context"
+          [(ngModel)]="context"
+          maxlength="10000"
+          style="min-height: 140px"
+          [placeholder]="'handoffs.what-was-decided-what-is-the-next-step-what-are-the-contra' | t"
+        ></textarea>
+      </div>
+    </div>
+    <div class="notice">
+      <luma-icon name="flow" />
+      {{ 'handoffs.this-handoff-replaces-the-feature-s-pending-route-with-sou' | t }}
+    </div>
+  </form>
+  <footer class="modal-footer" modal-footer>
+    <button class="btn ghost" (click)="dialogs.close()">{{ 'action.cancel' | t }}</button>
+    <button class="btn primary" type="submit" form="handoffForm">
+      <luma-icon name="arrow" />
+      {{ 'handoffs.record-handoff' | t }}
+    </button>
+  </footer>
+</luma-modal>

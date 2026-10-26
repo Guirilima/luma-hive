@@ -1,0 +1,45 @@
+<luma-modal
+  [title]="'features.individual-spawn' | t"
+  [subtitle]="
+    (store.settings()?.mode === 'live'
+      ? store.agent(agentId)?.provider?.toUpperCase() + ' CLI / '
+      : 'SESSÃO SIMULADA / ') + store.agent(agentId)?.name
+  "
+  modalClass="narrow"
+  (closed)="dialogs.close()"
+>
+  <form id="spawnForm" (ngSubmit)="start()">
+    <div class="field">
+      <label for="spawnFeature">{{ 'ui.feature-for' | t }} {{ store.agent(agentId)?.name }}</label>
+      <select id="spawnFeature" name="featureId" [(ngModel)]="featureId">
+        @for (feature of features(); track feature.id) {
+          <option [value]="feature.id">{{ feature.key }} / {{ feature.title }}</option>
+        }
+      </select>
+    </div>
+    <div class="notice warning">
+      <luma-icon name="info" />
+      <span>
+        {{ 'ui.this-feature-s-route-will-be-replaced-by-an-individual-' | t }}
+        {{ store.agent(agentId)?.name }}{{ 'ui.the-delivery-then-goes-to-human-review' | t }}
+        {{
+          store.settings()?.mode === 'live'
+            ? ('ui.the-cli-runs-in-the-operation-folder' | t)
+            : ('ui.no-real-ai-execution' | t)
+        }}
+      </span>
+    </div>
+  </form>
+  <footer class="modal-footer" modal-footer>
+    <button class="btn ghost" (click)="dialogs.close()">{{ 'action.cancel' | t }}</button>
+    <button
+      class="btn primary"
+      type="submit"
+      form="spawnForm"
+      [disabled]="!featureId || store.projectLocked()"
+    >
+      <luma-icon name="play" />
+      {{ store.settings()?.mode === 'live' ? ('ui.spawn-cli' | t) : ('ui.start-spawn-demo' | t) }}
+    </button>
+  </footer>
+</luma-modal>

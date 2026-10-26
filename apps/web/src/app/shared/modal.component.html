@@ -1,0 +1,25 @@
+<div class="overlay" (click)="outside($event)" (keydown)="keys($event)">
+  <section
+    [class]="'modal ' + modalClass()"
+    role="dialog"
+    aria-modal="true"
+    [attr.aria-labelledby]="headingId"
+  >
+    <header class="modal-header">
+      <div>
+        <div class="eyebrow">{{ subtitle() | uiLabel }}</div>
+        <h2 [id]="headingId" [innerHTML]="title() | t"></h2>
+      </div>
+      <button
+        type="button"
+        class="icon-button"
+        (click)="closed.emit()"
+        [attr.aria-label]="'action.close' | t"
+      >
+        <luma-icon name="close" />
+      </button>
+    </header>
+    <div class="modal-body"><ng-content /></div>
+    <ng-content select="[modal-footer]" />
+  </section>
+</div>

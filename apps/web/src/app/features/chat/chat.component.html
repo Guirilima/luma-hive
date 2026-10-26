@@ -1,0 +1,180 @@
+<luma-modal
+  [title]="agent()?.name || ('life.visit' | t)"
+  [subtitle]="'life.visit' | t"
+  modalClass="agent-phone"
+  (closed)="close()"
+>
+  <div class="ac-phone">
+    <div
+      class="ac-screen fe-chat"
+      role="group"
+      [attr.aria-label]="('ui.conversation-with' | t) + agent()?.name"
+    >
+      <div class="ac-status">
+        <span class="ac-clock">{{ clock }}</span>
+        <span class="ac-island" aria-hidden="true"></span>
+        <span class="ac-icons" aria-hidden="true">
+          <svg viewBox="0 0 18 12">
+            <rect x="0" y="8" width="3" height="4" rx="1" />
+            <rect x="5" y="5.5" width="3" height="6.5" rx="1" />
+            <rect x="10" y="3" width="3" height="9" rx="1" />
+            <rect x="15" y="0" width="3" height="12" rx="1" /></svg
+          ><svg viewBox="0 0 16 12">
+            <path d="M8 11.6 5.7 9.2a3.3 3.3 0 0 1 4.6 0Z" />
+            <path d="M3.4 6.9a6.5 6.5 0 0 1 9.2 0l-1.5 1.5a4.4 4.4 0 0 0-6.2 0Z" />
+            <path d="M1.1 4.6a9.8 9.8 0 0 1 13.8 0l-1.5 1.5a7.7 7.7 0 0 0-10.8 0Z" /></svg
+          ><svg viewBox="0 0 27 12" class="ac-battery">
+            <rect x=".5" y=".5" width="23" height="11" rx="3.3" />
+            <rect x="2" y="2" width="18" height="8" rx="2" />
+            <path d="M25 4.2v3.6c.8-.3 1.3-1 1.3-1.8S25.8 4.5 25 4.2Z" />
+          </svg>
+        </span>
+      </div>
+      <header class="fe-chat-head ac-head">
+        @if (agent(); as a) {
+          <img [src]="portrait(a)" alt="" />
+        }
+        <div>
+          <div class="fe-chat-id">
+            <strong>{{ agent()?.name }}</strong>
+            <span class="fe-model">{{ model() }}</span>
+            <span class="fe-effort">▥ {{ agent()?.effort || ('ui.default' | t) }}</span>
+          </div>
+          <small>{{ role().toUpperCase() }}</small>
+        </div>
+        <button
+          type="button"
+          class="icon-button small ac-close"
+          (click)="close()"
+          [attr.aria-label]="'chat.close-conversation' | t"
+          [title]="'chat.close-esc' | t"
+        >
+          <luma-icon name="close" />
+        </button>
+      </header>
+      <div class="fe-msgs" id="feMsgs" aria-live="polite" (scroll)="chatScroll.onScroll($event)">
+        <div class="fe-time">{{ 'ui.today' | t }} {{ clock }}</div>
+        <div class="fe-row agent">
+          <div class="fe-bubble agent">{{ greeting }}</div>
+        </div>
+        @for (m of messages(); track m.id) {
+          <div
+            [class]="
+              'fe-row ' + (m.role === 'user' ? 'user' : m.role === 'system' ? 'system' : 'agent')
+            "
+          >
+            @if (m.role === 'system') {
+              <p class="fe-note" [class.error]="m.kind === 'error' || !!m.retry">
+                {{ m.text }}
+                @if (m.retry) {
+                  <button type="button" class="link-button fe-retry" (click)="retry(m)">
+                    {{ 'chat.try-again' | t }}
+                  </button>
+                }
+              </p>
+            } @else {
+              <div
+                [class]="'fe-bubble ' + (m.role === 'user' ? 'user' : 'agent')"
+                [class.tail]="messages()[$index + 1]?.role !== m.role"
+              >
+                <div class="fe-bubble-md" [innerHTML]="render(m.text)"></div>
+              </div>
+              @if (m.retry) {
+                <button class="link-button fe-retry" (click)="retry(m)">
+                  {{ 'chat.retry' | t }}
+                </button>
+              }
+              @if (!m.used && (m.options?.length || m.list?.length)) {
+                <div class="ac-pick">
+                  @if (m.list?.length) {
+                    <div class="ac-list">
+                      @for (opt of m.list; track $index) {
+                        <button
+                          class="ac-list-row"
+                          (click)="choose(m.id, opt)"
+                          [disabled]="working()"
+                        >
+                          <b>{{ opt.key }}</b>
+                          <span>{{ opt.title || opt.label }}</span>
+                          @if (opt.tag) {
+                            <em [class]="opt.tone || ''">{{ opt.tag }}</em>
+                          }
+                        </button>
+                      }
+                    </div>
+                  }
+                  @if (m.options?.length) {
+                    <div class="ac-options">
+                      @for (opt of m.options; track $index) {
+                        <button class="ac-opt" (click)="choose(m.id, opt)" [disabled]="working()">
+                          {{ opt.label }}
+                        </button>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            }
+          </div>
+        }
+        @if (working()) {
+          <div class="fe-row agent fe-typing-row">
+            <div class="fe-bubble agent fe-typing">
+              @if (stream()) {
+                <div class="fe-bubble-md" [innerHTML]="render(stream())"></div>
+              } @else {
+                <i></i>
+                <i></i>
+                <i></i>
+              }
+            </div>
+            <button class="link-button fe-stop" (click)="stop()">{{ 'chat.stop' | t }}</button>
+          </div>
+        }
+        @if (receipt(); as text) {
+          <div class="fe-receipt">{{ text }}</div>
+        }
+      </div>
+      <button
+        type="button"
+        class="fe-jump"
+        [hidden]="!chatScroll.unread()"
+        (click)="chatScroll.jump('.ac-screen .fe-msgs')"
+      >
+        {{ 'chat.new-message' | t }}
+      </button>
+      @if (live()) {
+        <div class="fe-compose">
+          <div class="fe-pill">
+            <textarea
+              id="feChatInput"
+              [(ngModel)]="message"
+              (keydown.enter)="enter($event)"
+              rows="1"
+              maxlength="4000"
+              placeholder="iMessage"
+              [attr.aria-label]="('ui.message-for' | t) + agent()?.name"
+              autofocus
+            ></textarea>
+            <button
+              class="fe-send"
+              (click)="send()"
+              [disabled]="!message.trim()"
+              [attr.aria-label]="'chat.send' | t"
+              [title]="'chat.send-enter' | t"
+            >
+              <svg viewBox="0 0 24 24"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5" /></svg>
+            </button>
+          </div>
+        </div>
+      } @else {
+        <div class="fe-compose offline">
+          <p class="fe-note">
+            {{ 'chat.the-options-work-here-for-open-ended-conversations-connect' | t }}
+          </p>
+        </div>
+      }
+      <div class="ac-home" aria-hidden="true"></div>
+    </div>
+  </div>
+</luma-modal>

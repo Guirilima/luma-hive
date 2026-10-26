@@ -1,0 +1,71 @@
+@font-face {
+  font-family: 'Luma Pixel';
+  src: url('/assets/fonts/pixelify-sans/PixelifySans.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}
+html[data-interface-theme='pixel'] {
+  --bg: #102430;
+  --ink: #f1e7ce;
+  --muted: #b2bdba;
+  --dim: #80969b;
+  --cyan: #75e0c2;
+  --route: #75e0c2;
+  --purple: #d3b1ed;
+  --line: #bd9b615c;
+  --panel: #142e3d;
+  --sans: 'Luma Pixel', 'Segoe UI', sans-serif;
+  --pixel-font: 'Luma Pixel', 'Segoe UI', sans-serif;
+  --pixel-paper: #f1e7ce;
+  --pixel-panel: #173544;
+  --pixel-deep: #102430;
+  --pixel-border: #b48b53;
+  --pixel-gold: #f0cc83;
+  --pixel-shadow: #061823;
+  --pixel-frame: inset 0 0 0 2px #e1bf7f55, inset 0 -3px 0 #06182380, 4px 4px 0 #061823;
+}
+html[data-interface-theme='pixel'] body {
+  font-family: var(--pixel-font);
+  font-size: 15px;
+  background: var(--pixel-deep);
+}
+html[data-interface-theme='pixel'] :is(button, input, select, textarea) {
+  border-radius: 0;
+}
+html[data-interface-theme='pixel'] :is(button, a):focus-visible {
+  outline: 3px solid #ffe4a7;
+  outline-offset: 3px;
+}
+html[data-interface-theme='pixel'] :is(input, select, textarea):focus {
+  outline: 2px solid #75e0c2;
+  outline-offset: 2px;
+}
+html[data-interface-theme='pixel']
+  :is(h1, h2, h3, h4, .brand, .btn, .primary-action, .editor-tab, .sq-type) {
+  font-family: var(--pixel-font);
+}
+html[data-interface-theme='pixel'] :is(h1, h2, h3) {
+  text-shadow: 2px 2px 0 #061823;
+}
+html[data-interface-theme='pixel'] :is(.eyebrow, .section-cap, .home-section-head, .ops-side-head) {
+  color: #d8b87d;
+}
+html[data-interface-theme='pixel'] :is(.hint, .muted, .footer-note, .editor-side-note) {
+  color: #b1c0bc;
+}
+html[data-interface-theme='pixel'] ::selection {
+  color: #102430;
+  background: #f0cc83;
+}
+html[data-interface-theme='pixel'] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+html[data-interface-theme='pixel'] ::-webkit-scrollbar-thumb {
+  background: #ba965d;
+  border: 2px solid #183442;
+}
+html[data-interface-theme='pixel'] ::-webkit-scrollbar-track {
+  background: #0f2531;
+}
