@@ -184,6 +184,39 @@
                       </span>
                     </button>
                   }
+                  @for (id of draft.specialistIds || []; track id) {
+                    @if (agent(id); as member) {
+                      <button
+                        type="button"
+                        class="sq-node sq-adr filled"
+                        (click)="openPick('specialist', $index)"
+                      >
+                        <span class="sq-ring" [class.photo]="photos()">
+                          @if (photos()) {
+                            <img [src]="portrait(member)" alt="" />
+                          } @else {
+                            <luma-icon [name]="member.icon" />
+                          }
+                        </span>
+                        <span class="sq-node-label">
+                          <strong>{{ member.name }}</strong>
+                          <small>{{ member.specialty || ('squad.specialistArchitect' | t) }}</small>
+                        </span>
+                      </button>
+                    }
+                  }
+                  <button
+                    type="button"
+                    class="sq-node sq-adr add"
+                    (click)="openPick('specialist')"
+                    [title]="'squad.addSpecialist' | t"
+                  >
+                    <span class="sq-ring"><luma-icon name="plus" /></span>
+                    <span class="sq-node-label">
+                      <strong>{{ 'action.add' | t }}</strong>
+                      <small>{{ 'squad.specialistArchitect' | t }}</small>
+                    </span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -194,6 +227,19 @@
                   {{ 'ui.technically-executes-the-mission' | t }}
                   {{ pad(draft.operatorIds.length) }} {{ 'ui.operator-s' | t }}
                 </small>
+              </div>
+              <div
+                class="sq-composition-badge-discrete"
+                [class.success]="recommendationMet()"
+                [class.sq-warn]="!recommendationMet()"
+                [title]="recommendationTooltip()"
+                [attr.aria-label]="recommendationTooltip()"
+              >
+                <luma-icon [name]="recommendationMet() ? 'check' : 'info'" />
+                <span>
+                  {{ 'squad.coverageQa' | t }} {{ qaCount() }}/1 · {{ 'squad.coverageDocs' | t }}
+                  {{ docsCount() }}/1
+                </span>
               </div>
               <div class="sq-row">
                 <div class="sq-bus">
@@ -288,6 +334,7 @@
               <button
                 type="button"
                 class="sq-item category"
+                [attr.data-category]="item.key"
                 [class.active]="pickerIndex() === $index"
                 [class.near]="Math.abs(pickerIndex() - $index) === 1"
                 [class.far]="Math.abs(pickerIndex() - $index) > 1"
@@ -317,10 +364,11 @@
             @for (item of choices(); track item.id) {
               <button
                 class="sq-item"
+                [attr.data-agent-id]="item.id"
                 [class.existing]="!!store.agent(item.id)"
                 [class.preset]="item.id !== '__custom__' && !store.agent(item.id)"
                 [class.custom]="item.id === '__custom__'"
-                [class.active]="choice()?.name === item.name"
+                [class.active]="choice()?.id === item.id"
                 [class.near]="Math.abs(pickerIndex() - $index) === 1"
                 [class.far]="Math.abs(pickerIndex() - $index) > 1"
                 [class.taken]="taken(item.id)"
@@ -347,7 +395,7 @@
     <div class="sq-detail">
       <div class="sq-detail-icon">
         @if (categoryMode()) {
-          <luma-icon [name]="categoryIcon(selectedCategory()?.key || '')" />
+          <luma-icon [name]="categoryIcon(selectedCategory().key || '')" />
         } @else if (choice(); as item) {
           @if (item.id === '__custom__') {
             <luma-icon name="sparkle" />
@@ -400,11 +448,8 @@
           <luma-icon name="check" />
           {{ confirmLabel() | uiLabel }}
         </button>
-        @if (position.slot === 'op' && position.index >= 0) {
-          <button
-            class="btn danger"
-            (click)="draft.operatorIds.splice(position.index, 1); closePick()"
-          >
+        @if ((position.slot === 'op' || position.slot === 'specialist') && position.index >= 0) {
+          <button class="btn danger" (click)="removePosition(position)">
             <luma-icon name="trash" />
             {{ 'action.remove' | t }}
           </button>

@@ -29,20 +29,85 @@
         <aside class="ops-list" id="opsList" [attr.aria-label]="'dashboard.operations' | t">
           <div class="ops-list-head">
             <span>{{ 'dashboard.operations-161' | t }}</span>
-            <span>{{ pad(store.workspace()!.projects.length) }}</span>
+            <span>
+              {{ pad(filteredOperations().length) }} / {{ pad(store.workspace()!.projects.length) }}
+            </span>
           </div>
-          @for (operation of store.workspace()!.projects; track operation.id) {
+
+          <!-- Filtros de Operações MEL-010 -->
+          <div class="ops-list-filters">
+            <div class="search-box">
+              <luma-icon name="search" />
+              <input
+                type="search"
+                [placeholder]="'filters.searchPlaceholder' | t"
+                [value]="opsSearch()"
+                (input)="opsSearch.set($any($event.target).value)"
+                [attr.aria-label]="'filters.searchPlaceholder' | t"
+              />
+            </div>
+            <div class="ops-filter-row">
+              <select
+                [value]="opsStatusFilter()"
+                (change)="opsStatusFilter.set($any($event.target).value)"
+                [attr.aria-label]="'filters.byStatus' | t"
+              >
+                <option value="all">{{ 'filters.status.all' | t }}</option>
+                <option value="running">{{ 'filters.status.in_progress' | t }}</option>
+                <option value="review">{{ 'filters.status.review' | t }}</option>
+                <option value="completed">{{ 'filters.status.completed' | t }}</option>
+              </select>
+              <select
+                [value]="opsSquadFilter()"
+                (change)="opsSquadFilter.set($any($event.target).value)"
+                [attr.aria-label]="'filters.bySquad' | t"
+              >
+                <option value="all">{{ 'filters.squad.all' | t }}</option>
+                @for (squad of store.workspace()?.squads; track squad.id) {
+                  <option [value]="squad.id">{{ squad.name }}</option>
+                }
+              </select>
+              <select
+                [value]="opsSortFilter()"
+                (change)="opsSortFilter.set($any($event.target).value)"
+                [attr.aria-label]="'filters.sort' | t"
+              >
+                <option value="recent">{{ 'filters.sort.recent' | t }}</option>
+                <option value="name">{{ 'filters.sort.name' | t }}</option>
+              </select>
+              @if (hasOpsFilters()) {
+                <button
+                  class="btn ghost sm"
+                  (click)="clearOpsFilters()"
+                  [title]="'filters.clear' | t"
+                >
+                  <luma-icon name="close" />
+                </button>
+              }
+            </div>
+          </div>
+
+          @for (operation of filteredOperations(); track operation.id) {
             <button
               class="ops-item"
               [class.active]="operation.id === project.id"
+              [class.completed]="isProjectCompleted(operation)"
               [attr.aria-pressed]="operation.id === project.id"
               (click)="switchProject(operation.id)"
             >
               <span class="between">
                 <span class="eyebrow">{{ operation.code }}</span>
-                @if (operation.id === project.id) {
-                  <span class="tag accent">{{ 'shell.active' | t }}</span>
-                }
+                <span class="flex gap-xs">
+                  @if (operation.id === project.id) {
+                    <span class="tag accent">{{ 'shell.active' | t }}</span>
+                  }
+                  @if (isProjectCompleted(operation)) {
+                    <span class="tag success completed-badge sm">
+                      <luma-icon name="check" />
+                      {{ 'status.projectCompleted' | t }}
+                    </span>
+                  }
+                </span>
               </span>
               <strong>{{ operation.name }}</strong>
               <small>
@@ -53,6 +118,15 @@
               </small>
               <i class="ops-progress"><b [style.width.%]="progress(operation)"></b></i>
             </button>
+          }
+          @if (filteredOperations().length === 0) {
+            <div class="project-filters-empty sm">
+              <luma-icon name="search" />
+              <p>{{ 'filters.noResults' | t }}</p>
+              <button class="btn ghost sm" (click)="clearOpsFilters()">
+                {{ 'filters.clear' | t }}
+              </button>
+            </div>
           }
           <button class="ops-item new" (click)="dialogs.open('project')">
             <luma-icon name="plus" />
@@ -80,7 +154,12 @@
                   <luma-icon name="squad" />
                   {{ 'projects.open-in-squad' | t }}
                 </button>
-                <button class="btn" (click)="router.navigate(['/memory'], {queryParams:{project:project.id}})">{{'memory.title' | t}}</button>
+                <button
+                  class="btn"
+                  (click)="router.navigate(['/memory'], { queryParams: { project: project.id } })"
+                >
+                  {{ 'memory.title' | t }}
+                </button>
                 <button class="btn" (click)="exportProject()">
                   <luma-icon name="download" />
                   {{ 'action.export' | t }}
@@ -367,6 +446,12 @@
                               @if (sprint.id === currentSprint()?.id && !execution.busy()) {
                                 <span class="tag accent">{{ 'projects.current' | t }}</span>
                               }
+                              @if (isSprintCompleted(sprint.id)) {
+                                <span class="tag success completed-badge sm">
+                                  <luma-icon name="check" />
+                                  {{ 'status.sprintCompleted' | t }}
+                                </span>
+                              }
                               <span class="sprint-count">
                                 {{ pad(sprintDone(sprint.id)) }}/{{
                                   pad(sprintFeatures(sprint.id).length)
@@ -382,6 +467,24 @@
                               </i>
                             </span>
                             <span class="sprint-actions">
+                              <button
+                                class="btn sm"
+                                [class.ghost]="!isSprintCompleted(sprint.id)"
+                                [disabled]="
+                                  !isSprintCompleted(sprint.id) && !hasDeliveryGuide(sprint.id)
+                                "
+                                (click)="openDeliveryGuide(sprint.id)"
+                                [title]="getDeliveryGuideTitle(sprint.id)"
+                              >
+                                <luma-icon
+                                  [name]="isGuideGenerating(sprint.id) ? 'clock' : 'book'"
+                                />
+                                {{
+                                  isGuideGenerating(sprint.id)
+                                    ? ('delivery.guideGenerating' | t)
+                                    : ('delivery.guide' | t)
+                                }}
+                              </button>
                               @if (sprintRunning(sprint.id)) {
                                 <button class="btn sm" (click)="execution.startCurrent()">
                                   <luma-icon [name]="execution.paused() ? 'play' : 'pause'" />
@@ -596,6 +699,58 @@
         <luma-icon name="check" />
         {{ 'projects.save-sprint' | t }}
       </button>
+    </footer>
+  </luma-modal>
+}
+
+@if (selectedGuide(); as guide) {
+  <luma-modal
+    [title]="
+      ('delivery.guide' | t) + ' · ' + sprintCode(guide.sprintId) + ' (v' + guide.version + ')'
+    "
+    (closed)="closeDeliveryGuide()"
+  >
+    <div class="delivery-guide-modal">
+      @if (guide.outdatedReason || guide.status === 'outdated') {
+        <div class="callout warning">
+          <luma-icon name="info" />
+          <p>{{ 'delivery.outdatedNotice' | t }}</p>
+        </div>
+      }
+      <div class="between mb-sm">
+        <span class="eyebrow">
+          {{ 'delivery.documenter' | t }}:
+          <strong>{{ guide.documenterName }}</strong>
+        </span>
+        <span class="eyebrow">{{ guide.updatedAt || guide.createdAt }}</span>
+      </div>
+
+      @if (guide.source === 'manual') {
+        <div class="notice warning">
+          <luma-icon name="info" />
+          <span>{{ 'delivery.manualNotice' | t }}</span>
+        </div>
+      }
+      <div class="delivery-guide-section">
+        <h4>{{ 'delivery.runAndValidate' | t }}</h4>
+        <pre class="code-block delivery-guide-content"><code>{{ guideMarkdown(guide) }}</code></pre>
+      </div>
+    </div>
+
+    <footer class="modal-footer flex between w-100" modal-footer>
+      <button class="btn ghost" (click)="exportDeliveryGuideMarkdown(guide.sprintId)">
+        <luma-icon name="download" />
+        {{ 'action.export' | t }} Markdown
+      </button>
+      <div class="flex gap-sm">
+        <button class="btn ghost" (click)="updateDeliveryGuide(guide.sprintId)">
+          <luma-icon name="sparkle" />
+          {{ 'delivery.refreshSnapshot' | t }}
+        </button>
+        <button class="btn primary" (click)="closeDeliveryGuide()">
+          {{ 'action.close' | t }}
+        </button>
+      </div>
     </footer>
   </luma-modal>
 }

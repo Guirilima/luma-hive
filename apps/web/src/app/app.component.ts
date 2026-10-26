@@ -23,7 +23,7 @@ import { IconComponent } from './shared/icon.component';
 import { OperationRoomComponent } from './features/operation-room/operation-room.component';
 import { RoomService } from './core/execution/room.service';
 import { MapComponent } from './features/map/map.component';
-import { Locale } from '@domain/models';
+import { Locale, Provider, PROVIDERS } from '@domain/models';
 @Component({
   selector: 'luma-root',
   host: { '[class.reduce-motion]': 'store.settings()?.motion === false' },
@@ -45,6 +45,28 @@ import { Locale } from '@domain/models';
 export class AppComponent {
   pad(n: number): string {
     return String(n).padStart(2, '0');
+  }
+  readonly connectedProviders = computed(() =>
+    PROVIDERS.filter((provider) => {
+      const health = this.providers.health()[provider];
+      return !!health?.version && !health.runtimeError;
+    }),
+  );
+  connectorName(provider: Provider): string {
+    return { codex: 'Codex', devin: 'Devin', antigravity: 'Antigravity' }[provider];
+  }
+  connectorShort(provider: Provider): string {
+    return { codex: 'CDX', devin: 'DVN', antigravity: 'AGY' }[provider];
+  }
+  connectorTitle(provider: Provider): string {
+    return (
+      this.connectorName(provider) +
+      ' CLI · ' +
+      this.providers.health()[provider]?.version +
+      ' · ' +
+      this.i18n.text('connectors.detectedHint') +
+      (this.activeProvider() === provider ? ' · ' + this.i18n.text('connectors.currentAgent') : '')
+    );
   }
   cliVersion(): string {
     return (

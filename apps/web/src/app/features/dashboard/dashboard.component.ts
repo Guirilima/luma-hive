@@ -2,7 +2,7 @@ import { UiLabelPipe } from '../../core/i18n/i18n.service';
 import { PortraitService } from '../../core/appearance/portrait.service';
 import { dependenciesReady } from '@domain/workspace';
 import { SquadCardComponent } from '../projects/project-form.component';
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { portrait } from '@domain/catalog';
 import { Agent, Project, Squad, Feature } from '@domain/models';
@@ -133,6 +133,74 @@ export class DashboardComponent {
     const total = p.features.length;
     if (!total) return 0;
     return Math.round((this.feitas(p) / total) * 100);
+  }
+
+  readonly searchQuery = signal('');
+  readonly statusFilter = signal<'all' | 'running' | 'review' | 'completed'>('all');
+  readonly squadFilter = signal<string>('all');
+  readonly sortFilter = signal<'recent' | 'name'>('recent');
+
+  isProjectCompleted(p: Project): boolean {
+    return (
+      p.features.length > 0 &&
+      p.features.every((f) => f.status === 'done') &&
+      !p.features.some((f) => f.status === 'running') &&
+      !(this.store.project()?.id === p.id && this.execution.busy())
+    );
+  }
+
+  isProjectInReview(p: Project): boolean {
+    return p.features.some((f) => f.status === 'review');
+  }
+
+  projectLastUpdated(p: Project): string {
+    return p.logs?.at(-1)?.at || p.handoffs?.at(-1)?.at || p.createdAt || '';
+  }
+
+  readonly filteredProjects = computed(() => {
+    let list = this.store.workspace()?.projects || [];
+    const query = this.searchQuery().trim().toLowerCase();
+    if (query) {
+      list = list.filter(
+        (p) =>
+          p.name.toLowerCase().includes(query) ||
+          p.code.toLowerCase().includes(query) ||
+          (p.briefing && p.briefing.toLowerCase().includes(query)),
+      );
+    }
+    const st = this.statusFilter();
+    if (st === 'completed') {
+      list = list.filter((p) => this.isProjectCompleted(p));
+    } else if (st === 'review') {
+      list = list.filter((p) => this.isProjectInReview(p));
+    } else if (st === 'running') {
+      list = list.filter((p) => !this.isProjectCompleted(p) && !this.isProjectInReview(p));
+    }
+    const sq = this.squadFilter();
+    if (sq !== 'all') {
+      list = list.filter((p) => p.squadId === sq);
+    }
+    const sort = this.sortFilter();
+    list = [...list].sort((a, b) => {
+      if (sort === 'name') return a.name.localeCompare(b.name);
+      return this.projectLastUpdated(b).localeCompare(this.projectLastUpdated(a));
+    });
+    return list;
+  });
+
+  readonly hasActiveFilters = computed(
+    () =>
+      !!this.searchQuery().trim() ||
+      this.statusFilter() !== 'all' ||
+      this.squadFilter() !== 'all' ||
+      this.sortFilter() !== 'recent',
+  );
+
+  clearFilters(): void {
+    this.searchQuery.set('');
+    this.statusFilter.set('all');
+    this.squadFilter.set('all');
+    this.sortFilter.set('recent');
   }
 
   squadAgents(project: Project): Agent[] {

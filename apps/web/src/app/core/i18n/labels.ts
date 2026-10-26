@@ -1,6 +1,67 @@
 import { Locale } from '@domain/models';
 /** Stable IDs; preserve IDs when renaming labels. */
 export const LABELS = {
+  'squad.keepAgent': { 'pt-BR': 'Manter', en: 'Keep', es: 'Mantener' },
+  'squad.chooseAgent': { 'pt-BR': 'Escolher', en: 'Choose', es: 'Elegir' },
+  'squad.newArchitect': {
+    'pt-BR': 'Novo especialista de arquitetura',
+    en: 'New architecture specialist',
+    es: 'Nuevo especialista de arquitectura',
+  },
+  'filters.byStatus': {
+    'pt-BR': 'Filtrar por situação',
+    en: 'Filter by status',
+    es: 'Filtrar por estado',
+  },
+  'filters.bySquad': {
+    'pt-BR': 'Filtrar por squad',
+    en: 'Filter by squad',
+    es: 'Filtrar por squad',
+  },
+  'filters.sort': { 'pt-BR': 'Ordenar projetos', en: 'Sort projects', es: 'Ordenar proyectos' },
+
+  'connectors.available': { 'pt-BR': 'Conectores', en: 'Connectors', es: 'Conectores' },
+  'connectors.none': {
+    'pt-BR': 'Nenhum CLI detectado. Verifique as configurações.',
+    en: 'No CLI detected. Check settings.',
+    es: 'No se detectó ningún CLI. Revisa la configuración.',
+  },
+  'connectors.detectedHint': {
+    'pt-BR': 'CLI detectado nesta máquina; não confirma login ou saldo.',
+    en: 'CLI detected on this machine; does not confirm sign-in or quota.',
+    es: 'CLI detectado en esta máquina; no confirma sesión ni cuota.',
+  },
+  'connectors.currentAgent': {
+    'pt-BR': 'Usado pelo agente atual',
+    en: 'Used by the current agent',
+    es: 'Usado por el agente actual',
+  },
+  'squad.coverageQa': { 'pt-BR': 'QA', en: 'QA', es: 'QA' },
+  'squad.coverageDocs': { 'pt-BR': 'Docs', en: 'Docs', es: 'Docs' },
+  'delivery.unassigned': { 'pt-BR': 'Não atribuído', en: 'Unassigned', es: 'Sin asignar' },
+  'delivery.unreported': {
+    'pt-BR': 'Não informado — preencher e validar para este projeto.',
+    en: 'Not provided — fill in and verify for this project.',
+    es: 'No informado — completar y verificar para este proyecto.',
+  },
+  'delivery.approvedFeatures': {
+    'pt-BR': 'Features aprovadas',
+    en: 'Approved features',
+    es: 'Features aprobadas',
+  },
+  'delivery.manualNotice': {
+    'pt-BR':
+      'Rascunho consolidado pelo sistema a partir dos dados do projeto. Nenhum agente documentador foi executado para gerar este guia; revise as instruções antes de usar.',
+    en: 'Draft assembled by the system from project data. No documentation agent was run to generate this guide; review the instructions before use.',
+    es: 'Borrador compilado por el sistema a partir de los datos del proyecto. No se ejecutó ningún agente de documentación para generar esta guía; revisa las instrucciones antes de usarla.',
+  },
+  'delivery.installCommands': { 'pt-BR': 'Instalação', en: 'Installation', es: 'Instalación' },
+  'delivery.refreshSnapshot': {
+    'pt-BR': 'Atualizar rascunho',
+    en: 'Update draft',
+    es: 'Actualizar borrador',
+  },
+
   'permissions.title': {
     'pt-BR': 'Permissões e autonomia',
     en: 'Permissions and autonomy',
@@ -7658,6 +7719,197 @@ export const LABELS = {
       'Somente leitura/plano limitam as ferramentas de edição. Automático usa a política nativa do CLI para decidir ações das ferramentas do agente; bloqueios ainda podem ocorrer. Não desativa globalmente as permissões.',
     en: 'Read-only/plan restrict editing tools. Automatic uses the native CLI policy to decide actions within the agent tool list; blocks may still occur. It does not globally disable permissions.',
     es: 'Solo lectura/plan limitan las herramientas de edición. Automático usa la política nativa del CLI para decidir acciones de las herramientas del agente; aún puede haber bloqueos. No desactiva globalmente los permisos.',
+  },
+  'status.projectCompleted': {
+    'pt-BR': 'Concluído',
+    en: 'Completed',
+    es: 'Completado',
+  },
+  'status.sprintCompleted': {
+    'pt-BR': 'Concluída',
+    en: 'Completed',
+    es: 'Completada',
+  },
+  'filters.searchPlaceholder': {
+    'pt-BR': 'Buscar por nome ou código...',
+    en: 'Search by name or code...',
+    es: 'Buscar por nombre o código...',
+  },
+  'filters.status.all': {
+    'pt-BR': 'Todas as situações',
+    en: 'All statuses',
+    es: 'Todos los estados',
+  },
+  'filters.status.in_progress': {
+    'pt-BR': 'Em andamento',
+    en: 'In progress',
+    es: 'En curso',
+  },
+  'filters.status.review': {
+    'pt-BR': 'Aguardando revisão',
+    en: 'Awaiting review',
+    es: 'En revisión',
+  },
+  'filters.status.completed': {
+    'pt-BR': 'Concluídas',
+    en: 'Completed',
+    es: 'Completadas',
+  },
+  'filters.squad.all': {
+    'pt-BR': 'Todas as squads',
+    en: 'All squads',
+    es: 'Todos los squads',
+  },
+  'filters.sort.recent': {
+    'pt-BR': 'Mais recentes',
+    en: 'Most recent',
+    es: 'Más recientes',
+  },
+  'filters.sort.name': {
+    'pt-BR': 'Nome (A-Z)',
+    en: 'Name (A-Z)',
+    es: 'Nombre (A-Z)',
+  },
+  'filters.clear': {
+    'pt-BR': 'Limpar filtros',
+    en: 'Clear filters',
+    es: 'Limpiar filtros',
+  },
+  'filters.showingCount': {
+    'pt-BR': 'Exibindo {count} de {total}',
+    en: 'Showing {count} of {total}',
+    es: 'Mostrando {count} de {total}',
+  },
+  'filters.noResults': {
+    'pt-BR': 'Nenhuma operação encontrada com os filtros selecionados.',
+    en: 'No operations found with selected filters.',
+    es: 'No se encontraron operaciones con los filtros seleccionados.',
+  },
+  'delivery.guide': {
+    'pt-BR': 'Guia da entrega',
+    en: 'Delivery guide',
+    es: 'Guía de entrega',
+  },
+  'delivery.guideGenerating': {
+    'pt-BR': 'Gerando guia...',
+    en: 'Generating guide...',
+    es: 'Generando guía...',
+  },
+  'delivery.guideNotAvailable': {
+    'pt-BR': 'Guia ainda não disponível. Conclua as entregas da sprint para gerar.',
+    en: 'Guide not available yet. Complete sprint deliveries to generate.',
+    es: 'Guía aún no disponible. Complete las entregas del sprint para generar.',
+  },
+  'delivery.runAndValidate': {
+    'pt-BR': 'Executar e validar',
+    en: 'Run and validate',
+    es: 'Ejecutar y validar',
+  },
+  'delivery.runAndValidateDesc': {
+    'pt-BR': 'Instruções para abrir, rodar comandos e validar a versão entregue.',
+    en: 'Instructions to open, run commands, and validate the delivered version.',
+    es: 'Instrucciones para abrir, ejecutar comandos y validar la versión entregada.',
+  },
+  'delivery.runAndValidateFolder': {
+    'pt-BR': 'Pasta do projeto',
+    en: 'Project folder',
+    es: 'Carpeta del proyecto',
+  },
+  'delivery.runAndValidatePrereqs': {
+    'pt-BR': 'Pré-requisitos',
+    en: 'Prerequisites',
+    es: 'Prerrequisitos',
+  },
+  'delivery.runAndValidateCommands': {
+    'pt-BR': 'Comandos de inicialização',
+    en: 'Start commands',
+    es: 'Comandos de inicio',
+  },
+  'delivery.runAndValidateUrl': {
+    'pt-BR': 'URL / Porta',
+    en: 'URL / Port',
+    es: 'URL / Puerto',
+  },
+  'delivery.runAndValidateCreds': {
+    'pt-BR': 'Credenciais demonstrativas',
+    en: 'Demo credentials',
+    es: 'Credenciales demostrativas',
+  },
+  'delivery.runAndValidateTestFlow': {
+    'pt-BR': 'Fluxo de teste e validação',
+    en: 'Test and validation flow',
+    es: 'Flujo de prueba y validación',
+  },
+  'delivery.runAndValidateExpected': {
+    'pt-BR': 'Resultado esperado',
+    en: 'Expected result',
+    es: 'Resultado esperado',
+  },
+  'delivery.runAndValidateLimitations': {
+    'pt-BR': 'Limitações conhecidas',
+    en: 'Known limitations',
+    es: 'Limitaciones conocidas',
+  },
+  'delivery.runAndValidateHowToStop': {
+    'pt-BR': 'Como parar',
+    en: 'How to stop',
+    es: 'Cómo parar',
+  },
+  'delivery.runAndValidatePlaceholder': {
+    'pt-BR':
+      '# Como Executar e Validar\n\n## 1. Pré-requisitos\n- Node.js LTS\n\n## 2. Inicialização\ncd <pasta>\nnpm install\nnpm start\n\n## 3. URL e Acesso\n- http://localhost:4355\n\n## 4. Roteiro de Teste\n1. Acessar tela...\n2. Validar funcionalidade...\n\n## 5. Como Parar\nCtrl+C',
+    en: '# How to Run and Validate\n\n## 1. Prerequisites\n- Node.js LTS\n\n## 2. Start\ncd <folder>\nnpm install\nnpm start\n\n## 3. URL & Access\n- http://localhost:4355\n\n## 4. Test Flow\n1. Open page...\n2. Validate feature...\n\n## 5. How to Stop\nCtrl+C',
+    es: '# Cómo Ejecutar y Validar\n\n## 1. Prerrequisitos\n- Node.js LTS\n\n## 2. Inicio\ncd <carpeta>\nnpm install\nnpm start\n\n## 3. URL y Acceso\n- http://localhost:4355\n\n## 4. Flujo de Prueba\n1. Abrir página...\n2. Validar función...\n\n## 5. Cómo Parar\nCtrl+C',
+  },
+  'delivery.documenter': {
+    'pt-BR': 'Documentador responsável',
+    en: 'Lead documenter',
+    es: 'Documentador responsable',
+  },
+  'delivery.version': {
+    'pt-BR': 'Versão do guia',
+    en: 'Guide version',
+    es: 'Versión de la guía',
+  },
+  'delivery.outdatedNotice': {
+    'pt-BR': 'Este guia pode estar desatualizado em relação a alterações recentes.',
+    en: 'This guide may be outdated relative to recent changes.',
+    es: 'Esta guía puede estar desactualizada respecto a cambios recientes.',
+  },
+  'squad.recommendedComposition': {
+    'pt-BR': 'Composição recomendada',
+    en: 'Recommended composition',
+    es: 'Composición recomendada',
+  },
+  'squad.recommendationMet': {
+    'pt-BR': 'Recomendação atendida',
+    en: 'Recommendation met',
+    es: 'Recomendación cumplida',
+  },
+  'squad.missingQa': {
+    'pt-BR': 'Falta pelo menos 1 QA',
+    en: 'Missing at least 1 QA',
+    es: 'Falta al menos 1 QA',
+  },
+  'squad.missingDocs': {
+    'pt-BR': 'Falta pelo menos 1 Documentador',
+    en: 'Missing at least 1 Documenter',
+    es: 'Falta al menos 1 Documentador',
+  },
+  'squad.missingBoth': {
+    'pt-BR': 'Falta 1 QA e 1 Documentador',
+    en: 'Missing 1 QA and 1 Documenter',
+    es: 'Falta 1 QA y 1 Documentador',
+  },
+  'squad.addSpecialist': {
+    'pt-BR': 'Adicionar especialista em arquitetura',
+    en: 'Add architecture specialist',
+    es: 'Añadir especialista en arquitectura',
+  },
+  'squad.specialistArchitect': {
+    'pt-BR': 'Arquiteto especialista',
+    en: 'Specialist architect',
+    es: 'Arquitecto especialista',
   },
 } as const satisfies Record<string, Record<Locale, string>>;
 export type LabelId = keyof typeof LABELS;

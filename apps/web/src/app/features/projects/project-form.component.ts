@@ -4,7 +4,7 @@ import { TranslatePipe } from '../../core/i18n/i18n.service';
 import { PortraitService } from '../../core/appearance/portrait.service';
 import { Component, input, output, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Agent, Project, Squad, uuid, timestamp } from '@domain/models';
+import { Agent, Project, Squad, uuid, timestamp, RunAndValidateInstructions } from '@domain/models';
 import { portrait } from '@domain/catalog';
 import { WorkspaceStore } from '../../core/workspace/workspace.store';
 import { IconComponent } from '../../shared/icon.component';
@@ -193,16 +193,20 @@ export class TeamsCtaComponent {
                     </em>
                   }
                 </span>
-                <button
-                  class="ops-doc-agent group"
-                  type="button"
-                  (click)="$event.preventDefault(); $event.stopPropagation(); meeting.emit(row.key)"
-                  [attr.aria-label]="('ui.co-write' | t) + row.title"
-                >
-                  @for (a of members(); track a.id) {
-                    <img [src]="portrait(a)" [alt]="a.name" />
-                  }
-                </button>
+                @if (row.key !== 'runAndValidate') {
+                  <button
+                    class="ops-doc-agent group"
+                    type="button"
+                    (click)="
+                      $event.preventDefault(); $event.stopPropagation(); meeting.emit(row.key)
+                    "
+                    [attr.aria-label]="('ui.co-write' | t) + (row.title | uiLabel)"
+                  >
+                    @for (a of members(); track a.id) {
+                      <img [src]="portrait(a)" [alt]="a.name" />
+                    }
+                  </button>
+                }
               </summary>
               <div class="ops-doc-body">
                 @if (row.key === 'scope') {
@@ -298,6 +302,39 @@ export class TeamsCtaComponent {
                     maxlength="8000"
                     [attr.aria-label]="'project.vision' | t"
                   ></textarea>
+                } @else if (row.key === 'runAndValidate') {
+                  <p class="hint">
+                    {{ 'delivery.runAndValidateDesc' | t }}
+                  </p>
+                  <div class="field full">
+                    <label for="rvInstructions">{{ 'delivery.runAndValidate' | t }}</label>
+                    <textarea
+                      id="rvInstructions"
+                      class="code"
+                      name="rvInstructions"
+                      [(ngModel)]="runAndValidate().instructions"
+                      [ngModelOptions]="standalone"
+                      rows="14"
+                      maxlength="20000"
+                      [placeholder]="'delivery.runAndValidatePlaceholder' | t"
+                    ></textarea>
+                  </div>
+                  <div class="field">
+                    <label for="rvDocAgent">{{ 'delivery.documenter' | t }}</label>
+                    <select
+                      id="rvDocAgent"
+                      name="rvDocAgent"
+                      [(ngModel)]="draft().documenterId"
+                      [ngModelOptions]="standalone"
+                    >
+                      <option value="">{{ 'ui.choose-agent' | t }}</option>
+                      @for (agent of documenters(); track agent.id) {
+                        <option [value]="agent.id">
+                          {{ agent.name }} ({{ agent.specialty || agent.role }})
+                        </option>
+                      }
+                    </select>
+                  </div>
                 } @else {
                   <textarea
                     name="glossary"
@@ -326,6 +363,7 @@ export class ProjectFormComponent {
     { key: 'scope', title: 'ESCOPO', path: 'docs/project/scope.md' },
     { key: 'glossary', title: 'GLOSSÁRIO', path: 'docs/project/glossary.md' },
     { key: 'architecture', title: 'ARQUITETURA', path: 'docs/architecture/' },
+    { key: 'runAndValidate', title: 'delivery.runAndValidate', path: 'docs/run-and-validate.md' },
   ];
   pad(n: number): string {
     return String(n).padStart(3, '0');
@@ -333,9 +371,21 @@ export class ProjectFormComponent {
   readonly adrStatuses = ['Proposto', 'Aceito', 'Rejeitado', 'Substituído'];
   filled(key: string): boolean {
     const d = this.draft();
-    return key === 'scope'
-      ? !!(d.scopeIn + d.scopeOut).trim()
-      : !!d[key as 'vision' | 'glossary' | 'architecture']?.trim();
+    if (key === 'scope') return !!(d.scopeIn + d.scopeOut).trim();
+    if (key === 'runAndValidate') {
+      const rv = d.runAndValidate;
+      return !!(rv && (rv.instructions?.trim() || rv.startCommands || rv.url));
+    }
+    return !!d[key as 'vision' | 'glossary' | 'architecture']?.trim();
+  }
+  runAndValidate(): RunAndValidateInstructions {
+    return (this.draft().runAndValidate ??= { folder: this.draft().folder || '' });
+  }
+  documenters(): Agent[] {
+    const squad = this.store.workspace()?.squads.find((squad) => squad.id === this.draft().squadId);
+    return (squad?.agentIds || [])
+      .map((id) => this.store.agent(id))
+      .filter((agent): agent is Agent => !!agent && agent.role === 'docs');
   }
   members(): Agent[] {
     const q = this.store.workspace()?.squads.find((q) => q.id === this.draft().squadId);

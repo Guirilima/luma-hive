@@ -5,7 +5,15 @@ import { FEATURE_SCOPES } from '@domain/workspace';
 import { projectExport, zipFiles, slug } from '@domain/exports';
 import { Component, inject, signal, computed, effect, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Project, STATUSES, FeatureStatus, Sprint, uuid } from '@domain/models';
+import {
+  Project,
+  STATUSES,
+  FeatureStatus,
+  Sprint,
+  uuid,
+  timestamp,
+  DeliveryGuide,
+} from '@domain/models';
 import { portrait, ROLES } from '@domain/catalog';
 import { projectGaps } from '@domain/workspace';
 import { ProjectFormComponent, TeamsCtaComponent } from './project-form.component';
@@ -57,10 +65,231 @@ export class ProjectsComponent {
     'scopeOut',
     'glossary',
     'architecture',
+    'runAndValidate',
+    'documenterId',
   ] as const;
   private savedDocs = '';
 
   readonly search = signal('');
+  readonly opsSearch = signal('');
+  readonly opsStatusFilter = signal<'all' | 'running' | 'review' | 'completed'>('all');
+  readonly opsSquadFilter = signal<string>('all');
+  readonly opsSortFilter = signal<'recent' | 'name'>('recent');
+
+  isProjectCompleted(p: Project): boolean {
+    return (
+      p.features.length > 0 &&
+      p.features.every((f) => f.status === 'done') &&
+      !p.features.some((f) => f.status === 'running') &&
+      !(this.store.project()?.id === p.id && this.execution.busy())
+    );
+  }
+
+  isProjectInReview(p: Project): boolean {
+    return p.features.some((f) => f.status === 'review');
+  }
+
+  isSprintCompleted(sprintId: string): boolean {
+    const fs = this.sprintFeatures(sprintId);
+    return fs.length > 0 && fs.every((f) => f.status === 'done') && !this.sprintRunning(sprintId);
+  }
+
+  projectLastUpdated(p: Project): string {
+    return p.logs?.at(-1)?.at || p.handoffs?.at(-1)?.at || p.createdAt || '';
+  }
+
+  readonly filteredOperations = computed(() => {
+    let list = this.store.workspace()?.projects || [];
+    const query = this.opsSearch().trim().toLowerCase();
+    if (query) {
+      list = list.filter(
+        (p) =>
+          p.name.toLowerCase().includes(query) ||
+          p.code.toLowerCase().includes(query) ||
+          (p.briefing && p.briefing.toLowerCase().includes(query)),
+      );
+    }
+    const st = this.opsStatusFilter();
+    if (st === 'completed') {
+      list = list.filter((p) => this.isProjectCompleted(p));
+    } else if (st === 'review') {
+      list = list.filter((p) => this.isProjectInReview(p));
+    } else if (st === 'running') {
+      list = list.filter((p) => !this.isProjectCompleted(p) && !this.isProjectInReview(p));
+    }
+    const sq = this.opsSquadFilter();
+    if (sq !== 'all') {
+      list = list.filter((p) => p.squadId === sq);
+    }
+    const sort = this.opsSortFilter();
+    list = [...list].sort((a, b) => {
+      if (sort === 'name') return a.name.localeCompare(b.name);
+      return this.projectLastUpdated(b).localeCompare(this.projectLastUpdated(a));
+    });
+    return list;
+  });
+
+  readonly hasOpsFilters = computed(
+    () =>
+      !!this.opsSearch().trim() ||
+      this.opsStatusFilter() !== 'all' ||
+      this.opsSquadFilter() !== 'all' ||
+      this.opsSortFilter() !== 'recent',
+  );
+
+  clearOpsFilters(): void {
+    this.opsSearch.set('');
+    this.opsStatusFilter.set('all');
+    this.opsSquadFilter.set('all');
+    this.opsSortFilter.set('recent');
+  }
+
+  readonly selectedGuideSprintId = signal<string>('');
+  readonly selectedGuide = computed(() => {
+    const sId = this.selectedGuideSprintId();
+    if (!sId) return null;
+    return this.getDeliveryGuide(sId) || null;
+  });
+
+  hasDeliveryGuide(sprintId: string): boolean {
+    const p = this.store.project();
+    return !!p?.deliveryGuides?.some((g) => g.sprintId === sprintId);
+  }
+
+  getDeliveryGuide(sprintId: string): DeliveryGuide | undefined {
+    const p = this.store.project();
+    return p?.deliveryGuides?.find((g) => g.sprintId === sprintId);
+  }
+
+  isGuideGenerating(sprintId: string): boolean {
+    const g = this.getDeliveryGuide(sprintId);
+    return g?.status === 'generating';
+  }
+
+  getDeliveryGuideTitle(sprintId: string): string {
+    if (!this.isSprintCompleted(sprintId) && !this.hasDeliveryGuide(sprintId)) {
+      return this.i18n.text('delivery.guideNotAvailable');
+    }
+    return this.i18n.text('delivery.guide');
+  }
+
+  openDeliveryGuide(sprintId: string): void {
+    const current = this.store.project();
+    if (!current) return;
+    const p = structuredClone(current);
+    let guide = this.getDeliveryGuide(sprintId);
+    if (!guide && this.isSprintCompleted(sprintId)) {
+      const sprint = p.sprints.find((s) => s.id === sprintId);
+      const sFeatures = this.sprintFeatures(sprintId);
+      const docAgent = this.store.team().find((a) => a.id === p.documenterId && a.role === 'docs');
+      const newGuide: DeliveryGuide = {
+        id: uuid('guide'),
+        sprintId,
+        version: 1,
+        createdAt: timestamp(),
+        updatedAt: timestamp(),
+        documenterId: docAgent?.id || '',
+        documenterName: docAgent?.name || this.i18n.text('delivery.unassigned'),
+        source: 'manual',
+        status: 'draft',
+        featureKeys: sFeatures.map((f) => f.key),
+        runAndValidate: structuredClone(p.runAndValidate || { folder: p.folder }),
+        summary:
+          this.i18n.text('delivery.approvedFeatures') +
+          ': ' +
+          sFeatures.map((f) => f.key + ' (' + f.title + ')').join(', '),
+      };
+      if (!p.deliveryGuides) p.deliveryGuides = [];
+      p.deliveryGuides.push(newGuide);
+      guide = newGuide;
+      if (!this.store.saveProject(p)) return;
+    }
+    this.selectedGuideSprintId.set(sprintId);
+  }
+
+  closeDeliveryGuide(): void {
+    this.selectedGuideSprintId.set('');
+  }
+
+  updateDeliveryGuide(sprintId: string): void {
+    const current = this.store.project();
+    if (!current) return;
+    const p = structuredClone(current);
+    const guide = p.deliveryGuides?.find((guide) => guide.sprintId === sprintId);
+    if (guide) {
+      guide.version = (guide.version || 1) + 1;
+      guide.updatedAt = timestamp();
+      guide.status = 'draft';
+      guide.source = 'manual';
+      const documenter = this.store
+        .team()
+        .find((agent) => agent.id === p.documenterId && agent.role === 'docs');
+      guide.documenterId = documenter?.id || '';
+      guide.documenterName = documenter?.name || this.i18n.text('delivery.unassigned');
+      guide.outdatedReason = undefined;
+      if (p.runAndValidate) {
+        guide.runAndValidate = structuredClone(p.runAndValidate);
+      }
+      this.store.saveProject(p);
+    }
+  }
+
+  exportDeliveryGuideMarkdown(sprintId: string): void {
+    const guide = this.getDeliveryGuide(sprintId);
+    const p = this.store.project();
+    if (!guide || !p) return;
+    const sprint = p.sprints.find((s) => s.id === sprintId);
+    const content = this.guideMarkdown(guide);
+    const md =
+      '# ' +
+      this.i18n.text('delivery.guide') +
+      ' — ' +
+      p.name +
+      ' / ' +
+      (sprint?.name || sprintId) +
+      ' (v' +
+      guide.version +
+      ')\n\n' +
+      this.i18n.text('delivery.documenter') +
+      ': ' +
+      guide.documenterName +
+      '\n\n' +
+      (guide.source === 'manual' ? this.i18n.text('delivery.manualNotice') + '\n\n' : '') +
+      guide.summary +
+      '\n\n' +
+      content;
+    download(
+      `${slug(p.code)}-${slug(sprint?.name || sprintId)}-guia-entrega-v${guide.version}.md`,
+      md,
+      'text/markdown',
+    );
+  }
+
+  guideMarkdown(guide: DeliveryGuide): string {
+    if (guide.runAndValidate.instructions?.trim()) return guide.runAndValidate.instructions;
+    const fields: [keyof typeof guide.runAndValidate, string][] = [
+      ['folder', 'delivery.runAndValidateFolder'],
+      ['prerequisites', 'delivery.runAndValidatePrereqs'],
+      ['installCommands', 'delivery.installCommands'],
+      ['startCommands', 'delivery.runAndValidateCommands'],
+      ['url', 'delivery.runAndValidateUrl'],
+      ['demoCredentials', 'delivery.runAndValidateCreds'],
+      ['testFlow', 'delivery.runAndValidateTestFlow'],
+      ['expectedResult', 'delivery.runAndValidateExpected'],
+      ['knownLimitations', 'delivery.runAndValidateLimitations'],
+      ['howToStop', 'delivery.runAndValidateHowToStop'],
+    ];
+    return fields
+      .map(
+        ([field, label]) =>
+          '## ' +
+          this.i18n.text(label) +
+          '\n' +
+          (guide.runAndValidate[field] || this.i18n.text('delivery.unreported')),
+      )
+      .join('\n\n');
+  }
+
   readonly board = signal(false);
   readonly statuses = STATUSES;
   readonly sprintDraft = signal<Sprint | null>(null);
@@ -256,8 +485,9 @@ export class ProjectsComponent {
       if (!project) return;
       const draft = untracked(() => this.documentDraft());
       if (!draft || draft.id !== project.id || this.docFingerprint(draft) === this.savedDocs) {
-        this.documentDraft.set(structuredClone(project));
-        this.savedDocs = this.docFingerprint(project);
+        const next = this.documentCopy(project);
+        this.documentDraft.set(next);
+        this.savedDocs = this.docFingerprint(next);
       }
     });
   }
@@ -269,6 +499,12 @@ export class ProjectsComponent {
   squadName(squadId?: string): string {
     if (!squadId) return this.i18n.text('ui.no-squad');
     return this.store.workspace()?.squads?.find((s) => s.id === squadId)?.name || 'SQUAD';
+  }
+
+  private documentCopy(project: Project): Project {
+    const draft = structuredClone(project);
+    draft.runAndValidate ??= { folder: project.folder };
+    return draft;
   }
 
   private docFingerprint(project: Project): string {
@@ -303,8 +539,9 @@ export class ProjectsComponent {
   resetDocuments(): void {
     const p = this.store.project();
     if (p) {
-      this.documentDraft.set(structuredClone(p));
-      this.savedDocs = this.docFingerprint(p);
+      const next = this.documentCopy(p);
+      this.documentDraft.set(next);
+      this.savedDocs = this.docFingerprint(next);
     }
   }
 

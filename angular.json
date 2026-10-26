@@ -32,7 +32,8 @@
               "apps/web/src/styles/themes/pixel.css",
               "apps/web/src/styles/agent-portraits.css",
               "apps/web/src/styles/observability-shell.css",
-              "apps/web/src/styles/squad-activity.css"
+              "apps/web/src/styles/squad-activity.css",
+              "apps/web/src/styles/map-chrome.css"
             ]
           },
           "configurations": {

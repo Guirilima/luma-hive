@@ -38,16 +38,79 @@
     <section class="home-section home-projects-wrap">
       <div class="home-section-head">
         <span>{{ 'dashboard.operations-161' | t }}</span>
-        <span>{{ pad(store.workspace()?.projects?.length || 0) }}</span>
+        <span>
+          {{ pad(filteredProjects().length) }} / {{ pad(store.workspace()?.projects?.length || 0) }}
+        </span>
       </div>
+
+      <!-- Barra de Filtros MEL-010 -->
+      <div class="project-filters-bar">
+        <div class="search-box">
+          <luma-icon name="search" />
+          <input
+            type="search"
+            [placeholder]="'filters.searchPlaceholder' | t"
+            [value]="searchQuery()"
+            (input)="searchQuery.set($any($event.target).value)"
+            aria-label="Buscar operações"
+          />
+        </div>
+        <select
+          [value]="statusFilter()"
+          (change)="statusFilter.set($any($event.target).value)"
+          [attr.aria-label]="'filters.byStatus' | t"
+        >
+          <option value="all">{{ 'filters.status.all' | t }}</option>
+          <option value="running">{{ 'filters.status.in_progress' | t }}</option>
+          <option value="review">{{ 'filters.status.review' | t }}</option>
+          <option value="completed">{{ 'filters.status.completed' | t }}</option>
+        </select>
+        <select
+          [value]="squadFilter()"
+          (change)="squadFilter.set($any($event.target).value)"
+          [attr.aria-label]="'filters.bySquad' | t"
+        >
+          <option value="all">{{ 'filters.squad.all' | t }}</option>
+          @for (sq of store.workspace()?.squads; track sq.id) {
+            <option [value]="sq.id">{{ sq.name }}</option>
+          }
+        </select>
+        <select
+          [value]="sortFilter()"
+          (change)="sortFilter.set($any($event.target).value)"
+          [attr.aria-label]="'filters.sort' | t"
+        >
+          <option value="recent">{{ 'filters.sort.recent' | t }}</option>
+          <option value="name">{{ 'filters.sort.name' | t }}</option>
+        </select>
+        @if (hasActiveFilters()) {
+          <button class="btn ghost sm" (click)="clearFilters()">
+            <luma-icon name="close" />
+            {{ 'filters.clear' | t }}
+          </button>
+        }
+      </div>
+
       <div class="home-projects">
-        @for (project of store.workspace()?.projects; track project.id) {
-          <article class="home-project" [class.current]="project.id === store.project()?.id">
+        @for (project of filteredProjects(); track project.id) {
+          <article
+            class="home-project"
+            [class.current]="project.id === store.project()?.id"
+            [class.completed]="isProjectCompleted(project)"
+          >
             <div class="between">
               <span class="eyebrow">{{ project.code }}</span>
-              @if (project.id === store.project()?.id) {
-                <span class="tag accent">{{ 'dashboard.active-162' | t }}</span>
-              }
+              <div class="flex gap-xs">
+                @if (project.id === store.project()?.id) {
+                  <span class="tag accent">{{ 'dashboard.active-162' | t }}</span>
+                }
+                @if (isProjectCompleted(project)) {
+                  <span class="tag success completed-badge">
+                    <luma-icon name="check" />
+                    {{ 'status.projectCompleted' | t }}
+                  </span>
+                }
+              </div>
             </div>
             <h3>{{ project.name }}</h3>
             <p>{{ project.briefing.slice(0, 110) || ('ui.briefing-pending' | t) }}</p>
@@ -105,6 +168,15 @@
               </div>
             </div>
           </article>
+        }
+        @if (filteredProjects().length === 0) {
+          <div class="project-filters-empty">
+            <luma-icon name="search" />
+            <p>{{ 'filters.noResults' | t }}</p>
+            <button class="btn ghost sm" (click)="clearFilters()">
+              {{ 'filters.clear' | t }}
+            </button>
+          </div>
         }
         <button class="home-project new" (click)="dialogs.open('project')">
           <luma-icon name="plus" />

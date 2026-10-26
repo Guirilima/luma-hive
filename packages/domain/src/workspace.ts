@@ -144,7 +144,9 @@ export const slug = (value: string) =>
     .replace(/^-|-$/g, '')
     .slice(0, 60) || 'operation';
 export const squadMembers = (s: Squad) => [
-  ...new Set([s.commanderId, s.adrId, s.prdId, ...s.operatorIds].filter(Boolean)),
+  ...new Set(
+    [s.commanderId, s.adrId, s.prdId, ...(s.specialistIds || []), ...s.operatorIds].filter(Boolean),
+  ),
 ];
 export function assignDesks(agents: Agent[]): void {
   const taken = new Set<string>();
@@ -341,6 +343,7 @@ export function normalizeWorkspace(input: unknown, forImport = false): Workspace
   }
   for (const s of raw.squads) {
     check(s.id);
+    s.specialistIds = (s.specialistIds || []).filter((id) => agentIds.has(id));
     s.operatorIds = (s.operatorIds || []).filter((id) => agentIds.has(id));
     s.agentIds = squadMembers(s).filter((id) => agentIds.has(id));
   }

@@ -49,16 +49,43 @@
     <div class="system-meta">
       <luma-attention-trigger />
       <luma-usage />
-      <button
-        class="mode-indicator"
-        [class.connected]="!!providers.health()[activeProvider()]?.version"
-        (click)="dialogs.open('settings', undefined, activeProvider())"
-        [attr.aria-label]="('ui.status-of' | t) + activeProvider() + ' CLI'"
+      <div
+        class="connector-status-list"
+        [attr.data-connector-count]="connectedProviders().length"
+        [attr.aria-label]="'connectors.available' | t"
+        role="group"
       >
-        <i></i>
-        {{ activeProvider().toUpperCase() }} CLI / {{ cliVersion() }} /
-        {{ store.settings()?.providers?.[activeProvider()]?.permission?.toUpperCase() }}
-      </button>
+        @for (provider of connectedProviders(); track provider) {
+          <button
+            type="button"
+            class="mode-indicator connector-status connected"
+            [class.current-provider]="activeProvider() === provider"
+            [attr.data-provider]="provider"
+            [title]="connectorTitle(provider)"
+            [attr.aria-label]="connectorTitle(provider)"
+            (click)="dialogs.open('settings', undefined, provider)"
+          >
+            <i aria-hidden="true"></i>
+            <span>
+              {{
+                connectedProviders().length === 1
+                  ? connectorName(provider) + ' CLI'
+                  : connectorShort(provider)
+              }}
+            </span>
+          </button>
+        } @empty {
+          <button
+            type="button"
+            class="mode-indicator connector-status offline"
+            (click)="dialogs.open('settings', undefined, 'execution')"
+            [title]="'connectors.none' | t"
+          >
+            <i aria-hidden="true"></i>
+            <span>{{ 'connectors.available' | t }} · 0</span>
+          </button>
+        }
+      </div>
       <button
         class="icon-button"
         [disabled]="!store.workspace()"

@@ -46,7 +46,7 @@ export class SquadEditorComponent implements OnDestroy {
   clickChoice(item: Agent): void {
     this.pointerPick(
       item.id,
-      () => this.cursor.set(item.name),
+      () => this.cursor.set(item.id),
       () => this.choose(item),
     );
   }
@@ -78,15 +78,53 @@ export class SquadEditorComponent implements OnDestroy {
     const q = this.existing;
     return (
       !q ||
-      JSON.stringify([q.name, q.commanderId, q.adrId, q.prdId, q.operatorIds]) !==
+      JSON.stringify([
+        q.name,
+        q.commanderId,
+        q.adrId,
+        q.prdId,
+        q.specialistIds || [],
+        q.operatorIds,
+      ]) !==
         JSON.stringify([
           this.draft.name,
           this.draft.commanderId,
           this.draft.adrId,
           this.draft.prdId,
+          this.draft.specialistIds || [],
           this.draft.operatorIds,
         ])
     );
+  }
+  allDraftMembers(): Agent[] {
+    const ids = [
+      this.draft.commanderId,
+      this.draft.adrId,
+      this.draft.prdId,
+      ...(this.draft.specialistIds || []),
+      ...this.draft.operatorIds,
+    ].filter(Boolean);
+    return [...new Set(ids)].map((id) => this.agent(id)).filter((a): a is Agent => !!a);
+  }
+  qaCount(): number {
+    return this.allDraftMembers().filter((a) => a.role === 'qa').length;
+  }
+  docsCount(): number {
+    return this.allDraftMembers().filter((a) => a.role === 'docs').length;
+  }
+  recommendationMet(): boolean {
+    return this.qaCount() >= 1 && this.docsCount() >= 1;
+  }
+  recommendationText(): string {
+    const q = this.qaCount();
+    const d = this.docsCount();
+    if (q >= 1 && d >= 1) return this.i18n.text('squad.recommendationMet');
+    if (q === 0 && d === 0) return this.i18n.text('squad.missingBoth');
+    if (q === 0) return this.i18n.text('squad.missingQa');
+    return this.i18n.text('squad.missingDocs');
+  }
+  recommendationTooltip(): string {
+    return `${this.i18n.text('squad.recommendedComposition')}: ${this.i18n.text('squad.coverageQa')} ${this.qaCount()}/1, ${this.i18n.text('squad.coverageDocs')} ${this.docsCount()}/1 — ${this.recommendationText()}`;
   }
   missing(): string[] {
     const out = [];
@@ -134,23 +172,25 @@ export class SquadEditorComponent implements OnDestroy {
   }
   currentPickId(): string {
     const p = this.pick();
-    return p?.slot === 'commander'
-      ? this.draft.commanderId
-      : p?.slot === 'adr'
-        ? this.draft.adrId
-        : p?.slot === 'prd'
-          ? this.draft.prdId
-          : p
-            ? this.draft.operatorIds[p.index] || ''
-            : '';
+    if (!p) return '';
+    if (p.slot === 'commander') return this.draft.commanderId;
+    if (p.slot === 'adr') return this.draft.adrId;
+    if (p.slot === 'prd') return this.draft.prdId;
+    if (p.slot === 'specialist') return (this.draft.specialistIds || [])[p.index] || '';
+    return this.draft.operatorIds[p.index] || '';
   }
   currentCategory(): string {
     const role = this.agent(this.currentPickId())?.role;
-    return CATEGORIES.find((c) => c.roles.includes(role || ''))?.key || '';
+    if (!role) return '';
+    return CATEGORIES.find((c) => c.roles.includes(role))?.key || '';
   }
   setCategory(key: string): void {
     this.category = key;
-    this.cursor.set(this.agent(this.currentPickId())?.name || '');
+    if (this.currentCategory() === key && this.currentPickId()) {
+      this.cursor.set(this.currentPickId());
+    } else {
+      this.cursor.set(this.choices()[0]?.id || '');
+    }
   }
   backCategory(): void {
     this.clearPickClick();
@@ -215,8 +255,8 @@ export class SquadEditorComponent implements OnDestroy {
         : item && this.taken(item.id)
           ? this.i18n.text('ui.already-in-squad')
           : item?.id === this.currentPickId()
-            ? 'Manter'
-            : 'Escolher';
+            ? this.i18n.text('squad.keepAgent')
+            : this.i18n.text('squad.chooseAgent');
   }
   pickerTitle(): string {
     const p = this.pick();
@@ -224,11 +264,13 @@ export class SquadEditorComponent implements OnDestroy {
       ? (p.index < 0 ? this.i18n.text('ui.new-operator') : 'OPERADOR') +
           ' / ' +
           (CATEGORIES.find((c) => c.key === this.category)?.label.toUpperCase() || 'ESPECIALIDADE')
-      : p?.slot === 'commander'
-        ? 'COMANDANTE'
-        : p?.slot === 'adr'
-          ? this.i18n.text('ui.adr-analyst')
-          : this.i18n.text('ui.prd-analyst');
+      : p?.slot === 'specialist'
+        ? this.i18n.text(p.index < 0 ? 'squad.newArchitect' : 'squad.specialistArchitect')
+        : p?.slot === 'commander'
+          ? 'COMANDANTE'
+          : p?.slot === 'adr'
+            ? this.i18n.text('ui.adr-analyst')
+            : this.i18n.text('ui.prd-analyst');
   }
   categoryDescription(): string {
     const c = this.selectedCategory();
@@ -236,20 +278,22 @@ export class SquadEditorComponent implements OnDestroy {
     return c.description + (chips.length ? ' Opções: ' + chips.join(', ') + '.' : '');
   }
   pickerIndex(): number {
-    return this.categoryMode()
-      ? Math.max(
-          0,
-          this.categories.findIndex((c) => c.key === this.selectedCategory()?.key),
-        )
-      : Math.max(
-          0,
-          this.choices().findIndex((a) => a.name === this.choice()?.name),
-        );
+    if (this.categoryMode()) {
+      return Math.max(
+        0,
+        this.categories.findIndex((c) => c.key === this.selectedCategory()?.key),
+      );
+    }
+    const current = this.choice();
+    return Math.max(
+      0,
+      this.choices().findIndex((a) => a.id === current?.id),
+    );
   }
   stripTransform(): string {
     const step = this.categoryMode() ? 180 : 102,
       width = this.categoryMode() ? 85 : 46;
-    return 'translateX(calc(50% - ' + (this.pickerIndex() * step + width) + 'px))';
+    return `translateX(-${this.pickerIndex() * step + width}px)`;
   }
   moveCursor(dir: number): void {
     this.clearPickClick();
@@ -258,7 +302,8 @@ export class SquadEditorComponent implements OnDestroy {
       this.categoryCursor.set(list[(this.pickerIndex() + dir + list.length) % list.length].key);
     } else {
       const list = this.choices();
-      this.cursor.set(list[(this.pickerIndex() + dir + list.length) % list.length]?.name || '');
+      const next = list[(this.pickerIndex() + dir + list.length) % list.length];
+      this.cursor.set(next?.id || '');
     }
   }
   confirmPick(): void {
@@ -277,7 +322,10 @@ export class SquadEditorComponent implements OnDestroy {
     return this.store.workspace()?.squads.find((s) => s.id === this.draft?.id);
   }
   private newAgents: Agent[] = [];
-  readonly pick = signal<{ slot: 'commander' | 'adr' | 'prd' | 'op'; index: number } | null>(null);
+  readonly pick = signal<{
+    slot: 'commander' | 'adr' | 'prd' | 'specialist' | 'op';
+    index: number;
+  } | null>(null);
   readonly cursor = signal('');
   get categories() {
     return CATEGORIES.filter(
@@ -370,7 +418,12 @@ export class SquadEditorComponent implements OnDestroy {
       : [...this.draft.operatorIds, id];
   }
   agent(id: string): Agent | undefined {
-    return this.store.agent(id) || this.newAgents.find((a) => a.id === id);
+    return (
+      this.store.agent(id) ||
+      this.newAgents.find((a) => a.id === id) ||
+      this.presetAgents.find((a) => a.id === id) ||
+      this.store.agents().find((a) => a.name === id)
+    );
   }
   slotAgent(slot: string): Agent | undefined {
     return this.agent(slot === 'adr' ? this.draft.adrId : this.draft.prdId);
@@ -414,13 +467,22 @@ export class SquadEditorComponent implements OnDestroy {
     this.newAgents = [];
     this.closePick();
   }
-  openPick(slot: 'commander' | 'adr' | 'prd' | 'op', index = -1): void {
+  openPick(slot: 'commander' | 'adr' | 'prd' | 'specialist' | 'op', index = -1): void {
     this.clearPickClick();
     this.pick.set({ slot, index });
     this.query = '';
-    this.category = '';
-    this.cursor.set(this.agent(this.currentPickId())?.name || '');
-    this.categoryCursor.set(this.currentCategory());
+    const currentId = this.currentPickId();
+    const currentAgent = this.agent(currentId);
+    if (currentAgent) {
+      const cat = this.currentCategory();
+      this.category = cat;
+      this.categoryCursor.set(cat || this.categories[0]?.key || '');
+      this.cursor.set(currentAgent.id);
+    } else {
+      this.category = '';
+      this.categoryCursor.set(this.categories[0]?.key || '');
+      this.cursor.set('');
+    }
     setTimeout(() => document.querySelector<HTMLElement>('.sq-strip')?.focus(), 0);
   }
   taken(id: string): boolean {
@@ -432,13 +494,18 @@ export class SquadEditorComponent implements OnDestroy {
           ? this.draft.commanderId
           : position?.slot === 'adr'
             ? this.draft.adrId
-            : this.draft.prdId;
+            : position?.slot === 'prd'
+              ? this.draft.prdId
+              : position?.slot === 'specialist'
+                ? (this.draft.specialistIds || [])[position.index]
+                : '';
     return (
       id !== current &&
       [
         this.draft.commanderId,
         this.draft.adrId,
         this.draft.prdId,
+        ...(this.draft.specialistIds || []),
         ...this.draft.operatorIds,
       ].includes(id)
     );
@@ -449,7 +516,7 @@ export class SquadEditorComponent implements OnDestroy {
     const role =
       position.slot === 'commander'
         ? 'commander'
-        : position.slot === 'adr'
+        : position.slot === 'adr' || position.slot === 'specialist'
           ? 'architect'
           : position.slot === 'prd'
             ? 'po'
@@ -458,20 +525,34 @@ export class SquadEditorComponent implements OnDestroy {
     const definition =
       position.slot === 'op'
         ? CATEGORIES.find((c) => c.key === this.category)?.presets || []
-        : catalog.presets[position.slot];
+        : position.slot === 'specialist'
+          ? CATEGORIES.find((c) => c.key === 'architecture')?.presets || catalog.presets.adr
+          : catalog.presets[position.slot];
     const names = new Set(definition.map((p) => p.name));
     const fits = (a: Agent) =>
       (role ? a.role === role : a.role !== 'commander') &&
       (!this.category || CATEGORIES.find((c) => c.key === this.category)?.roles.includes(a.role));
     const choices: Agent[] = [];
+    const currentA = this.agent(this.currentPickId());
+    if (currentA && fits(currentA)) {
+      choices.push(currentA);
+    }
     definition.forEach((preset, index) => {
       const a =
         pool.find((a) => a.name === preset.name) ||
         this.presetAgents.find((a) => a.name === preset.name);
-      if (a && fits(a) && (!this.taken(a.id) || (position.slot === 'op' && index === 0)))
-        choices.push(a);
+      if (a && fits(a) && (!this.taken(a.id) || (position.slot === 'op' && index === 0))) {
+        if (!choices.some((c) => c.id === a.id)) {
+          choices.push(a);
+        }
+      }
     });
-    choices.push(...pool.filter((a) => !names.has(a.name) && fits(a) && !this.taken(a.id)));
+    choices.push(
+      ...pool.filter(
+        (a) =>
+          !names.has(a.name) && fits(a) && !this.taken(a.id) && !choices.some((c) => c.id === a.id),
+      ),
+    );
     return [
       ...choices,
       {
@@ -487,7 +568,8 @@ export class SquadEditorComponent implements OnDestroy {
   }
   choice(): Agent | undefined {
     const list = this.choices();
-    return list.find((a) => a.name === this.cursor()) || list[0];
+    const cur = this.cursor();
+    return list.find((a) => a.id === cur) || list.find((a) => a.name === cur) || list[0];
   }
   choose(item: Agent): void {
     this.clearPickClick();
@@ -498,7 +580,9 @@ export class SquadEditorComponent implements OnDestroy {
     const position = this.pick();
     if (!position || this.taken(item.id) || this.store.projectLocked()) return;
     let agent =
+      this.store.agents().find((a) => a.id === item.id) ||
       this.store.agents().find((a) => a.name === item.name) ||
+      this.newAgents.find((a) => a.id === item.id) ||
       this.newAgents.find((a) => a.name === item.name);
     if (!agent) {
       agent = item;
@@ -507,11 +591,34 @@ export class SquadEditorComponent implements OnDestroy {
     if (position.slot === 'commander') this.draft.commanderId = agent.id;
     else if (position.slot === 'adr') this.draft.adrId = agent.id;
     else if (position.slot === 'prd') this.draft.prdId = agent.id;
-    else if (position.index >= 0) this.draft.operatorIds[position.index] = agent.id;
+    else if (position.slot === 'specialist') {
+      if (!this.draft.specialistIds) this.draft.specialistIds = [];
+      if (position.index >= 0) this.draft.specialistIds[position.index] = agent.id;
+      else this.draft.specialistIds.push(agent.id);
+    } else if (position.index >= 0) this.draft.operatorIds[position.index] = agent.id;
     else this.draft.operatorIds.push(agent.id);
     this.draft.operatorIds = [...new Set(this.draft.operatorIds)].filter(
-      (id) => ![this.draft.commanderId, this.draft.adrId, this.draft.prdId].includes(id),
+      (id) =>
+        ![
+          this.draft.commanderId,
+          this.draft.adrId,
+          this.draft.prdId,
+          ...(this.draft.specialistIds || []),
+        ].includes(id),
     );
+    if (this.draft.specialistIds) {
+      this.draft.specialistIds = [...new Set(this.draft.specialistIds)].filter(
+        (id) => ![this.draft.commanderId, this.draft.adrId, this.draft.prdId].includes(id),
+      );
+    }
+    this.closePick();
+  }
+  removePosition(position: { slot: string; index: number }): void {
+    if (position.slot === 'specialist' && position.index >= 0 && this.draft.specialistIds) {
+      this.draft.specialistIds.splice(position.index, 1);
+    } else if (position.slot === 'op' && position.index >= 0) {
+      this.draft.operatorIds.splice(position.index, 1);
+    }
     this.closePick();
   }
   @HostListener('document:keydown', ['$event']) pickerDocumentKeys(event: KeyboardEvent): void {

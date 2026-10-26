@@ -356,28 +356,30 @@
       </span>
     </button>
   </div>
-  @if (!background() && !handoffs() && !focused()) {
-    <section class="squad-quick-stats hud" [attr.aria-label]="'squadActivity.summary' | t">
-      @for (filter of activityFilters; track filter) {
-        <button
-          type="button"
-          [attr.data-count]="filter"
-          [title]="
-            (filter === 'helpers' ? 'squadActivity.helpersHint' : 'squadActivity.count.' + filter)
-              | t
-          "
-          [class.active]="activityFilter() === filter"
-          [attr.aria-pressed]="activityFilter() === filter"
-          (click)="activityFilter.set(activityFilter() === filter ? 'all' : filter)"
-        >
-          <strong>{{ activity.counts()[filter] }}</strong>
-          <span>{{ 'squadActivity.count.' + filter | t }}</span>
-        </button>
-      }
-    </section>
-  }
   @if (!focused()) {
     <aside class="left-hud hud" id="leftHud" [attr.aria-label]="'map.project-and-squad' | t">
+      @if (!background() && !handoffs()) {
+        <section class="squad-quick-stats" [attr.aria-label]="'squadActivity.summary' | t">
+          @for (filter of activityFilters; track filter) {
+            <button
+              type="button"
+              [attr.data-count]="filter"
+              [title]="
+                (filter === 'helpers'
+                  ? 'squadActivity.helpersHint'
+                  : 'squadActivity.count.' + filter
+                ) | t
+              "
+              [class.active]="activityFilter() === filter"
+              [attr.aria-pressed]="activityFilter() === filter"
+              (click)="activityFilter.set(activityFilter() === filter ? 'all' : filter)"
+            >
+              <strong>{{ activity.counts()[filter] }}</strong>
+              <span>{{ 'squadActivity.count.' + filter | t }}</span>
+            </button>
+          }
+        </section>
+      }
       <div class="project-topline">
         <span>{{ store.project()?.code }} / WORKSPACE</span>
         <luma-icon name="radio" />

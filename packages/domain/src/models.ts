@@ -50,6 +50,7 @@ export interface Squad {
   commanderId: string;
   adrId: string;
   prdId: string;
+  specialistIds?: string[];
   operatorIds: string[];
   agentIds: string[];
   createdAt: string;
@@ -117,6 +118,37 @@ export interface Adr {
   date: string;
   content: string;
 }
+export interface RunAndValidateInstructions {
+  instructions?: string;
+  folder?: string;
+  prerequisites?: string;
+  installCommands?: string;
+  startCommands?: string;
+  url?: string;
+  demoCredentials?: string;
+  testFlow?: string;
+  expectedResult?: string;
+  knownLimitations?: string;
+  howToStop?: string;
+}
+
+export interface DeliveryGuide {
+  id: string;
+  sprintId: string;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  documenterId: string;
+  documenterName: string;
+  source?: 'manual' | 'agent';
+  status: 'draft' | 'ready' | 'generating' | 'failed' | 'outdated';
+  failureReason?: string;
+  outdatedReason?: string;
+  featureKeys: string[];
+  runAndValidate: RunAndValidateInstructions;
+  summary: string;
+}
+
 export interface Project {
   id: string;
   code: string;
@@ -137,6 +169,9 @@ export interface Project {
   logs: Log[];
   handoffs: Handoff[];
   createdAt: string;
+  documenterId?: string;
+  runAndValidate?: RunAndValidateInstructions;
+  deliveryGuides?: DeliveryGuide[];
 }
 export interface ProviderSettings {
   path: string;
