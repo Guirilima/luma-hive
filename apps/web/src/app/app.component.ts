@@ -1,6 +1,15 @@
+import { AttentionTriggerComponent } from './features/workflow/attention.component';
 import { AppearanceService } from './core/appearance/appearance.service';
 import { UsageComponent } from './features/usage/usage.component';
-import { Component, inject, signal, computed, HostListener, effect } from '@angular/core';
+import {
+  Component,
+  inject,
+  signal,
+  computed,
+  HostListener,
+  effect,
+  afterEveryRender,
+} from '@angular/core';
 import { Router, RouterOutlet, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { WorkspaceStore } from './core/workspace/workspace.store';
@@ -21,6 +30,7 @@ import { Locale } from '@domain/models';
   standalone: true,
   imports: [
     UsageComponent,
+    AttentionTriggerComponent,
     MapComponent,
     OperationRoomComponent,
     RouterOutlet,
@@ -62,7 +72,7 @@ export class AppComponent {
   operationName = '';
   navStep(direction: -1 | 1): void {
     if (this.dialogs.current()?.kind === 'squad') this.dialogs.close();
-    const current = this.views.findIndex((v) => v.path === this.router.url);
+    const current = this.views.findIndex((v) => v.path === this.router.url.split('?')[0]);
     const next = (current + direction + this.views.length) % this.views.length;
     this.goView(this.views[next].path);
   }
@@ -77,9 +87,21 @@ export class AppComponent {
     { path: '/projects', key: 'nav.projects' },
     { path: '/squad', key: 'nav.squad' },
     { path: '/handoffs', key: 'nav.handoffs' },
+    { path: '/observability', key: 'nav.observability' },
+    { path: '/recovery', key: 'recovery.title' },
+    { path: '/memory', key: 'memory.nav' },
   ];
   private errorTimer: ReturnType<typeof setTimeout> | null = null;
   constructor() {
+    let lastNav = '';
+    afterEveryRender(() => {
+      const path = this.router.url.split('?')[0];
+      if (path === lastNav) return;
+      const active = document.querySelector<HTMLElement>('.topbar .mode-nav a.active');
+      if (!active) return;
+      lastNav = path;
+      active.scrollIntoView({ inline: 'nearest', block: 'nearest' });
+    });
     effect(() =>
       document.body.classList.toggle('reduce-motion', this.store.settings()?.motion === false),
     );
@@ -207,14 +229,21 @@ export class AppComponent {
     if (key === '?') this.dialogs.open('help');
     if (key === 'q' || key === 'e') {
       if (this.dialogs.current()?.kind === 'squad') this.dialogs.close();
-      const current = this.views.findIndex((v) => v.path === this.router.url),
+      const current = this.views.findIndex((v) => v.path === this.router.url.split('?')[0]),
         next = (current + (key === 'q' ? -1 : 1) + this.views.length) % this.views.length;
       this.goView(this.views[next].path);
       e.preventDefault();
     }
   }
+  @HostListener('window:resize') alignNavigation(): void {
+    requestAnimationFrame(() =>
+      document
+        .querySelector<HTMLElement>('.topbar .mode-nav a.active')
+        ?.scrollIntoView({ inline: 'nearest', block: 'nearest' }),
+    );
+  }
   @HostListener('window:beforeunload', ['$event']) unload(e: BeforeUnloadEvent): void {
-    if (this.store.pending() || this.execution.busy()) {
+    if (this.store.pending() || (this.execution.busy() && !this.execution.workflow.current())) {
       e.preventDefault();
       e.returnValue = '';
     }

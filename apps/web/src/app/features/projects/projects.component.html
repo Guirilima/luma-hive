@@ -80,6 +80,7 @@
                   <luma-icon name="squad" />
                   {{ 'projects.open-in-squad' | t }}
                 </button>
+                <button class="btn" (click)="router.navigate(['/memory'], {queryParams:{project:project.id}})">{{'memory.title' | t}}</button>
                 <button class="btn" (click)="exportProject()">
                   <luma-icon name="download" />
                   {{ 'action.export' | t }}

@@ -1,3 +1,4 @@
+import { SquadActivityService, SquadMemberActivity } from './squad-activity.service';
 import { UiLabelPipe } from '../../core/i18n/i18n.service';
 import { PortraitService } from '../../core/appearance/portrait.service';
 import { department } from './renderers/pixel-paths';
@@ -13,6 +14,7 @@ import {
   effect,
   inject,
   signal,
+  computed,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ROLES } from '@domain/catalog';
@@ -56,8 +58,55 @@ interface WorkState {
   standalone: true,
   imports: [UiLabelPipe, FormsModule, TranslatePipe, IconComponent],
   templateUrl: './map.component.html',
+  providers: [SquadActivityService],
 })
 export class MapComponent implements AfterViewInit, OnDestroy {
+  readonly activity = inject(SquadActivityService);
+  readonly mapBusyAgents = computed(() =>
+    this.background() || this.handoffs()
+      ? this.execution.busyAgents()
+      : this.activity
+          .members()
+          .filter((m) => m.state === 'working')
+          .map((m) => m.agent.id),
+  );
+  memberStatus(id: string): string {
+    return (
+      this.activity.members().find((m) => m.agent.id === id)?.reason || 'squadActivity.available'
+    );
+  }
+  readonly activityFilter = signal('all');
+  readonly activityFilters = ['all', 'working', 'idle', 'waiting', 'paused', 'helpers'] as const;
+  readonly collapsedConsultations = signal<Set<string>>(new Set());
+  readonly visibleMembers = computed(() =>
+    this.activity
+      .members()
+      .filter(
+        (m) =>
+          this.activityFilter() === 'all' ||
+          (this.activityFilter() === 'helpers'
+            ? m.activeConsultations > 0
+            : m.state === this.activityFilter()),
+      ),
+  );
+  toggleConsultations(id: string): void {
+    this.collapsedConsultations.update((ids) => {
+      const next = new Set(ids);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  }
+  inspectRun(id: string): void {
+    if (id && id !== 'local-active')
+      void this.router.navigate(['/observability'], { queryParams: { run: id } });
+  }
+  consultationPortrait(id: string | null): string {
+    const agent = id ? this.store.agent(id) : null;
+    return agent ? this.portrait(agent) : '';
+  }
+  memberSummary(member: SquadMemberActivity): string {
+    return member.activity || this.i18n.text(member.reason);
+  }
   readonly Math = Math;
   readonly handoffs = input(false);
   readonly background = input(false);
@@ -159,6 +208,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
   } | null = null;
   private suppressClick = false;
   constructor() {
+    effect(() => this.activity.enabled.set(!this.background() && !this.handoffs()));
     effect(() => {
       if (this.dialogs.mapHomeRequested()) queueMicrotask(() => this.home());
     });
@@ -187,13 +237,13 @@ export class MapComponent implements AfterViewInit, OnDestroy {
           ? 'planning'
           : this.execution.plan()
             ? 'awaiting'
-            : this.execution.busy()
+            : this.execution.busy() || this.mapBusyAgents().length > 0
               ? 'running'
               : 'idle',
         links: this.nodeLinks(),
         agents: this.store.team(),
         selectedId: this.dismissed() ? '' : this.store.selectedId(),
-        busyIds: this.execution.busyAgents(),
+        busyIds: this.mapBusyAgents(),
         motion: settings.motion,
         quality: settings.quality,
         cityShape: settings.cityShape,
@@ -283,6 +333,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     if (room) this.renderer?.visit(id, room);
   }
   wheel(e: WheelEvent): void {
+    if ((e.target as HTMLElement).closest('.hud')) return;
     e.preventDefault();
     this.zoom(Math.exp(-e.deltaY * 0.0012));
   }
@@ -291,7 +342,8 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   }
   down(e: PointerEvent): void {
-    if (![0, 2].includes(e.button) || (e.target as HTMLElement).closest('button,select')) return;
+    if (![0, 2].includes(e.button) || (e.target as HTMLElement).closest('button,select,.hud'))
+      return;
     e.preventDefault();
     this.drag = {
       id: e.pointerId,
@@ -473,7 +525,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
         foot: label.toUpperCase() + ' · ' + tag,
         say: this.execution
           .events()
-          .filter((e) => e.type === 'text')
+          .filter((e) => !e.activityId && e.type === 'text')
           .map((e) => e.text || '')
           .join('')
           .split(String.fromCharCode(96).repeat(3))[0]
@@ -502,7 +554,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
     const liveSpeech =
       id === this.execution.currentAgent() && this.execution.interacting()
         ? events
-            .filter((e) => e.type === 'text')
+            .filter((e) => !e.activityId && e.type === 'text')
             .map((e) => e.text || '')
             .join('')
         : '';
@@ -566,7 +618,7 @@ export class MapComponent implements AfterViewInit, OnDestroy {
         {
           x: 0,
           y: 0,
-          w: this.room.opened() && !this.room.minimized() ? this.room.width() + 28 : 270,
+          w: this.room.opened() && !this.room.minimized() ? this.room.width() + 28 : 334,
           h: this.height,
         },
         { x: this.width - 295, y: 0, w: 295, h: this.height },

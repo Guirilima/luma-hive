@@ -60,6 +60,14 @@ Codex usa `codex exec --json` e consulta modelos por `app-server`. Devin usa `de
 
 Os testes automatizados das execuções usam um CLI simulado, sem chamadas pagas. A interface permite testar a instalação real e consultar modelos. Para verificar uma execução real de ponta a ponta, configure o login e rode uma operação de teste com o provedor escolhido.
 
+## Acompanhamento e continuidade
+
+O header oferece a central **Precisa de você**, com perguntas, aprovações, revisões e bloqueios. As abas **Recuperação** e **Memória** mostram checkpoints de execução e decisões aprovadas do projeto. Essas áreas estão disponíveis nos três idiomas e nos temas futurista e pixel.
+
+Sprints em modo real continuam no servidor quando o navegador é fechado. Após queda do servidor, etapas incertas exigem revisão e autorização antes de repetir; entregas continuam dependendo de aprovação humana. Somente memórias aprovadas entram no contexto das próximas chamadas.
+
+Veja [Pendências, recuperação e memória](docs/WORKFLOW.md) para uso, persistência e limites de backup, e [Observabilidade](docs/OBSERVABILIDADE.md) para árvores de agentes, eventos e consumo informado pelos CLIs.
+
 ## Organização
 
 | Pasta                       | Responsabilidade                                                                                                   |
@@ -101,3 +109,7 @@ Não houve commit nem push durante a preparação desta base.
 ## Recuperação de paridade
 
 A conferência desta recuperação está descrita em [docs/PARIDADE.md](docs/PARIDADE.md). Os cenários de navegador usam dois bancos isolados e o mesmo exemplo Atlas Commerce, com F00 e F01 concluídas. Scripts de conferência, capturas e backups locais ficam em `previews/recovery-20261014/`, ignorados pelo Git. Os testes unitários em `tests/` permanecem para a etapa final.
+
+## Aceite real e permissões
+
+Relatório do piloto com Antigravity e website de três telas: [docs/ACEITE-REAL-2026-10-25.md](docs/ACEITE-REAL-2026-10-25.md). Seleção de autonomia e limites dos perfis: [docs/PERMISSOES.md](docs/PERMISSOES.md).

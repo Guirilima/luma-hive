@@ -1,3 +1,4 @@
+import { Router } from '@angular/router';
 import { TranslatePipe } from '../../core/i18n/i18n.service';
 import { FormsModule } from '@angular/forms';
 import { Component, inject, signal, effect, ElementRef, viewChild } from '@angular/core';
@@ -16,6 +17,13 @@ import { Run, RunEvent } from '@domain/models';
   templateUrl: './console.component.html',
 })
 export class ConsoleComponent {
+  private readonly router = inject(Router);
+  observe(): void {
+    const id = this.selectedRun()?.id || this.execution.latestRunId();
+    this.dialogs.close();
+    void this.router.navigate(['/observability'], { queryParams: { run: id || undefined } });
+  }
+
   private readonly api = inject(ApiService);
   readonly store = inject(WorkspaceStore);
   readonly execution = inject(ExecutionService);

@@ -165,3 +165,27 @@ export function capture(
     );
   });
 }
+
+/** Conservative retry guard. Never terminate a process based on a recycled PID. */
+export async function recordedProcessAlive(pid: number, startedAt: string): Promise<boolean> {
+  if (!Number.isSafeInteger(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+  } catch (e) {
+    return (e as NodeJS.ErrnoException).code !== 'ESRCH';
+  }
+  if (process.platform !== 'win32') return true;
+  try {
+    const command = `$p=Get-CimInstance Win32_Process -Filter 'ProcessId=${pid}';if($p){$p.CreationDate.ToUniversalTime().ToString('o')}`;
+    const { stdout } = await exec(
+      'powershell.exe',
+      ['-NoProfile', '-NonInteractive', '-Command', command],
+      { windowsHide: true, timeout: 8000 },
+    );
+    if (!stdout.trim()) return false;
+    const created = Date.parse(stdout.trim());
+    return !Number.isFinite(created) || Math.abs(created - Date.parse(startedAt)) < 15000;
+  } catch {
+    return true;
+  }
+}

@@ -1,3 +1,4 @@
+import { Router } from '@angular/router';
 import {
   Component,
   computed,
@@ -20,6 +21,14 @@ import { IconComponent } from '../../shared/icon.component';
   styleUrl: './usage.component.css',
 })
 export class UsageComponent {
+  private readonly router = inject(Router);
+  observe(): void {
+    this.closePreview();
+    this.panel()?.nativeElement.close();
+    this.opened.set(false);
+    void this.router.navigate(['/observability'], { queryParams: { tab: 'consumption' } });
+  }
+
   readonly i18n = inject(I18nService);
   private readonly api = inject(ApiService);
   private readonly panel = viewChild<ElementRef<HTMLDialogElement>>('panel');

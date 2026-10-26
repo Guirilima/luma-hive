@@ -7,6 +7,12 @@
   [modalClass]="logsOnly ? '' : 'wide'"
   (closed)="dialogs.close()"
 >
+  <div class="modal-toolbar">
+    <button type="button" class="btn" (click)="observe()">
+      <luma-icon name="flow" />
+      {{ 'obs.open' | t }}
+    </button>
+  </div>
   @if (logsOnly) {
     <div class="modal-toolbar">
       <div class="flex wrap">

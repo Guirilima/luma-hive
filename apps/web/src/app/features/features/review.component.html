@@ -35,6 +35,9 @@
           }
         </time>
         <p>{{ o.text }}</p>
+        @if (o.runId && !o.simulated) {
+          <button class="btn sm" (click)="remember(o.runId)">{{ 'memory.remember' | t }}</button>
+        }
       </article>
     } @empty {
       <p class="prose">{{ 'features.no-delivery-records-yet' | t }}</p>
@@ -49,11 +52,11 @@
     </div>
     @if (f.status === 'review') {
       <div class="ops-detail-actions">
-        <button class="btn ghost" (click)="review(false)">
+        <button class="btn ghost" [disabled]="store.saving()" (click)="review(false)">
           <luma-icon name="edit" />
           {{ 'action.reject' | t }}
         </button>
-        <button class="btn primary" (click)="review(true)">
+        <button class="btn primary" [disabled]="store.saving()" (click)="review(true)">
           <luma-icon name="check" />
           {{ real(f) ? ('ui.approve-delivery' | t) : ('ui.approve-delivery-demo' | t) }}
         </button>

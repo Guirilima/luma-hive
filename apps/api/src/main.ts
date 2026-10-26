@@ -14,6 +14,7 @@ server.on('error', (error) => {
 });
 for (const signal of ['SIGINT', 'SIGTERM'] as const)
   process.on(signal, () => {
+    server.emit('shutdown');
     runs.shutdown();
     server.close(() => {
       repository.close();

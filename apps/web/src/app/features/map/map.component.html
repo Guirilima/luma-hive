@@ -30,7 +30,7 @@
             type="button"
             class="pixel-agent pixel-marker"
             [class.selected]="store.selectedId() === a.id"
-            [class.working]="execution.busyAgents().includes(a.id)"
+            [class.working]="mapBusyAgents().includes(a.id)"
             [style.left.px]="marker.x - 21"
             [style.top.px]="marker.y - 62"
             [style.transform]="'scale(' + marker.scale + ')'"
@@ -44,7 +44,7 @@
             <span class="pixel-agent-name">{{ a.name }}</span>
             <span class="pixel-agent-status">
               {{
-                execution.busyAgents().includes(a.id)
+                mapBusyAgents().includes(a.id)
                   ? ('ui.working' | t)
                   : marker.walking
                     ? ('ui.in-transit' | t)
@@ -61,7 +61,7 @@
             class="map-node"
             [class.selected]="!dismissed() && store.selectedId() === agent.id"
             [class.walking]="marker.walking"
-            [class.working]="execution.busyAgents().includes(agent.id)"
+            [class.working]="mapBusyAgents().includes(agent.id)"
             [style.left.px]="marker.x"
             [style.top.px]="marker.y"
             (pointerdown)="agentDown($event, agent.id)"
@@ -86,7 +86,7 @@
                     ? roleLabel(agent)
                     : roles[agent.role].short +
                       ' / ' +
-                      (execution.busyAgents().includes(agent.id) ? 'EXECUTANDO' : 'READY')
+                      (mapBusyAgents().includes(agent.id) ? 'EXECUTANDO' : 'READY')
                   ) | uiLabel
                 }}
               </small>
@@ -214,7 +214,7 @@
       <small class="pixel-summary">
         {{ 'ui.13-departments' | t }} {{ store.team().length }} {{ 'ui.agents-283' | t }}
         {{
-          execution.busy()
+          mapBusyAgents().length > 0 || execution.busy()
             ? execution.paused()
               ? ('ui.operation-paused' | t)
               : ('ui.in-operation' | t)
@@ -356,6 +356,26 @@
       </span>
     </button>
   </div>
+  @if (!background() && !handoffs() && !focused()) {
+    <section class="squad-quick-stats hud" [attr.aria-label]="'squadActivity.summary' | t">
+      @for (filter of activityFilters; track filter) {
+        <button
+          type="button"
+          [attr.data-count]="filter"
+          [title]="
+            (filter === 'helpers' ? 'squadActivity.helpersHint' : 'squadActivity.count.' + filter)
+              | t
+          "
+          [class.active]="activityFilter() === filter"
+          [attr.aria-pressed]="activityFilter() === filter"
+          (click)="activityFilter.set(activityFilter() === filter ? 'all' : filter)"
+        >
+          <strong>{{ activity.counts()[filter] }}</strong>
+          <span>{{ 'squadActivity.count.' + filter | t }}</span>
+        </button>
+      }
+    </section>
+  }
   @if (!focused()) {
     <aside class="left-hud hud" id="leftHud" [attr.aria-label]="'map.project-and-squad' | t">
       <div class="project-topline">
@@ -388,31 +408,109 @@
         <span>{{ squadName() }}</span>
         <span>{{ pad(store.team().length) }}</span>
       </div>
-      <div class="roster">
-        @for (agent of store.team(); track agent.id) {
-          <button
-            class="roster-item"
-            [class.selected]="store.selectedId() === agent.id && !dismissed()"
-            (click)="select(agent.id)"
-            (dblclick)="dialogs.open('chat', agent.id)"
-            [attr.aria-label]="('ui.select-expr-72' | t) + agent.name"
-            [title]="'map.double-click-to-chat' | t"
-            [attr.aria-pressed]="!dismissed() && store.selectedId() === agent.id"
-          >
-            <img class="roster-avatar" [src]="portrait(agent)" alt="" />
-            <div>
-              <div class="roster-name">{{ agent.name }}</div>
-              <div class="roster-role">{{ roleLabel(agent) | uiLabel }}</div>
-            </div>
-            <div class="roster-end" [class.busy]="execution.busyAgents().includes(agent.id)">
-              @if (execution.busyAgents().includes(agent.id)) {
-                <i class="dot"></i>
-              } @else {
-                <luma-icon [name]="agent.icon || roles[agent.role].icon" />
-              }
-              <span class="role-short">{{ roles[agent.role].short }}</span>
-            </div>
+      @if (!handoffs()) {
+        @if (activity.stale()) {
+          <p class="roster-sync-note" role="status">{{ 'squadActivity.stale' | t }}</p>
+        }
+        @if (activityFilter() !== 'all') {
+          <button type="button" class="roster-filter-clear" (click)="activityFilter.set('all')">
+            {{ 'squadActivity.showAll' | t }} ·
+            {{ 'squadActivity.count.' + activityFilter() | t }} ×
           </button>
+        }
+      }
+      <div class="roster squad-activity-roster">
+        @for (member of handoffs() ? activity.members() : visibleMembers(); track member.agent.id) {
+          @let agent = member.agent;
+          <div class="roster-member" [attr.data-agent]="agent.id" [attr.data-state]="member.state">
+            <button
+              type="button"
+              class="roster-item"
+              [class.selected]="store.selectedId() === agent.id && !dismissed()"
+              (click)="select(agent.id)"
+              (dblclick)="dialogs.open('chat', agent.id)"
+              [attr.aria-label]="agent.name + ' · ' + (member.reason | t)"
+              [title]="'map.double-click-to-chat' | t"
+              [attr.aria-pressed]="!dismissed() && store.selectedId() === agent.id"
+            >
+              <img class="roster-avatar" [src]="portrait(agent)" alt="" />
+              <span class="roster-member-copy">
+                <strong class="roster-name">{{ agent.name }}</strong>
+                <span class="roster-role">{{ roleLabel(agent) | uiLabel }}</span>
+                @if (!handoffs()) {
+                  <span class="roster-state" [attr.data-state]="member.state">
+                    <i></i>
+                    {{ member.reason | t }}
+                  </span>
+                  @if (member.activity) {
+                    <span class="roster-activity" [title]="member.activity">
+                      {{ memberSummary(member) }}
+                    </span>
+                  }
+                }
+              </span>
+              <span class="roster-end">
+                <luma-icon [name]="agent.icon || roles[agent.role].icon" />
+                <span class="role-short">{{ roles[agent.role].short }}</span>
+              </span>
+            </button>
+            @if (!handoffs() && member.consultations.length) {
+              <button
+                type="button"
+                class="roster-consultations-toggle"
+                (click)="toggleConsultations(agent.id)"
+                [attr.aria-expanded]="!collapsedConsultations().has(agent.id)"
+                [attr.aria-controls]="'consultations-' + agent.id"
+              >
+                <luma-icon name="flow" />
+                {{ 'squadActivity.consultations' | t }} {{ member.consultations.length }}
+                <span>{{ member.activeConsultations }} {{ 'squadActivity.active' | t }}</span>
+                <luma-icon [name]="'chevron'" />
+              </button>
+              @if (!collapsedConsultations().has(agent.id)) {
+                <div class="roster-consultations" [id]="'consultations-' + agent.id">
+                  @for (child of member.consultations; track child.runId + ':' + child.node.id) {
+                    <button
+                      type="button"
+                      class="roster-consultation"
+                      [attr.data-state]="child.node.state"
+                      [style.margin-left.px]="Math.min(child.depth, 4) * 12"
+                      (click)="inspectRun(child.runId)"
+                      [disabled]="child.runId === 'local-active'"
+                      [title]="
+                        ('squadActivity.inspect' | t) + ' · ' + (child.node.task || child.activity)
+                      "
+                    >
+                      @if (consultationPortrait(child.node.agentId); as photo) {
+                        <img [src]="photo" alt="" />
+                      } @else {
+                        <luma-icon name="agent" />
+                      }
+                      <span class="roster-child-copy">
+                        <strong>{{ child.node.name }}</strong>
+                        <small>{{ 'obs.state.' + child.node.state | t }}</small>
+                        <span>
+                          {{ child.activity || child.node.task || ('squadActivity.noDetails' | t) }}
+                        </span>
+                      </span>
+                      <i class="roster-child-dot"></i>
+                    </button>
+                  }
+                </div>
+              }
+            }
+            @if (!handoffs() && member.runId && member.runId !== 'local-active') {
+              <button type="button" class="roster-run-link" (click)="inspectRun(member.runId)">
+                {{
+                  (member.state === 'working' ? 'squadActivity.viewRun' : 'squadActivity.lastRun')
+                    | t
+                }}
+                <luma-icon name="chevron" />
+              </button>
+            }
+          </div>
+        } @empty {
+          <p class="roster-empty">{{ 'squadActivity.empty' | t }}</p>
         }
       </div>
       <div class="roster-add">
@@ -473,17 +571,21 @@
               <dt>{{ 'map.effort' | t }}</dt>
               <dd>{{ agent.effort ? agent.effort.toUpperCase() : ('ui.default' | t) }}</dd>
             </div>
-            <div class="data-pair" [class.active]="execution.busyAgents().includes(agent.id)">
+            <div class="data-pair" [class.active]="mapBusyAgents().includes(agent.id)">
               <dt>{{ 'map.state' | t }}</dt>
               <dd>
-                {{
-                  execution.busyAgents().includes(agent.id)
-                    ? execution.paused()
-                      ? ('ui.operation-paused' | t)
-                      : ('ui.running-expr-76' | t) +
-                        (store.settings()?.mode === 'live' ? 'CLI' : 'DEMO')
-                    : ('ui.on-standby' | t)
-                }}
+                @if (!handoffs()) {
+                  {{ memberStatus(agent.id) | t }}
+                } @else {
+                  {{
+                    mapBusyAgents().includes(agent.id)
+                      ? execution.paused()
+                        ? ('ui.operation-paused' | t)
+                        : ('ui.running-expr-76' | t) +
+                          (store.settings()?.mode === 'live' ? 'CLI' : 'DEMO')
+                      : ('ui.on-standby' | t)
+                  }}
+                }
               </dd>
             </div>
             <div class="data-pair">
@@ -517,7 +619,7 @@
             <div class="between">
               <div class="eyebrow">
                 {{
-                  execution.busyAgents().includes(agent.id)
+                  mapBusyAgents().includes(agent.id)
                     ? ('ui.current-mission' | t)
                     : ('ui.next-assignment' | t)
                 }}

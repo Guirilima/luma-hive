@@ -1,3 +1,8 @@
+import { OperationService } from '../workflow/operation.service';
+import { MemoryService } from '../workflow/memory.service';
+import { AttentionService } from '../workflow/attention.service';
+import { ObservabilityService } from '../observability/observability.service';
+import type { ObservationFilters } from '../../../../packages/domain/src/observability';
 import { UsageService } from '../usage/usage.service';
 import http from 'node:http';
 import fs from 'node:fs/promises';
@@ -36,6 +41,10 @@ export function createServer(
   catalog = new CatalogService(),
 ): http.Server {
   const usage = new UsageService(repository);
+  const observations = new ObservabilityService(repository);
+  const operations = new OperationService(repository, runs);
+  const memory = new MemoryService(repository);
+  const attention = new AttentionService(repository, operations, memory);
   const handler = async (request: http.IncomingMessage, response: http.ServerResponse) => {
     const url = new URL(request.url || '/', `http://127.0.0.1:${config.port}`),
       method = request.method;
@@ -46,6 +55,7 @@ export function createServer(
       if (method === 'GET') return json(response, 200, repository.read());
       if (method === 'PUT') {
         const payload = (await body(request)) as { workspace: unknown; rev: string };
+        operations.validateWorkspaceUpdate(payload.workspace as any);
         return json(response, 200, repository.save(payload.workspace, payload.rev));
       }
     }
@@ -67,6 +77,83 @@ export function createServer(
       runs.concurrency = value.concurrency;
       return json(response, 200, { ok: true, maxConcurrent: runs.concurrency });
     }
+    if (method === 'GET' && url.pathname === '/api/attention')
+      return json(response, 200, {
+        items: attention.list(
+          url.searchParams.get('projectId') || '',
+          url.searchParams.get('acknowledged') === '1',
+        ),
+      });
+    if (method === 'POST' && parts[1] === 'attention' && parts[2] && parts[3] === 'acknowledge')
+      return json(response, 200, attention.acknowledge(decodeURIComponent(parts[2])));
+    if (url.pathname === '/api/memory') {
+      if (method === 'GET')
+        return json(response, 200, {
+          entries: memory.list(url.searchParams.get('projectId') || ''),
+        });
+      if (method === 'POST')
+        return json(response, 201, { entry: memory.create(await body(request)) });
+    }
+    if (method === 'PATCH' && parts[1] === 'memory' && parts[2])
+      return json(response, 200, { entry: memory.update(parts[2], await body(request)) });
+    if (url.pathname === '/api/operations') {
+      if (method === 'GET')
+        return json(response, 200, {
+          operations: operations.list(url.searchParams.get('projectId') || ''),
+        });
+      if (method === 'POST')
+        return json(response, 201, { operation: operations.start(await body(request)) });
+    }
+    if (parts[1] === 'operations' && parts[2]) {
+      if (method === 'POST' && parts[3] === 'action') {
+        const input = (await body(request)) as any;
+        return json(response, 200, {
+          operation: await operations.action(
+            parts[2],
+            input.action,
+            input.acknowledge === true,
+            input.stageId,
+          ),
+        });
+      }
+      if (method === 'GET') return json(response, 200, { operation: operations.get(parts[2]) });
+    }
+    if (method === 'GET' && url.pathname === '/api/observability') {
+      const period = url.searchParams.get('period') || 'month';
+      requireValue(['week', 'month', 'all'].includes(period), 'Invalid period');
+      const provider = url.searchParams.get('provider') || '';
+      requireValue(!provider || PROVIDERS.includes(provider as Provider), 'Invalid provider');
+      const offset = Number(url.searchParams.get('offset') || 0),
+        limit = Number(url.searchParams.get('limit') || 50);
+      requireValue(
+        Number.isInteger(offset) &&
+          offset >= 0 &&
+          Number.isInteger(limit) &&
+          limit >= 1 &&
+          limit <= 200,
+        'Invalid pagination',
+      );
+      for (const key of ['projectId', 'sprintId', 'agentId', 'model'])
+        requireValue((url.searchParams.get(key) || '').length <= 160, 'Invalid filter');
+      return json(
+        response,
+        200,
+        observations.snapshot(
+          {
+            projectId: url.searchParams.get('projectId') || '',
+            sprintId: url.searchParams.get('sprintId') || '',
+            agentId: url.searchParams.get('agentId') || '',
+            model: url.searchParams.get('model') || '',
+            provider,
+            period: period as ObservationFilters['period'],
+          },
+          offset,
+          limit,
+        ),
+      );
+    }
+    if (method === 'GET' && parts[1] === 'runs' && parts[2] && parts[3] === 'trace')
+      return json(response, 200, observations.trace(parts[2]));
     if (method === 'GET' && url.pathname === '/api/usage') {
       return json(response, 200, await usage.snapshot(url.searchParams.get('refresh') === '1'));
     }
@@ -113,8 +200,17 @@ export function createServer(
         return json(response, 200, {
           runs: repository.runs(url.searchParams.get('projectId') || ''),
         });
-      if (method === 'POST')
-        return json(response, 201, { run: await runs.start((await body(request)) as RunRequest) });
+      if (method === 'POST') {
+        const input = (await body(request)) as RunRequest;
+        requireValue(
+          input.kind !== 'step' || !operations.hasOpen(input.projectId),
+          'recovery.alreadyOpen',
+          409,
+        );
+        delete input.operationId;
+        delete input.checkpointId;
+        return json(response, 201, { run: await runs.start(input) });
+      }
     }
     if (parts[1] === 'runs' && parts[2]) {
       if (parts[3] === 'events' && method === 'GET')
@@ -170,11 +266,14 @@ export function createServer(
       throw new HttpError(404, 'Application build not found. Run npm.cmd run build.');
     }
   };
-  return http.createServer((request, response) => {
+  const server = http.createServer((request, response) => {
     void handler(request, response).catch((error: Error & { status?: number }) => {
       if (!response.headersSent)
         json(response, error.status || 400, { ok: false, error: error.message });
       else response.end();
     });
   });
+  server.on('shutdown', () => operations.shutdown());
+  server.on('close', () => operations.shutdown());
+  return server;
 }

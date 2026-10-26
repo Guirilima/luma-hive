@@ -1,3 +1,5 @@
+import { message } from '../workflow/i18n';
+import { MemoryService } from '../workflow/memory.service';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
@@ -31,10 +33,18 @@ export class RunService {
   >();
   concurrency = 2;
   private pending = 0;
+  get availableSlots(): number {
+    return Math.max(0, this.concurrency - this.active.size - this.pending);
+  }
   constructor(
     private readonly repository: WorkspaceRepository,
     private readonly projectsDir: string,
-  ) {}
+  ) {
+    this.concurrency = Math.max(
+      1,
+      Math.min(8, Number(repository.read().workspace?.settings.concurrency) || 2),
+    );
+  }
   async start(request: RunRequest): Promise<Run> {
     if (this.active.size + this.pending >= this.concurrency)
       throw new HttpError(429, 'Concurrent run limit reached');
@@ -75,7 +85,7 @@ export class RunService {
     const permissions = {
       codex: ['workspace-write', 'read-only'],
       devin: ['auto', 'accept-edits', 'smart', 'dangerous', 'read-only', 'plan'],
-      antigravity: ['accept-edits', 'read-only', 'plan'],
+      antigravity: ['accept-edits', 'auto', 'read-only', 'plan', 'unattended'],
     };
     requireValue(
       permissions[request.provider].includes(
@@ -83,6 +93,45 @@ export class RunService {
       ),
       'Invalid permission mode',
     );
+    // Stored agent capabilities are authoritative; a caller may only narrow them.
+    const agent = workspace!.agents.find((a) => a.id === request.agentId)!;
+    const configuredMode = workspace!.settings.providers[request.provider].permission;
+    requireValue(
+      request.options.permissionMode !== 'unattended' ||
+        (request.provider === 'antigravity' && configuredMode === 'unattended'),
+      message('permissions.notEnabled', workspace!.settings.locale),
+      403,
+    );
+    if (['read-only', 'plan'].includes(configuredMode))
+      request.options.permissionMode = configuredMode;
+    requireValue(
+      !request.options.tools ||
+        (Array.isArray(request.options.tools) &&
+          request.options.tools.every((t) => typeof t === 'string')),
+      'Invalid tools',
+    );
+    const readOnly = ['read-only', 'plan'].includes(request.options.permissionMode || '');
+    request.options.tools = [
+      ...new Set(
+        (request.options.tools || []).filter(
+          (tool) =>
+            agent.tools.includes(tool) && (!readOnly || ['Read', 'Glob', 'Grep'].includes(tool)),
+        ),
+      ),
+    ];
+    for (const [key, colleague] of Object.entries(request.options.agents || {})) {
+      const profile = workspace!.agents.find(
+        (a) => a.id === key && project!.agentIds.includes(a.id),
+      );
+      if (!profile || profile.provider !== request.provider || readOnly) {
+        delete request.options.agents![key];
+        continue;
+      }
+      requireValue(Array.isArray(colleague.tools), 'Invalid colleague tools');
+      colleague.tools = colleague.tools.filter(
+        (t) => profile.tools.includes(t) && request.options.tools!.includes(t),
+      );
+    }
     requireValue(
       !request.options.model ||
         /^[A-Za-z0-9][A-Za-z0-9._\-\[\]]{0,79}$/.test(request.options.model),
@@ -119,6 +168,9 @@ export class RunService {
     } catch {
       await exec('git', ['init', '-q'], { cwd, windowsHide: true, timeout: 10000 });
     }
+    const memory = new MemoryService(this.repository).context(request.projectId);
+    request.systemPrompt = (request.systemPrompt || '') + memory;
+    for (const colleague of Object.values(request.options.agents || {})) colleague.prompt += memory;
     const id = uuid('run'),
       temp = await fs.mkdtemp(path.join(os.tmpdir(), 'luma-hive-'));
     let prepared;
@@ -130,7 +182,18 @@ export class RunService {
     }
     const child = launch(executable!, prepared.args, cwd),
       decoder = createDecoder(request.provider);
+    const feature = project!.features.find((f) => f.id === request.featureId);
+    const sprint = project!.sprints.find((s) => s.id === feature?.sprintId);
     const run: Run = {
+      operationId: request.operationId,
+      checkpointId: request.checkpointId,
+      agentName: workspace!.agents.find((a) => a.id === request.agentId)?.name,
+      projectName: project!.name,
+      featureName: feature?.title,
+      featureKey: feature?.key,
+      sprintId: sprint?.id,
+      sprintName: sprint?.name,
+      model: request.options.model || undefined,
       id,
       provider: request.provider,
       projectId: request.projectId,
@@ -143,6 +206,8 @@ export class RunService {
       result: null,
     };
     this.repository.insertRun(run);
+    let completionTimer: ReturnType<typeof setTimeout> | undefined,
+      terminalCleanup = false;
     let seq = 0,
       tail = '',
       timeout = false,
@@ -171,11 +236,29 @@ export class RunService {
       permissionMode: request.options.permissionMode || '',
     });
     child.stdin.on('error', () => {});
-    child.stdin.end(prepared.input);
+    // Antigravity stream-json supports several turns. Closing input before the terminal
+    // result can race its conversation shutdown and leave the Windows CLI hanging.
+    if (request.provider === 'antigravity') child.stdin.write(prepared.input);
+    else child.stdin.end(prepared.input);
     child.stdout.setEncoding('utf8');
     child.stdout.on('data', (chunk) => {
       try {
         for (const event of decoder.feed(chunk)) emit(event);
+        if (request.provider === 'antigravity' && decoder.complete && !completionTimer) {
+          child.stdin.end();
+          clearTimeout(timer);
+          // A native terminal result confirms the turn. Some Windows agy builds hang
+          // while flushing their store after that result; reap only this owned tree.
+          completionTimer = setTimeout(() => {
+            if (finished) return;
+            terminalCleanup = true;
+            emit({
+              type: 'stderr',
+              text: message('workflow.cliCleanup', workspace!.settings.locale),
+            });
+            stopProcess(child);
+          }, 5000);
+        }
       } catch (e) {
         tail = String(e);
         stopProcess(child);
@@ -195,9 +278,20 @@ export class RunService {
       if (finished) return;
       finished = true;
       clearTimeout(timer);
+      if (completionTimer) clearTimeout(completionTimer);
+      try {
+        for (const event of decoder.feed('\n')) emit(event);
+      } catch (e) {
+        tail = String(e);
+      }
       const entry = this.active.get(id),
         result = decoder.finish(),
-        error = !!entry?.cancelled || timeout || code !== 0 || !result || result.error;
+        error =
+          !!entry?.cancelled ||
+          timeout ||
+          (code !== 0 && !terminalCleanup) ||
+          !result ||
+          result.error;
       run.status = entry?.cancelled ? 'cancelled' : error ? 'failed' : 'done';
       run.endedAt = timestamp();
       run.result = emit({

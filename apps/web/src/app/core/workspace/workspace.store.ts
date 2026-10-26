@@ -134,9 +134,30 @@ export class WorkspaceStore {
     });
     return this.chain;
   }
+  async synchronize(): Promise<void> {
+    if (this.pending() || this.saving() || this.conflict()) return;
+    const epoch = this.epoch,
+      result = await this.api.workspace();
+    if (
+      epoch !== this.epoch ||
+      this.pending() ||
+      this.saving() ||
+      this.conflict() ||
+      result.rev === this.revision()
+    )
+      return;
+    this.workspace.set(result.workspace ? normalizeWorkspace(result.workspace) : null);
+    this.revision.set(result.rev);
+    this.path.set(result.path);
+    if (result.workspace) this.i18n.set(result.workspace.settings.locale);
+  }
   report(error: unknown): void {
     const e = error as Error & { status?: number };
-    this.error.set(e.message || String(error));
+    this.error.set(
+      /^(recovery|memory|attention|permissions)\./.test(e.message || '')
+        ? this.i18n.text(e.message)
+        : e.message || String(error),
+    );
     if (e.status === 409) this.conflict.set(true);
   }
   setLocale(locale: Locale): void {

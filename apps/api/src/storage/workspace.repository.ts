@@ -30,7 +30,12 @@ export class WorkspaceRepository {
       CREATE TABLE IF NOT EXISTS runs(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,started_at TEXT NOT NULL,status TEXT NOT NULL,data TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS run_events(run_id TEXT NOT NULL REFERENCES runs(id) ON DELETE CASCADE,seq INTEGER NOT NULL,data TEXT NOT NULL,PRIMARY KEY(run_id,seq));
       CREATE INDEX IF NOT EXISTS runs_project ON runs(project_id,started_at);
-      PRAGMA user_version=1;`);
+      CREATE TABLE IF NOT EXISTS operations(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,updated_at TEXT NOT NULL,data TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS memories(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,updated_at TEXT NOT NULL,data TEXT NOT NULL);
+      CREATE TABLE IF NOT EXISTS attention_acks(id TEXT PRIMARY KEY,project_id TEXT NOT NULL,updated_at TEXT NOT NULL,data TEXT NOT NULL);
+      CREATE INDEX IF NOT EXISTS operations_project ON operations(project_id,updated_at);
+      CREATE INDEX IF NOT EXISTS memories_project ON memories(project_id,updated_at);
+      PRAGMA user_version=2;`);
     // A terminated process cannot remain marked as running after a server restart.
     for (const row of db.prepare("SELECT data FROM runs WHERE status='running'").all() as {
       data: string;
@@ -145,6 +150,15 @@ export class WorkspaceRepository {
         .all(new Date(since).toISOString(), new Date().toISOString()) || []
     ).map((row) => JSON.parse((row as { data: string }).data) as Run);
   }
+  observationRuns(since: number, projectId = ''): Run[] {
+    return (
+      this.db
+        ?.prepare(
+          "SELECT data FROM runs WHERE started_at >= ? AND (?='' OR project_id=?) ORDER BY started_at DESC, id DESC",
+        )
+        .all(new Date(since).toISOString(), projectId, projectId) || []
+    ).map((row) => JSON.parse((row as { data: string }).data) as Run);
+  }
   runs(projectId = ''): Run[] {
     return (
       this.db
@@ -152,6 +166,37 @@ export class WorkspaceRepository {
           "SELECT data FROM runs WHERE (?='' OR project_id=?) ORDER BY started_at DESC LIMIT 300",
         )
         .all(projectId, projectId) || []
+    ).map((row) => JSON.parse((row as { data: string }).data));
+  }
+  records<T>(table: 'operations' | 'memories' | 'attention_acks', projectId = ''): T[] {
+    return (
+      this.db
+        ?.prepare(
+          `SELECT data FROM ${table} WHERE (?='' OR project_id=?) ORDER BY updated_at DESC,id DESC`,
+        )
+        .all(projectId, projectId) || []
+    ).map((row) => JSON.parse((row as { data: string }).data));
+  }
+  putRecord(
+    table: 'operations' | 'memories' | 'attention_acks',
+    record: { id: string; projectId: string; updatedAt: string },
+  ): void {
+    this.open()
+      .prepare(
+        `INSERT INTO ${table} VALUES(?,?,?,?) ON CONFLICT(id) DO UPDATE SET project_id=excluded.project_id,updated_at=excluded.updated_at,data=excluded.data`,
+      )
+      .run(record.id, record.projectId, record.updatedAt, JSON.stringify(record));
+  }
+  transaction<T>(fn: () => T): T {
+    return this.open().transaction(fn)();
+  }
+  operationRuns(id: string): Run[] {
+    return (
+      this.db
+        ?.prepare(
+          "SELECT data FROM runs WHERE json_extract(data,'$.operationId')=? ORDER BY started_at DESC",
+        )
+        .all(id) || []
     ).map((row) => JSON.parse((row as { data: string }).data));
   }
   close(): void {

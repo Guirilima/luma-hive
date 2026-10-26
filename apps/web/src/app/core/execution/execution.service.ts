@@ -1,3 +1,6 @@
+import { WorkflowService } from '../workflow/workflow.service';
+import { Router } from '@angular/router';
+import type { DurableOperation } from '@domain/workflow';
 import { stagePrompt, calledAgentInstructions } from './stage-prompts';
 import { ConversationTurn, conversationIdentity } from './conversation-prompts';
 import {
@@ -29,6 +32,11 @@ import { ProviderService } from '../providers/provider.service';
 import { I18nService } from '../i18n/i18n.service';
 @Injectable({ providedIn: 'root' })
 export class ExecutionService {
+  readonly workflow = inject(WorkflowService);
+  private readonly router = inject(Router);
+  private managedId = '';
+  private managedRun = '';
+  private managedUnsubscribe: (() => void) | null = null;
   readonly room = inject(RoomService);
   private readonly api = inject(ApiService);
   readonly store = inject(WorkspaceStore);
@@ -91,7 +99,12 @@ export class ExecutionService {
       ) {
         const input = event.input as Record<string, unknown> | undefined,
           name = String(
-            input?.['subagent_type'] || input?.['agent_name'] || input?.['name'] || '',
+            input?.['subagent_type'] ||
+              input?.['agent_name'] ||
+              input?.['AgentName'] ||
+              input?.['TypeName'] ||
+              input?.['name'] ||
+              '',
           ).replace(/^luma-/, '');
         const agent = this.store
           .team()
@@ -104,6 +117,8 @@ export class ExecutionService {
         event.text !== 'Waiting for colleague response'
       )
         calls.delete(event.callId);
+      if (event.delegation && event.delegation.state !== 'running')
+        calls.delete(event.delegation.id.replace(/^call:/, ''));
     }
     for (const id of calls.values()) active.add(id);
     return [...active];
@@ -112,6 +127,10 @@ export class ExecutionService {
   private generation = 0;
   private requestAbort: (() => void) | null = null;
   constructor() {
+    effect(() => {
+      const operation = this.workflow.current();
+      this.applyOperation(operation);
+    });
     effect(() => {
       this.store.projectLocked.set(
         this.busy() ||
@@ -137,6 +156,16 @@ export class ExecutionService {
     return result.route;
   }
   togglePause(): void {
+    const managed = this.workflow.current();
+    if (managed) {
+      void this.workflow
+        .action(
+          managed,
+          ['paused', 'blocked', 'interrupted'].includes(managed.state) ? 'resume' : 'pause',
+        )
+        .catch((e) => this.store.report(e));
+      return;
+    }
     if (!this.busy()) return;
     const pausing = !this.paused();
     this.paused.set(pausing);
@@ -178,6 +207,17 @@ export class ExecutionService {
     void this.preparePlan(undefined, sprint.id);
   }
   async preparePlan(featureId?: string, sprintId?: string): Promise<void> {
+    if (this.store.settings()?.mode === 'live') {
+      await this.workflow.refresh();
+      if (this.workflow.error()) {
+        this.store.error.set(this.i18n.text(this.workflow.error()));
+        return;
+      }
+    }
+    if (this.workflow.current()) {
+      void this.router.navigateByUrl('/recovery');
+      return;
+    }
     if (this.busy() || this.planning() || this.interacting()) return;
     const project = this.store.project();
     if (!project) return;
@@ -286,6 +326,7 @@ export class ExecutionService {
           label,
         },
       });
+      await this.store.flush();
     } catch (e) {
       this.store.report(e);
     } finally {
@@ -307,9 +348,15 @@ export class ExecutionService {
       const p = w.projects.find((p) => p.id === w.projectId)!;
       for (const item of plan) {
         const f = p.features.find((f) => f.id === item.featureId)!;
+        if (
+          this.store.settings()?.mode === 'live' &&
+          f.step > 0 &&
+          JSON.stringify(f.route) !== JSON.stringify(item.route)
+        )
+          throw Error(this.i18n.text('recovery.planChanged'));
         f.route = item.route;
         f.briefs = item.briefs;
-        f.step = 0;
+        if (this.store.settings()?.mode !== 'live') f.step = 0;
         f.currentAgentId = null;
         f.status = dependenciesReady(f, p) ? 'ready' : 'blocked';
       }
@@ -323,6 +370,10 @@ export class ExecutionService {
     if (start) await this.run(plan.map((i) => i.featureId));
   }
   async run(ids: string[]): Promise<void> {
+    if (this.store.settings()?.mode === 'live') {
+      await this.startManaged(ids);
+      return;
+    }
     if (this.busy() || this.interacting()) return;
     this.busy.set(true);
     this.paused.set(false);
@@ -675,6 +726,11 @@ export class ExecutionService {
     });
   }
   async stop(): Promise<void> {
+    const managed = this.workflow.current();
+    if (managed) {
+      await this.workflow.action(managed, 'cancel').catch((e) => this.store.report(e));
+      return;
+    }
     const wasOperation = this.busy() || this.planning() || !!this.plan();
     const wasPlanning = this.planning() || !!this.plan();
     const feature = this.store.feature(this.currentFeature());
@@ -709,10 +765,119 @@ export class ExecutionService {
     this.currentFeature.set('');
     this.currentRun.set('');
   }
+  private applyOperation(op: DurableOperation | null): void {
+    if (!op) {
+      if (this.managedId) {
+        this.managedUnsubscribe?.();
+        this.managedUnsubscribe = null;
+        this.managedId = '';
+        this.managedRun = '';
+        this.busy.set(false);
+        this.paused.set(false);
+        this.interacting.set(false);
+        this.currentRun.set('');
+        this.currentAgent.set('');
+        this.currentFeature.set('');
+      }
+      return;
+    }
+    this.managedId = op.id;
+    const stage = op.stages[op.current];
+    this.busy.set(['running', 'pausing', 'paused'].includes(op.state));
+    this.paused.set(['paused', 'pausing'].includes(op.state));
+    this.interacting.set(
+      !!stage &&
+        ['running', 'launching'].includes(stage.state) &&
+        ['running', 'pausing'].includes(op.state),
+    );
+    this.currentKind.set('step');
+    this.currentAgent.set(stage?.agentId || '');
+    this.currentFeature.set(stage?.featureId || '');
+    const run = stage?.runId || '';
+    this.currentRun.set(run);
+    if (run !== this.managedRun) {
+      this.managedUnsubscribe?.();
+      this.managedUnsubscribe = null;
+      this.managedRun = run;
+      this.events.set([]);
+      if (run) {
+        this.latestRunId.set(run);
+        this.sessionRunIds.update((ids) => [...new Set([...ids, run])]);
+        void this.api
+          .run(run)
+          .then((value) => {
+            if (this.managedRun === run)
+              this.events.update((events) =>
+                [...new Map([...value.events, ...events].map((e) => [e.seq, e])).values()].sort(
+                  (a, b) => a.seq - b.seq,
+                ),
+              );
+          })
+          .catch(() => {});
+        if (stage.state === 'running')
+          this.managedUnsubscribe = this.api.subscribe(
+            run,
+            (event) => {
+              if (this.managedRun !== run) return;
+              this.events.update((events) =>
+                events.some((e) => e.seq === event.seq) ? events : [...events, event].slice(-2000),
+              );
+              if (event.type === 'result') void this.workflow.refresh();
+            },
+            () => void this.workflow.refresh(),
+          );
+      }
+    }
+  }
+  private async startManaged(ids: string[]): Promise<void> {
+    if (this.busy() || this.interacting() || this.workflow.current()) return;
+    await this.store.flush();
+    if (this.store.conflict()) return;
+    const selections = Object.fromEntries(
+      this.store
+        .team()
+        .map((agent) => [
+          agent.id,
+          resolveAgentSelection(
+            agent,
+            this.store.settings()!,
+            this.providers.catalogs()[agent.provider] || [],
+          ),
+        ]),
+    );
+    try {
+      const { operation } = await this.api.startOperation({
+        projectId: this.store.project()!.id,
+        featureIds: ids,
+        approved: true,
+        selections,
+      });
+      this.workflow.accept(operation);
+      this.applyOperation(operation);
+      await this.store.synchronize();
+      await this.workflow.refresh();
+    } catch (e) {
+      this.store.report(e);
+    }
+  }
   async recover(): Promise<void> {
+    await this.workflow.refresh();
+    if (this.workflow.current()) {
+      this.applyOperation(this.workflow.current());
+      return;
+    }
+    const pending = [...this.room.messages()].reverse().find((m) => m.plan?.status === 'awaiting');
+    if (pending?.plan) {
+      this.plan.set(pending.plan.items);
+      this.planOrigin.set('execution');
+      this.planSource.set(pending.plan.source || 'default');
+      this.planLabel.set(pending.plan.label || '');
+    }
+
     const { runs } = await this.api.runs(this.store.project()?.id);
     const run = runs.find(
       (r) =>
+        !r.operationId &&
         r.kind === 'step' &&
         r.featureId &&
         (r.status === 'running' ||

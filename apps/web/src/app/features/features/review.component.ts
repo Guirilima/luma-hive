@@ -1,3 +1,4 @@
+import { Router } from '@angular/router';
 import { TranslatePipe } from '../../core/i18n/i18n.service';
 import { Component, inject, input, output } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
@@ -16,6 +17,13 @@ import { ModalComponent } from '../../shared/modal.component';
   templateUrl: './review.component.html',
 })
 export class ReviewComponent {
+  private readonly router = inject(Router);
+  remember(runId: string): void {
+    this.dialogs.close();
+    void this.router.navigate(['/memory'], {
+      queryParams: { project: this.store.project()?.id, sourceKind: 'run', sourceRef: runId },
+    });
+  }
   readonly store = inject(WorkspaceStore);
   readonly dialogs = inject(DialogService);
   readonly i18n = inject(I18nService);
@@ -47,9 +55,10 @@ export class ReviewComponent {
   feature() {
     return this.store.feature(this.featureId() || this.dialogs.current()?.id || '');
   }
-  review(approve: boolean): void {
+  async review(approve: boolean): Promise<void> {
     this.store.review(this.feature()!.id, approve, this.feedback);
-    this.close();
+    await this.store.flush();
+    if (!this.store.pending() && !this.store.conflict()) this.close();
   }
   format(value: unknown): string {
     return JSON.stringify(value, null, 2);

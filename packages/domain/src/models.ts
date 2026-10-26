@@ -1,3 +1,4 @@
+import type { Delegation } from './observability';
 export type Locale = 'pt-BR' | 'en' | 'es';
 export type MapLayout = 'office-3d' | 'office-pixel' | 'city-3d';
 export type Provider = 'codex' | 'devin' | 'antigravity';
@@ -99,6 +100,7 @@ export interface Log {
   simulated: boolean;
 }
 export interface Handoff {
+  checkpointId?: string;
   id: string;
   at: string;
   from: string;
@@ -240,6 +242,8 @@ export interface Health {
   maxConcurrent: number;
 }
 export interface RunRequest {
+  operationId?: string;
+  checkpointId?: string;
   provider: Provider;
   projectId: string;
   project: string;
@@ -265,7 +269,13 @@ export interface RunRequest {
 export interface RunEvent {
   seq: number;
   at: string;
-  type: 'start' | 'text' | 'tool' | 'tool-result' | 'stderr' | 'result' | 'init';
+  type: 'start' | 'text' | 'tool' | 'tool-result' | 'stderr' | 'result' | 'init' | 'agent';
+  activityId?: string;
+  sourceAgentId?: string;
+  sourceAgentName?: string;
+  sourceSessionId?: string;
+  delegation?: Delegation;
+  usageScope?: 'self' | 'inclusive' | 'unknown';
   command?: { executable: string; args: string[]; cwd: string; pid?: number };
   model?: string;
   permissionMode?: string;
@@ -281,6 +291,15 @@ export interface RunEvent {
   costUsd?: number | null;
 }
 export interface Run {
+  operationId?: string;
+  checkpointId?: string;
+  agentName?: string;
+  projectName?: string;
+  featureName?: string;
+  featureKey?: string;
+  sprintId?: string;
+  sprintName?: string;
+  model?: string;
   id: string;
   projectId: string;
   agentId: string;

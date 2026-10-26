@@ -50,7 +50,7 @@ export class OperationRoomComponent {
       return '';
     const text = this.execution
       .events()
-      .filter((e) => e.type === 'text')
+      .filter((e) => !e.activityId && e.type === 'text')
       .map((e) => e.text || '')
       .join('');
     return this.execution.currentKind() === 'plan' ? planningSpeech(text) : text;

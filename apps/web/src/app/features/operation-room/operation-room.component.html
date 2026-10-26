@@ -308,7 +308,12 @@
           <button
             class="btn primary sm"
             (click)="execution.approvePlan()"
-            [disabled]="!execution.planValidCount() || execution.interacting()"
+            [disabled]="
+              !execution.planValidCount() ||
+              execution.interacting() ||
+              execution.planning() ||
+              store.saving()
+            "
           >
             <luma-icon name="check" />
             {{ 'operation-room.approve-plan' | t }}

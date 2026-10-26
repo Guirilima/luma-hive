@@ -28,5 +28,27 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/squads/squad-editor.component').then((m) => m.SquadEditorComponent),
   },
+  {
+    path: 'observability',
+    loadComponent: () =>
+      import('./features/observability/observability.component').then(
+        (m) => m.ObservabilityComponent,
+      ),
+  },
+  {
+    path: 'attention',
+    loadComponent: () =>
+      import('./features/workflow/attention.component').then((m) => m.AttentionComponent),
+  },
+  {
+    path: 'recovery',
+    loadComponent: () =>
+      import('./features/workflow/recovery.component').then((m) => m.RecoveryComponent),
+  },
+  {
+    path: 'memory',
+    loadComponent: () =>
+      import('./features/workflow/memory.component').then((m) => m.MemoryComponent),
+  },
   { path: '**', redirectTo: 'dashboard' },
 ];

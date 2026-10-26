@@ -30,7 +30,9 @@
               "apps/web/src/styles/map.css",
               "apps/web/src/styles/angular.css",
               "apps/web/src/styles/themes/pixel.css",
-              "apps/web/src/styles/agent-portraits.css"
+              "apps/web/src/styles/agent-portraits.css",
+              "apps/web/src/styles/observability-shell.css",
+              "apps/web/src/styles/squad-activity.css"
             ]
           },
           "configurations": {

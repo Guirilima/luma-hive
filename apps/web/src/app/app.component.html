@@ -36,7 +36,7 @@
       @for (view of views; track view.path) {
         <a
           [attr.href]="view.path"
-          [class.active]="router.url === view.path"
+          [class.active]="router.url.split('?')[0] === view.path"
           (click)="navigate($event, view.path)"
         >
           {{ view.key | t }}
@@ -47,6 +47,7 @@
       </button>
     </nav>
     <div class="system-meta">
+      <luma-attention-trigger />
       <luma-usage />
       <button
         class="mode-indicator"

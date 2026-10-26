@@ -1,3 +1,5 @@
+import type { DurableOperation, MemoryEntry, AttentionItem } from '@domain/workflow';
+import type { ObservationFilters, ObservationSnapshot, RunTrace } from '@domain/observability';
 import { UsageSnapshot } from '@domain/usage';
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
@@ -60,6 +62,46 @@ export class ApiService {
   }
   usage(refresh = false): Promise<UsageSnapshot> {
     return this.request('GET', '/api/usage' + (refresh ? '?refresh=1' : ''));
+  }
+  observations(filters: ObservationFilters, offset = 0): Promise<ObservationSnapshot> {
+    const query = new URLSearchParams({ ...filters, offset: String(offset), limit: '50' });
+    return this.request('GET', '/api/observability?' + query.toString());
+  }
+  runTrace(id: string): Promise<RunTrace> {
+    return this.request('GET', '/api/runs/' + encodeURIComponent(id) + '/trace');
+  }
+  operations(): Promise<{ operations: DurableOperation[] }> {
+    return this.request('GET', '/api/operations');
+  }
+  startOperation(input: unknown): Promise<{ operation: DurableOperation }> {
+    return this.request('POST', '/api/operations', input);
+  }
+  operationAction(
+    id: string,
+    action: string,
+    acknowledge = false,
+    stageId?: string,
+  ): Promise<{ operation: DurableOperation }> {
+    return this.request('POST', '/api/operations/' + encodeURIComponent(id) + '/action', {
+      action,
+      acknowledge,
+      stageId,
+    });
+  }
+  attention(acknowledged = false): Promise<{ items: AttentionItem[] }> {
+    return this.request('GET', '/api/attention' + (acknowledged ? '?acknowledged=1' : ''));
+  }
+  acknowledgeAttention(id: string) {
+    return this.request('POST', '/api/attention/' + encodeURIComponent(id) + '/acknowledge', {});
+  }
+  memories(projectId: string): Promise<{ entries: MemoryEntry[] }> {
+    return this.request('GET', '/api/memory?projectId=' + encodeURIComponent(projectId));
+  }
+  createMemory(input: unknown): Promise<{ entry: MemoryEntry }> {
+    return this.request('POST', '/api/memory', input);
+  }
+  updateMemory(id: string, input: unknown): Promise<{ entry: MemoryEntry }> {
+    return this.request('PATCH', '/api/memory/' + encodeURIComponent(id), input);
   }
   runs(projectId = ''): Promise<{ runs: Run[] }> {
     return this.request('GET', '/api/runs?projectId=' + encodeURIComponent(projectId));

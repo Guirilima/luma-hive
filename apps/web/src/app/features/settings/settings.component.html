@@ -231,6 +231,66 @@
       </div>
     </form>
   </div>
+  <div class="editor-pane" [class.hidden]="tab() !== 'permissions'" data-pane="permissions">
+    <form id="permissionsForm" (ngSubmit)="save()">
+      <h3>{{ 'permissions.title' | t }}</h3>
+      <p>{{ 'permissions.layers' | t }}</p>
+      <div class="notice">
+        <luma-icon name="info" />
+        <span>{{ 'permissions.headless' | t }}</span>
+      </div>
+      @for (cli of providerKeys; track cli) {
+        <div class="settings-row permission-provider">
+          <div>
+            <h3>{{ cli.toUpperCase() }}</h3>
+            <p>{{ 'permissions.providerScope' | t }}</p>
+          </div>
+          <div class="field">
+            <label [for]="cli + 'Policy'">{{ 'ui.permission-mode' | t }}</label>
+            <select
+              [id]="cli + 'Policy'"
+              [name]="cli + 'Policy'"
+              [(ngModel)]="draft.providers[cli].permission"
+            >
+              @for (permission of permissions[cli]; track permission) {
+                <option [value]="permission">{{ permissionLabel(permission) }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      }
+      @if (draft.providers.antigravity.permission === 'unattended') {
+        <div class="notice warning">
+          <luma-icon name="lock" />
+          <span>{{ 'permissions.confirmBody' | t }}</span>
+        </div>
+      }
+      <p class="hint">{{ 'permissions.autoAvailability' | t }}</p>
+      <h3>{{ 'permissions.profiles' | t }}</h3>
+      <p>{{ 'permissions.profileHint' | t }}</p>
+      @for (agent of store.team(); track agent.id) {
+        <div class="settings-row permission-profile">
+          <div>
+            <h3>{{ agent.name }} · {{ agent.provider.toUpperCase() }}</h3>
+            <p>{{ policyTools(agent).join(' · ') || ('permissions.noTools' | t) }}</p>
+          </div>
+          <button
+            type="button"
+            class="btn ghost sm"
+            (click)="editProfile(agent.id)"
+            [disabled]="store.projectLocked()"
+          >
+            {{ 'permissions.editProfile' | t }}
+          </button>
+        </div>
+      }
+      <div class="notice warning">
+        <luma-icon name="info" />
+        <span>{{ 'permissions.terminalBoundary' | t }}</span>
+      </div>
+      <p class="hint">{{ 'permissions.localOnly' | t }}</p>
+    </form>
+  </div>
   @for (cli of providerKeys; track cli) {
     <div class="editor-pane" [class.hidden]="tab() !== cli" [attr.data-pane]="cli">
       <div class="notice" [class.warning]="!providers.health()[cli]?.version" style="margin-top: 0">
@@ -294,7 +354,7 @@
               </span>
             } @else if (cli === 'antigravity') {
               <span class="hint">
-                {{ 'settings.read-only-and-plan-expose-only-reading-tools-actions-requi' | t }}
+                {{ 'settings.antigravity-policy-note' | t }}
               </span>
             }
           </div>
@@ -417,7 +477,7 @@
   </div>
   @if (tab() !== 'workspace' && tab() !== 'config') {
     <footer class="modal-footer" modal-footer>
-      @if (tab() !== 'execution') {
+      @if (tab() !== 'execution' && tab() !== 'permissions') {
         <button class="btn ghost" (click)="check()">
           <luma-icon name="radio" />
           {{ 'settings.test' | t }}
@@ -428,7 +488,13 @@
       <button
         class="btn primary"
         type="submit"
-        [attr.form]="tab() === 'execution' ? 'executionForm' : provider() + 'Form'"
+        [attr.form]="
+          tab() === 'permissions'
+            ? 'permissionsForm'
+            : tab() === 'execution'
+              ? 'executionForm'
+              : provider() + 'Form'
+        "
         [disabled]="store.projectLocked()"
       >
         <luma-icon name="check" />

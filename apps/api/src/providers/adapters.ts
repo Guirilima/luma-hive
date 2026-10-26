@@ -1,3 +1,4 @@
+import { providerTelemetry } from './telemetry';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { RunRequest, RunEvent } from '../../../../packages/domain/src/models';
@@ -13,6 +14,7 @@ export interface RawResult {
   sessionId: string | null;
 }
 export interface Decoder {
+  readonly complete: boolean;
   feed(chunk: string): Omit<RunEvent, 'seq' | 'at'>[];
   finish(): RawResult | null;
 }
@@ -74,6 +76,12 @@ export async function prepare(
     'Top-level application entries at launch: ' +
       (entries.join(', ') || 'NONE. This operation folder has no application files yet.'),
     'Briefing, ADRs and handoffs below are supplied as message context. They do not prove that source files exist on disk.',
+    'Effective tools for THIS agent: ' +
+      ((r.options.tools || []).join(', ') || 'NONE. Answer using the supplied context only.'),
+    !(r.options.tools || []).some((t) => ['Edit', 'Write', 'NotebookEdit'].includes(t))
+      ? 'This agent is NOT authorized to write or edit files, including documentation. Return specifications and evidence in your response. If Bash is allowed, use it only for authorized inspection and validation; do not use commands or colleagues to bypass your editing restrictions.'
+      : '',
+    'The server coordinator owns handoffs. Do not invoke the next specialist to implement their future stage. Focused colleague consultations are for advice within your CURRENT stage and effective permissions; return your result and let the coordinator advance.',
     'Never search, list or read parent/sibling folders, the Luma Hive host application, previews, backups or unrelated node_modules to locate missing operation files.',
     'If no code exists here, report the missing setup as a blocker. If this stage is explicitly authorized to create the base, create it only here using the allowed tools. Otherwise stop and ask for setup. Do not infer completed implementation from demo statuses.',
     ['read-only', 'plan'].includes(r.options.permissionMode || '')
@@ -205,7 +213,12 @@ export async function prepare(
     for (const [key, a] of Object.entries(o.agents)) {
       await fs.writeFile(
         path.join(directory, 'luma-' + key + '.md'),
-        `---\nname: ${JSON.stringify('luma-' + key)}\ndescription: ${JSON.stringify(a.description)}\nmainAgent: false\nsubagent: true\nmodel: inherit\ncommandExecutionPolicy: sandbox\ntools: ${JSON.stringify(a.tools.map((t) => agyTools[t]).filter(Boolean))}\n---\n\n${a.prompt}`,
+        `---\nname: ${JSON.stringify('luma-' + key)}\ndescription: ${JSON.stringify(a.description)}\nmainAgent: false\nsubagent: true\nmodel: inherit\ncommandExecutionPolicy: sandbox\ntools: ${JSON.stringify(
+          a.tools
+            .filter((t) => (o.tools || []).includes(t))
+            .map((t) => agyTools[t])
+            .filter(Boolean),
+        )}\n---\n\n${a.prompt}`,
       );
     }
     tools.push('invoke_subagent');
@@ -224,10 +237,15 @@ export async function prepare(
     '--agent',
     name,
     '--mode',
-    o.permissionMode === 'plan' && tools.length ? 'plan' : 'accept-edits',
+    o.permissionMode === 'plan' && tools.length
+      ? 'plan'
+      : o.permissionMode === 'auto'
+        ? 'auto'
+        : 'accept-edits',
     '--print-timeout',
     (o.timeoutSec || 900) + 's',
   );
+  if (o.permissionMode === 'unattended') args.push('--dangerously-skip-permissions');
   if (o.permissionMode !== 'plan' || !tools.length) args.push('--disable-slash-commands');
   if (model(o.model)) args.push('--model', model(o.model));
   if (o.effort) args.push('--effort', o.effort);
@@ -248,7 +266,7 @@ export function createDecoder(provider: RunRequest['provider']): Decoder {
     seen = new Set<string>();
   const toolResults = new Set<string>(),
     colleagueCalls = new Map<string, string>();
-  const consume = (event: any): Omit<RunEvent, 'seq' | 'at'>[] => {
+  const consumeRaw = (event: any): Omit<RunEvent, 'seq' | 'at'>[] => {
     if (provider === 'codex') {
       if (event.type === 'thread.started') {
         sessionId = event.thread_id;
@@ -381,7 +399,10 @@ export function createDecoder(provider: RunRequest['provider']): Decoder {
             callId: id,
           });
         }
-        if (step.state === 'DONE' && !toolResults.has(id)) {
+        if (
+          ['DONE', 'ERROR', 'FAILED', 'CANCELED', 'CANCELLED'].includes(step.state) &&
+          !toolResults.has(id)
+        ) {
           toolResults.add(id);
           out.push({
             type: 'tool-result',
@@ -391,13 +412,18 @@ export function createDecoder(provider: RunRequest['provider']): Decoder {
               typeof info.output === 'string'
                 ? info.output
                 : JSON.stringify(info.output || info.error?.message || ''),
-            error: !!info.error,
+            error: !!info.error || step.state !== 'DONE',
           });
         }
         return out;
       }
     }
     return [];
+  };
+  const telemetry = providerTelemetry(provider);
+  const consume = (event: any): Omit<RunEvent, 'seq' | 'at'>[] => {
+    const scope = telemetry.scope(event);
+    return scope ? telemetry.child(event, scope) : telemetry.decorate(event, consumeRaw(event));
   };
   const feed = (chunk: string) => {
     if (provider === 'devin') {
@@ -421,6 +447,9 @@ export function createDecoder(provider: RunRequest['provider']): Decoder {
     return out;
   };
   return {
+    get complete() {
+      return completed;
+    },
     feed,
     finish() {
       if (buffer.trim()) {

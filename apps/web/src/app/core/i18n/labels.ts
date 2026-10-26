@@ -1,6 +1,90 @@
 import { Locale } from '@domain/models';
-/** Stable IDs; translations live together. Preserve IDs when renaming text. */
+/** Stable IDs; preserve IDs when renaming labels. */
 export const LABELS = {
+  'permissions.title': {
+    'pt-BR': 'Permissões e autonomia',
+    en: 'Permissions and autonomy',
+    es: 'Permisos y autonomía',
+  },
+  'permissions.layers': {
+    'pt-BR':
+      'O perfil define as ferramentas do agente. A política do CLI define quais ações exigem confirmação.',
+    en: 'The profile defines the agent tools. The CLI policy determines which actions require confirmation.',
+    es: 'El perfil define las herramientas del agente. La política del CLI determina qué acciones requieren confirmación.',
+  },
+  'permissions.headless': {
+    'pt-BR':
+      'Execuções sem terminal interativo não exibem pedidos de aprovação do CLI: uma ação que exige confirmação pode falhar e aparecer em Precisa de você. Aprovação de plano e entrega continua humana.',
+    en: 'Non-interactive runs cannot display CLI approval prompts: an action requiring confirmation may fail and appear in Needs you. Plans and deliveries still require human approval.',
+    es: 'Las ejecuciones no interactivas no muestran solicitudes de aprobación del CLI: una acción que requiere confirmación puede fallar y aparecer en Te necesitan. Los planes y las entregas siguen requiriendo aprobación humana.',
+  },
+  'permissions.providerScope': {
+    'pt-BR': 'Aplica-se às próximas execuções deste provedor em todos os projetos deste workspace.',
+    en: 'Applies to future runs of this provider across all projects in this workspace.',
+    es: 'Se aplica a futuras ejecuciones de este proveedor en todos los proyectos de este workspace.',
+  },
+  'permissions.unattended': {
+    'pt-BR': 'Sem confirmações do CLI (avançado)',
+    en: 'Without CLI confirmations (advanced)',
+    es: 'Sin confirmaciones del CLI (avanzado)',
+  },
+  'permissions.confirmTitle': {
+    'pt-BR': 'Habilitar execução sem confirmações?',
+    en: 'Enable execution without confirmations?',
+    es: '¿Habilitar ejecución sin confirmaciones?',
+  },
+  'permissions.confirmAction': {
+    'pt-BR': 'Habilitar para próximas execuções',
+    en: 'Enable for future runs',
+    es: 'Habilitar para futuras ejecuciones',
+  },
+  'permissions.confirmBody': {
+    'pt-BR':
+      'Antigravity usará --dangerously-skip-permissions nas próximas execuções. Isso aprova pedidos de ferramentas sem confirmação do CLI, inclusive fora do sandbox. A lista de ferramentas do perfil continua sendo enviada ao CLI, mas Bash pode ler, alterar ou executar recursos do sistema; ela não oferece isolamento do sistema operacional. Use apenas em projetos e comandos confiáveis. Esta opção vale para todo o workspace.',
+    en: 'Antigravity will use --dangerously-skip-permissions for future runs. This approves tool requests without CLI confirmation, including outside the sandbox. Profile tool lists are still passed to the CLI, but Bash can read, change or execute system resources; the list provides no operating-system isolation. Use only with trusted projects and commands. This option applies to the entire workspace.',
+    es: 'Antigravity usará --dangerously-skip-permissions en futuras ejecuciones. Esto aprueba solicitudes de herramientas sin confirmación del CLI, incluso fuera del sandbox. Las herramientas del perfil se siguen enviando al CLI, pero Bash puede leer, modificar o ejecutar recursos del sistema; la lista no proporciona aislamiento del sistema operativo. Úsalo solo con proyectos y comandos de confianza. Esta opción se aplica a todo el workspace.',
+  },
+  'permissions.autoAvailability': {
+    'pt-BR':
+      'O modo auto depende da conta e do sandbox do CLI; pode ser recusado. Aceitar edições não libera automaticamente comandos de terminal.',
+    en: 'Auto mode depends on CLI account and sandbox availability; it may be refused. Accepting edits does not automatically authorize terminal commands.',
+    es: 'El modo auto depende de la cuenta y del sandbox del CLI; puede rechazarse. Aceptar ediciones no autoriza automáticamente comandos de terminal.',
+  },
+  'permissions.profiles': {
+    'pt-BR': 'Ferramentas dos agentes desta operação',
+    en: 'Agent tools for this operation',
+    es: 'Herramientas de los agentes de esta operación',
+  },
+  'permissions.profileHint': {
+    'pt-BR':
+      'Prévia do perfil após o filtro de somente leitura. Subagentes não recebem ferramentas além do próprio perfil e do agente que os chamou. A disponibilidade final depende do adaptador e do CLI.',
+    en: 'Profile preview after the read-only filter. Subagents receive no tools beyond their own profile and the calling agent. Final availability depends on the adapter and CLI.',
+    es: 'Vista previa del perfil tras el filtro de solo lectura. Los subagentes no reciben herramientas fuera de su perfil y del agente que los invocó. La disponibilidad final depende del adaptador y del CLI.',
+  },
+  'permissions.noTools': {
+    'pt-BR': 'Nenhuma ferramenta nesta política',
+    en: 'No tools under this policy',
+    es: 'Sin herramientas con esta política',
+  },
+  'permissions.editProfile': { 'pt-BR': 'Editar perfil', en: 'Edit profile', es: 'Editar perfil' },
+  'permissions.terminalBoundary': {
+    'pt-BR':
+      'Ferramentas e sandbox são camadas distintas. Bash pode alcançar arquivos e rede mesmo sem Edit/Write. Codex aplica o sandbox escolhido; os controles de ferramentas de cada provedor podem diferir. Uma instrução no prompt não é uma barreira de segurança.',
+    en: 'Tools and sandboxing are separate layers. Bash may access files and network even without Edit/Write. Codex applies the selected sandbox; provider tool controls may differ. A prompt instruction is not a security boundary.',
+    es: 'Las herramientas y el sandbox son capas distintas. Bash puede acceder a archivos y red incluso sin Edit/Write. Codex aplica el sandbox seleccionado; los controles de herramientas varían por proveedor. Una instrucción en el prompt no es una barrera de seguridad.',
+  },
+  'permissions.localOnly': {
+    'pt-BR':
+      'Salvar aqui altera somente a política do Luma Hive. Não modifica regras globais do CLI.',
+    en: 'Saving here only changes the Luma Hive policy. It does not modify global CLI rules.',
+    es: 'Guardar aquí solo cambia la política de Luma Hive. No modifica reglas globales del CLI.',
+  },
+  'permissions.notEnabled': {
+    'pt-BR': 'Execução sem confirmações não foi habilitada nas configurações do workspace.',
+    en: 'Execution without confirmations has not been enabled in workspace settings.',
+    es: 'La ejecución sin confirmaciones no está habilitada en la configuración del workspace.',
+  },
+
   'help.navigation': {
     'pt-BR': 'Alternar páginas',
     en: 'Switch pages',
@@ -1788,9 +1872,9 @@ export const LABELS = {
   },
   'usage.note': {
     'pt-BR':
-      'Semana: segunda-feira até agora. Mês: dia 1 até agora. O consumo considera todas as operações desta instalação, incluindo tentativas com falha quando há tokens informados. Cache já está incluído na entrada e não é somado novamente.',
-    en: 'Week: Monday until now. Month: day 1 until now. Usage includes all operations in this installation, including failed attempts when tokens are reported. Cached input is already included in input and is not added again.',
-    es: 'Semana: desde el lunes hasta ahora. Mes: desde el día 1 hasta ahora. El consumo incluye todas las operaciones de esta instalación, también los intentos fallidos cuando se informan tokens. La caché ya está incluida en la entrada y no se suma de nuevo.',
+      'Semana: segunda-feira até agora. Mês: dia 1 até agora. O consumo considera todas as operações desta instalação, incluindo tentativas com falha quando há tokens informados. Cache é informado separadamente pelo CLI; sua composição varia por provedor e não é somada novamente ao total.',
+    en: 'Week: Monday until now. Month: day 1 until now. Usage includes all operations in this installation, including failed attempts when tokens are reported. Cache is reported separately by the CLI; its composition varies by provider and is not added again to the total.',
+    es: 'Semana: desde el lunes hasta ahora. Mes: desde el día 1 hasta ahora. El consumo incluye todas las operaciones de esta instalación, también los intentos fallidos cuando se informan tokens. El CLI informa la caché por separado; su composición varía por proveedor y no se suma de nuevo al total.',
   },
   'usage.footer': {
     'pt-BR':
@@ -6491,6 +6575,1089 @@ export const LABELS = {
     'pt-BR': 'e',
     en: 'and',
     es: 'y',
+  },
+  'nav.observability': {
+    'pt-BR': 'OBSERVABILIDADE',
+    en: 'OBSERVABILITY',
+    es: 'OBSERVABILIDAD',
+  },
+  'obs.eyebrow': {
+    'pt-BR': 'EXECUÇÕES · AGENTES · CONSUMO',
+    en: 'RUNS · AGENTS · USAGE',
+    es: 'EJECUCIONES · AGENTES · CONSUMO',
+  },
+  'obs.title': {
+    'pt-BR': 'Observabilidade',
+    en: 'Observability',
+    es: 'Observabilidad',
+  },
+  'obs.description': {
+    'pt-BR': 'Acompanhe as execuções, as consultas a subagentes e o consumo informado pelos CLIs.',
+    en: 'Inspect runs, subagent consultations and usage reported by the CLIs.',
+    es: 'Consulta ejecuciones, consultas a subagentes y consumo informado por los CLI.',
+  },
+  'obs.project': {
+    'pt-BR': 'Projeto',
+    en: 'Project',
+    es: 'Proyecto',
+  },
+  'obs.period': {
+    'pt-BR': 'Período',
+    en: 'Period',
+    es: 'Período',
+  },
+  'obs.sprint': {
+    'pt-BR': 'Sprint',
+    en: 'Sprint',
+    es: 'Sprint',
+  },
+  'obs.agent': {
+    'pt-BR': 'Agente envolvido',
+    en: 'Agent involved',
+    es: 'Agente involucrado',
+  },
+  'obs.provider': {
+    'pt-BR': 'Provedor',
+    en: 'Provider',
+    es: 'Proveedor',
+  },
+  'obs.model': {
+    'pt-BR': 'Modelo',
+    en: 'Model',
+    es: 'Modelo',
+  },
+  'obs.all': {
+    'pt-BR': 'Todos',
+    en: 'All',
+    es: 'Todos',
+  },
+  'obs.allTime': {
+    'pt-BR': 'Todo o histórico',
+    en: 'All history',
+    es: 'Todo el historial',
+  },
+  'obs.thisWeek': {
+    'pt-BR': 'Esta semana',
+    en: 'This week',
+    es: 'Esta semana',
+  },
+  'obs.thisMonth': {
+    'pt-BR': 'Este mês',
+    en: 'This month',
+    es: 'Este mes',
+  },
+  'obs.retry': {
+    'pt-BR': 'Tentar novamente',
+    en: 'Retry',
+    es: 'Reintentar',
+  },
+  'obs.runs': {
+    'pt-BR': 'Execuções',
+    en: 'Runs',
+    es: 'Ejecuciones',
+  },
+  'obs.tokens': {
+    'pt-BR': 'Tokens informados',
+    en: 'Reported tokens',
+    es: 'Tokens informados',
+  },
+  'obs.duration': {
+    'pt-BR': 'Duração',
+    en: 'Duration',
+    es: 'Duración',
+  },
+  'obs.helpers': {
+    'pt-BR': 'Subagentes detectados',
+    en: 'Detected subagents',
+    es: 'Subagentes detectados',
+  },
+  'obs.failures': {
+    'pt-BR': 'Falhas',
+    en: 'Failures',
+    es: 'Fallos',
+  },
+  'obs.missingUsage': {
+    'pt-BR': 'Sem consumo informado',
+    en: 'Without reported usage',
+    es: 'Sin consumo informado',
+  },
+  'obs.views': {
+    'pt-BR': 'Visualizações de observabilidade',
+    en: 'Observability views',
+    es: 'Vistas de observabilidad',
+  },
+  'obs.execution': {
+    'pt-BR': 'Execuções e linha do tempo',
+    en: 'Runs and timeline',
+    es: 'Ejecuciones y línea de tiempo',
+  },
+  'obs.consumption': {
+    'pt-BR': 'Consumo por entrega e agente',
+    en: 'Usage by delivery and agent',
+    es: 'Consumo por entrega y agente',
+  },
+  'obs.groupBy': {
+    'pt-BR': 'Agrupar por',
+    en: 'Group by',
+    es: 'Agrupar por',
+  },
+  'obs.group.agent': {
+    'pt-BR': 'Agente responsável',
+    en: 'Responsible agent',
+    es: 'Agente responsable',
+  },
+  'obs.group.feature': {
+    'pt-BR': 'Feature / entrega',
+    en: 'Feature / delivery',
+    es: 'Funcionalidad / entrega',
+  },
+  'obs.group.sprint': {
+    'pt-BR': 'Sprint',
+    en: 'Sprint',
+    es: 'Sprint',
+  },
+  'obs.group.model': {
+    'pt-BR': 'Modelo',
+    en: 'Model',
+    es: 'Modelo',
+  },
+  'obs.group.provider': {
+    'pt-BR': 'Provedor',
+    en: 'Provider',
+    es: 'Proveedor',
+  },
+  'obs.group.subagent': {
+    'pt-BR': 'Subagente consultado',
+    en: 'Consulted subagent',
+    es: 'Subagente consultado',
+  },
+  'obs.childUsageNote': {
+    'pt-BR':
+      'Consumo do subagente somente quando informado pelo CLI. Pode já estar incluído no total da execução; não some estas linhas aos totais dos responsáveis.',
+    en: 'Subagent usage is shown only when reported by the CLI. It may already be included in the run total; do not add these rows to owner totals.',
+    es: 'Se muestra el consumo del subagente solo si lo informa el CLI. Puede estar incluido en el total; no sumes estas filas a los totales de responsables.',
+  },
+  'obs.rootUsageNote': {
+    'pt-BR':
+      'Totais informados pelas execuções principais, atribuídos ao responsável e à entrega. Consumo de filhos é detalhado separadamente, sem duplicar os totais. O filtro de agente inclui consultas recebidas.',
+    en: 'Main-run totals attributed to their owner and delivery. Child usage is detailed separately without double counting. The agent filter includes received consultations.',
+    es: 'Totales de ejecuciones principales atribuidos al responsable y la entrega. Los hijos se detallan aparte sin duplicar totales. El filtro de agente incluye consultas recibidas.',
+  },
+  'obs.input': {
+    'pt-BR': 'Entrada',
+    en: 'Input',
+    es: 'Entrada',
+  },
+  'obs.output': {
+    'pt-BR': 'Saída',
+    en: 'Output',
+    es: 'Salida',
+  },
+  'obs.cached': {
+    'pt-BR': 'Cache informado',
+    en: 'Reported cache',
+    es: 'Caché informada',
+  },
+  'obs.coverage': {
+    'pt-BR': 'Com dados / total',
+    en: 'With data / total',
+    es: 'Con datos / total',
+  },
+  'obs.empty': {
+    'pt-BR': 'Nenhuma execução para estes filtros.',
+    en: 'No runs match these filters.',
+    es: 'No hay ejecuciones para estos filtros.',
+  },
+  'obs.cacheNote': {
+    'pt-BR':
+      'Cache é um campo nativo separado; sua composição varia por provedor. Não é somado novamente ao total. “—” significa dado não informado. Totais podem ser parciais; são execuções locais, não o saldo da conta.',
+    en: 'Cache is a separate native field; its composition varies by provider. It is not added again to the total. “—” means unreported data. Totals may be partial; they cover local runs, not account balance.',
+    es: 'La caché es un campo nativo separado; su composición varía por proveedor. No se suma de nuevo al total. “—” indica datos no informados. Los totales pueden ser parciales: son ejecuciones locales, no el saldo de la cuenta.',
+  },
+  'obs.state.running': {
+    'pt-BR': 'Em execução',
+    en: 'Running',
+    es: 'En ejecución',
+  },
+  'obs.state.done': {
+    'pt-BR': 'Concluído',
+    en: 'Completed',
+    es: 'Completado',
+  },
+  'obs.state.failed': {
+    'pt-BR': 'Falhou',
+    en: 'Failed',
+    es: 'Falló',
+  },
+  'obs.state.cancelled': {
+    'pt-BR': 'Cancelado',
+    en: 'Cancelled',
+    es: 'Cancelado',
+  },
+  'obs.state.interrupted': {
+    'pt-BR': 'Interrompido',
+    en: 'Interrupted',
+    es: 'Interrumpido',
+  },
+  'obs.state.unknown': {
+    'pt-BR': 'Fim não informado',
+    en: 'End not reported',
+    es: 'Final no informado',
+  },
+  'obs.noFeature': {
+    'pt-BR': 'Sem feature associada',
+    en: 'No associated feature',
+    es: 'Sin funcionalidad asociada',
+  },
+  'obs.unassigned': {
+    'pt-BR': 'Sem associação',
+    en: 'Unassigned',
+    es: 'Sin asociación',
+  },
+  'obs.defaultModel': {
+    'pt-BR': 'Padrão / não informado',
+    en: 'Default / unreported',
+    es: 'Predeterminado / no informado',
+  },
+  'obs.previous': {
+    'pt-BR': 'Página anterior',
+    en: 'Previous page',
+    es: 'Página anterior',
+  },
+  'obs.next': {
+    'pt-BR': 'Próxima página',
+    en: 'Next page',
+    es: 'Página siguiente',
+  },
+  'obs.export': {
+    'pt-BR': 'Exportar execução',
+    en: 'Export run',
+    es: 'Exportar ejecución',
+  },
+  'obs.partial': {
+    'pt-BR':
+      'Este CLI ou registro não oferece todos os eventos estruturados. Exibimos apenas o que foi informado; ausência de subagentes ou tokens não prova que não existiram.',
+    en: 'This CLI or record does not expose all structured events. Only reported data is shown; missing subagents or tokens does not prove there were none.',
+    es: 'Este CLI o registro no ofrece todos los eventos estructurados. Solo mostramos datos informados; la ausencia de subagentes o tokens no demuestra que no existieran.',
+  },
+  'obs.tree': {
+    'pt-BR': 'Árvore da execução',
+    en: 'Run tree',
+    es: 'Árbol de ejecución',
+  },
+  'obs.helper': {
+    'pt-BR': 'Subagente',
+    en: 'Subagent',
+    es: 'Subagente',
+  },
+  'obs.owner': {
+    'pt-BR': 'Responsável',
+    en: 'Owner',
+    es: 'Responsable',
+  },
+  'obs.taskMissing': {
+    'pt-BR': 'O CLI não informou a tarefa delegada.',
+    en: 'The CLI did not report the delegated task.',
+    es: 'El CLI no informó la tarea delegada.',
+  },
+  'obs.unavailable': {
+    'pt-BR': 'Não informado',
+    en: 'Not reported',
+    es: 'No informado',
+  },
+  'obs.tools': {
+    'pt-BR': 'Chamadas de ferramenta',
+    en: 'Tool calls',
+    es: 'Llamadas a herramientas',
+  },
+  'obs.timeline': {
+    'pt-BR': 'Linha do tempo',
+    en: 'Timeline',
+    es: 'Línea de tiempo',
+  },
+  'obs.follow': {
+    'pt-BR': 'Acompanhar eventos novos',
+    en: 'Follow new events',
+    es: 'Seguir eventos nuevos',
+  },
+  'obs.eventType': {
+    'pt-BR': 'Tipo de evento',
+    en: 'Event type',
+    es: 'Tipo de evento',
+  },
+  'obs.search': {
+    'pt-BR': 'Buscar em ferramenta ou mensagem…',
+    en: 'Search tool or message…',
+    es: 'Buscar en herramienta o mensaje…',
+  },
+  'obs.noEvents': {
+    'pt-BR': 'Nenhum evento para esta seleção.',
+    en: 'No events for this selection.',
+    es: 'No hay eventos para esta selección.',
+  },
+  'obs.eventDetails': {
+    'pt-BR': 'Detalhes do evento',
+    en: 'Event details',
+    es: 'Detalles del evento',
+  },
+  'obs.result': {
+    'pt-BR': 'Resposta / resultado informado',
+    en: 'Reported response / result',
+    es: 'Respuesta / resultado informado',
+  },
+  'obs.footer': {
+    'pt-BR':
+      'Atualização automática a cada 4 segundos com a página visível. Dados obtidos dos registros locais dos CLIs.',
+    en: 'Auto-refresh every 4 seconds while visible. Data comes from locally recorded CLI events.',
+    es: 'Actualización cada 4 segundos mientras la página está visible. Datos de eventos locales de los CLI.',
+  },
+  'obs.event.all': {
+    'pt-BR': 'Todos os eventos',
+    en: 'All events',
+    es: 'Todos los eventos',
+  },
+  'obs.event.start': {
+    'pt-BR': 'Início',
+    en: 'Start',
+    es: 'Inicio',
+  },
+  'obs.event.init': {
+    'pt-BR': 'Sessão',
+    en: 'Session',
+    es: 'Sesión',
+  },
+  'obs.event.text': {
+    'pt-BR': 'Mensagem',
+    en: 'Message',
+    es: 'Mensaje',
+  },
+  'obs.event.tool': {
+    'pt-BR': 'Ferramenta',
+    en: 'Tool',
+    es: 'Herramienta',
+  },
+  'obs.event.tool-result': {
+    'pt-BR': 'Retorno',
+    en: 'Tool result',
+    es: 'Retorno',
+  },
+  'obs.event.agent': {
+    'pt-BR': 'Subagente',
+    en: 'Subagent',
+    es: 'Subagente',
+  },
+  'obs.event.result': {
+    'pt-BR': 'Resultado',
+    en: 'Result',
+    es: 'Resultado',
+  },
+  'obs.event.stderr': {
+    'pt-BR': 'Diagnóstico',
+    en: 'Diagnostic',
+    es: 'Diagnóstico',
+  },
+  'obs.event.errors': {
+    'pt-BR': 'Erros e diagnósticos',
+    en: 'Errors and diagnostics',
+    es: 'Errores y diagnósticos',
+  },
+  'obs.open': {
+    'pt-BR': 'Analisar execução',
+    en: 'Inspect run',
+    es: 'Analizar ejecución',
+  },
+  'obs.temporary': {
+    'pt-BR': 'Auxiliares temporários',
+    en: 'Temporary assistants',
+    es: 'Auxiliares temporales',
+  },
+  'squadActivity.summary': {
+    'pt-BR': 'Resumo da squad',
+    en: 'Squad overview',
+    es: 'Resumen del equipo',
+  },
+  'squadActivity.count.all': { 'pt-BR': 'Agentes', en: 'Agents', es: 'Agentes' },
+  'squadActivity.count.working': { 'pt-BR': 'Trabalhando', en: 'Working', es: 'Trabajando' },
+  'squadActivity.count.idle': { 'pt-BR': 'Disponíveis', en: 'Available', es: 'Disponibles' },
+  'squadActivity.count.waiting': {
+    'pt-BR': 'Precisam de você',
+    en: 'Need your input',
+    es: 'Necesitan tu ayuda',
+  },
+  'squadActivity.count.paused': { 'pt-BR': 'Pausados', en: 'Paused', es: 'Pausados' },
+  'squadActivity.count.helpers': {
+    'pt-BR': 'Subagentes ativos',
+    en: 'Active subagents',
+    es: 'Subagentes activos',
+  },
+  'squadActivity.executing': { 'pt-BR': 'Em execução', en: 'Running', es: 'En ejecución' },
+  'squadActivity.available': { 'pt-BR': 'Disponível', en: 'Available', es: 'Disponible' },
+  'squadActivity.consulting': {
+    'pt-BR': 'Auxiliando um agente',
+    en: 'Assisting an agent',
+    es: 'Ayudando a un agente',
+  },
+  'squadActivity.pausing': {
+    'pt-BR': 'Pausa após a etapa',
+    en: 'Pausing after this stage',
+    es: 'Pausa después de esta etapa',
+  },
+  'squadActivity.paused': { 'pt-BR': 'Pausado', en: 'Paused', es: 'Pausado' },
+  'squadActivity.planning': {
+    'pt-BR': 'Preparando o plano',
+    en: 'Preparing the plan',
+    es: 'Preparando el plan',
+  },
+  'squadActivity.approval': {
+    'pt-BR': 'Aguarda sua aprovação',
+    en: 'Awaiting your approval',
+    es: 'Espera tu aprobación',
+  },
+  'squadActivity.question': {
+    'pt-BR': 'Aguarda sua resposta',
+    en: 'Awaiting your answer',
+    es: 'Espera tu respuesta',
+  },
+  'squadActivity.review': {
+    'pt-BR': 'Entrega em revisão humana',
+    en: 'Delivery awaiting human review',
+    es: 'Entrega en revisión humana',
+  },
+  'squadActivity.failed': {
+    'pt-BR': 'Última execução falhou',
+    en: 'Last run failed',
+    es: 'La última ejecución falló',
+  },
+  'squadActivity.consultations': { 'pt-BR': 'Consultas', en: 'Consultations', es: 'Consultas' },
+  'squadActivity.active': { 'pt-BR': 'ativas', en: 'active', es: 'activas' },
+  'squadActivity.inspect': {
+    'pt-BR': 'Ver consulta na linha do tempo',
+    en: 'View consultation in timeline',
+    es: 'Ver consulta en la línea de tiempo',
+  },
+  'squadActivity.noDetails': {
+    'pt-BR': 'O CLI não informou os detalhes',
+    en: 'CLI did not report details',
+    es: 'El CLI no informó los detalles',
+  },
+  'squadActivity.viewRun': { 'pt-BR': 'Ver execução', en: 'View run', es: 'Ver ejecución' },
+  'squadActivity.lastRun': { 'pt-BR': 'Última execução', en: 'Last run', es: 'Última ejecución' },
+  'squadActivity.showAll': { 'pt-BR': 'Mostrar todos', en: 'Show all', es: 'Mostrar todos' },
+  'squadActivity.empty': {
+    'pt-BR': 'Nenhum agente neste estado.',
+    en: 'No agents in this state.',
+    es: 'Ningún agente en este estado.',
+  },
+  'squadActivity.stale': {
+    'pt-BR': 'Sem atualização do CLI. Exibindo os últimos dados recebidos.',
+    en: 'CLI update unavailable. Showing the last received data.',
+    es: 'Actualización del CLI no disponible. Mostrando los últimos datos recibidos.',
+  },
+  'squadActivity.consultingWith': {
+    'pt-BR': 'Consultando {agent}',
+    en: 'Consulting {agent}',
+    es: 'Consultando a {agent}',
+  },
+  'squadActivity.usingTool': { 'pt-BR': 'Usando {tool}', en: 'Using {tool}', es: 'Usando {tool}' },
+  'squadActivity.helpersHint': {
+    'pt-BR':
+      'Consultas ativas detectadas nos eventos dos CLIs. Alguns provedores informam apenas parte da atividade.',
+    en: 'Active consultations detected in CLI events. Some providers report only part of their activity.',
+    es: 'Consultas activas detectadas en eventos del CLI. Algunos proveedores informan solo parte de su actividad.',
+  },
+  'workflow.connectionError': {
+    'pt-BR': 'Não foi possível atualizar a coordenação. Os últimos dados continuam visíveis.',
+    en: 'Could not refresh coordination. Last known data remains visible.',
+    es: 'No se pudo actualizar la coordinación. Se muestran los últimos datos.',
+  },
+  'attention.title': {
+    'pt-BR': 'Precisa de você',
+    en: 'Needs your input',
+    es: 'Necesita tu ayuda',
+  },
+  'attention.description': {
+    'pt-BR': 'Perguntas, aprovações, entregas e interrupções que aguardam uma ação sua.',
+    en: 'Questions, approvals, deliveries and interruptions awaiting your action.',
+    es: 'Preguntas, aprobaciones, entregas e interrupciones que esperan tu acción.',
+  },
+  'attention.type': {
+    'pt-BR': 'Tipo de pendência',
+    en: 'Pending item type',
+    es: 'Tipo de pendiente',
+  },
+  'attention.showAcknowledged': {
+    'pt-BR': 'Mostrar falhas reconhecidas',
+    en: 'Show acknowledged failures',
+    es: 'Mostrar fallos reconocidos',
+  },
+  'attention.pendingCount': {
+    'pt-BR': 'itens na seleção',
+    en: 'items selected',
+    es: 'elementos en la selección',
+  },
+  'attention.approvalDetail': {
+    'pt-BR': 'Um plano aguarda sua aprovação antes de iniciar a execução.',
+    en: 'A plan awaits your approval before execution starts.',
+    es: 'Un plan espera tu aprobación antes de iniciar la ejecución.',
+  },
+  'attention.reviewDetail': {
+    'pt-BR': 'A rota terminou. Revise a entrega e aprove ou solicite ajustes.',
+    en: 'The route is complete. Review the delivery and approve or request changes.',
+    es: 'La ruta terminó. Revisa la entrega y aprueba o solicita cambios.',
+  },
+  'attention.blockedDetail': {
+    'pt-BR': 'A entrega possui dependências ainda não aprovadas.',
+    en: 'This delivery has dependencies that are not approved yet.',
+    es: 'Esta entrega tiene dependencias aún no aprobadas.',
+  },
+  'attention.openOrigin': {
+    'pt-BR': 'Abrir pendência',
+    en: 'Open pending item',
+    es: 'Abrir pendiente',
+  },
+  'attention.permissions': {
+    'pt-BR': 'Revisar configuração do provedor',
+    en: 'Review provider settings',
+    es: 'Revisar configuración del proveedor',
+  },
+  'attention.acknowledge': {
+    'pt-BR': 'Marcar como reconhecida',
+    en: 'Acknowledge',
+    es: 'Marcar como reconocido',
+  },
+  'attention.acknowledged': { 'pt-BR': 'Reconhecida', en: 'Acknowledged', es: 'Reconocido' },
+  'attention.empty': {
+    'pt-BR': 'Nenhuma pendência nesta seleção',
+    en: 'No pending items in this selection',
+    es: 'No hay pendientes en esta selección',
+  },
+  'attention.emptyDetail': {
+    'pt-BR': 'As novas pendências aparecerão aqui com acesso à ação correspondente.',
+    en: 'New pending items will appear here with access to their corresponding action.',
+    es: 'Los nuevos pendientes aparecerán aquí con acceso a la acción correspondiente.',
+  },
+  'attention.note': {
+    'pt-BR':
+      'Reconhecer uma falha apenas remove seu alerta. Isso não altera permissões, aprova entregas ou repete execuções.',
+    en: 'Acknowledging a failure only clears its alert. It does not change permissions, approve deliveries or retry runs.',
+    es: 'Reconocer un fallo solo elimina su alerta. No cambia permisos, aprueba entregas ni repite ejecuciones.',
+  },
+  'attention.invalidAcknowledge': {
+    'pt-BR': 'Essa pendência precisa ser resolvida na sua origem.',
+    en: 'This item must be resolved at its source.',
+    es: 'Este pendiente debe resolverse en su origen.',
+  },
+  'recovery.title': { 'pt-BR': 'Recuperação', en: 'Recovery', es: 'Recuperación' },
+  'recovery.description': {
+    'pt-BR':
+      'Acompanhe as etapas persistidas e retome uma operação sem repetir o que já foi confirmado.',
+    en: 'Track persisted stages and resume an operation without repeating confirmed work.',
+    es: 'Sigue las etapas guardadas y retoma una operación sin repetir el trabajo confirmado.',
+  },
+  'recovery.empty': {
+    'pt-BR':
+      'Nenhuma execução coordenada registrada. As próximas sprints em modo real aparecerão aqui.',
+    en: 'No coordinated runs recorded. Future live sprints will appear here.',
+    es: 'No hay ejecuciones coordinadas registradas. Los próximos sprints reales aparecerán aquí.',
+  },
+  'recovery.confirmedCount': {
+    'pt-BR': 'etapas confirmadas',
+    en: 'confirmed stages',
+    es: 'etapas confirmadas',
+  },
+  'recovery.approvedAt': {
+    'pt-BR': 'Plano aprovado em',
+    en: 'Plan approved on',
+    es: 'Plan aprobado el',
+  },
+  'recovery.diagnostic': {
+    'pt-BR': 'Detalhes do diagnóstico',
+    en: 'Diagnostic details',
+    es: 'Detalles del diagnóstico',
+  },
+  'recovery.resume': {
+    'pt-BR': 'Retomar etapas pendentes',
+    en: 'Resume pending stages',
+    es: 'Retomar etapas pendientes',
+  },
+  'recovery.cancel': {
+    'pt-BR': 'Encerrar coordenação',
+    en: 'End coordination',
+    es: 'Finalizar coordinación',
+  },
+  'recovery.cancelConfirm': {
+    'pt-BR':
+      'Encerrar esta operação? As etapas já confirmadas serão preservadas. Uma etapa interrompida pode ter deixado arquivos alterados.',
+    en: 'End this operation? Confirmed stages will be preserved. An interrupted stage may have left changed files.',
+    es: '¿Finalizar esta operación? Se conservarán las etapas confirmadas. Una etapa interrumpida puede haber dejado archivos modificados.',
+  },
+  'recovery.uncertainNote': {
+    'pt-BR':
+      'Esta etapa não possui conclusão confirmada. Revise o diagnóstico e a pasta do projeto antes de autorizar outra tentativa. Nenhuma etapa anterior confirmada será repetida.',
+    en: 'This stage has no confirmed completion. Review diagnostics and the project folder before authorizing another attempt. Previously confirmed stages will not be repeated.',
+    es: 'Esta etapa no tiene una conclusión confirmada. Revisa el diagnóstico y la carpeta del proyecto antes de autorizar otro intento. No se repetirán las etapas confirmadas.',
+  },
+  'recovery.retryAcknowledgement': {
+    'pt-BR':
+      'Revisei os arquivos e confirmei que o processo anterior encerrou. Autorizo uma nova tentativa desta etapa, que pode já ter realizado alterações.',
+    en: 'I reviewed the files and confirmed the previous process has stopped. I authorize another attempt of this stage, which may already have made changes.',
+    es: 'Revisé los archivos y confirmé que terminó el proceso anterior. Autorizo otro intento de esta etapa, que puede haber realizado cambios.',
+  },
+  'recovery.prepareRetry': {
+    'pt-BR': 'Preparar nova tentativa',
+    en: 'Prepare retry',
+    es: 'Preparar otro intento',
+  },
+  'recovery.stage': { 'pt-BR': 'Etapa', en: 'Stage', es: 'Etapa' },
+  'recovery.attempts': {
+    'pt-BR': 'Tentativas registradas',
+    en: 'Recorded attempts',
+    es: 'Intentos registrados',
+  },
+  'recovery.audit': {
+    'pt-BR': 'Histórico de coordenação',
+    en: 'Coordination history',
+    es: 'Historial de coordinación',
+  },
+  'recovery.note': {
+    'pt-BR':
+      'A coordenação real continua no servidor ao fechar a aba. Após reiniciar o servidor, a retomada depende de sua ação. Conclusões de CLI aguardam revisão humana da entrega.',
+    en: 'Live coordination continues on the server when the tab closes. After a server restart, resuming requires your action. CLI completions still await human review of the delivery.',
+    es: 'La coordinación real continúa en el servidor al cerrar la pestaña. Tras reiniciar el servidor, debes decidir cuándo retomar. Las entregas del CLI siguen requiriendo revisión humana.',
+  },
+  'recovery.notFound': {
+    'pt-BR': 'Coordenação não encontrada.',
+    en: 'Coordination not found.',
+    es: 'Coordinación no encontrada.',
+  },
+  'recovery.liveOnly': {
+    'pt-BR': 'A coordenação persistente exige uma operação existente em modo real.',
+    en: 'Persistent coordination requires an existing live operation.',
+    es: 'La coordinación persistente requiere una operación existente en modo real.',
+  },
+  'recovery.approvalRequired': {
+    'pt-BR': 'Aprove o plano antes de iniciar.',
+    en: 'Approve the plan before starting.',
+    es: 'Aprueba el plan antes de iniciar.',
+  },
+  'recovery.alreadyOpen': {
+    'pt-BR': 'Já existe uma coordenação pendente neste projeto. Abra Recuperação para continuar.',
+    en: 'This project already has pending coordination. Open Recovery to continue.',
+    es: 'Este proyecto ya tiene una coordinación pendiente. Abre Recuperación para continuar.',
+  },
+  'recovery.documentsRequired': {
+    'pt-BR': 'Complete os documentos do projeto antes de executar.',
+    en: 'Complete project documents before execution.',
+    es: 'Completa los documentos del proyecto antes de ejecutar.',
+  },
+  'recovery.invalidPlan': {
+    'pt-BR': 'O plano ou a rota contém dados inválidos. Revise os especialistas e as entregas.',
+    en: 'The plan or route contains invalid data. Review specialists and deliveries.',
+    es: 'El plan o la ruta tiene datos inválidos. Revisa especialistas y entregas.',
+  },
+  'recovery.locked': {
+    'pt-BR':
+      'Os campos de execução estão sob controle da coordenação persistente. Atualize o workspace antes de continuar.',
+    en: 'Execution fields are controlled by persistent coordination. Refresh the workspace before continuing.',
+    es: 'Los campos de ejecución están bajo coordinación persistente. Actualiza el workspace antes de continuar.',
+  },
+  'recovery.busy': {
+    'pt-BR': 'A etapa está sendo preparada. Aguarde a atualização e tente novamente.',
+    en: 'The stage is being prepared. Wait for the update and try again.',
+    es: 'Se está preparando la etapa. Espera la actualización e inténtalo de nuevo.',
+  },
+  'recovery.invalidAction': {
+    'pt-BR': 'Essa ação não está disponível no estado atual.',
+    en: 'This action is unavailable in the current state.',
+    es: 'Esta acción no está disponible en el estado actual.',
+  },
+  'recovery.retryRequired': {
+    'pt-BR': 'Resolva a etapa interrompida antes de retomar.',
+    en: 'Resolve the interrupted stage before resuming.',
+    es: 'Resuelve la etapa interrumpida antes de retomar.',
+  },
+  'recovery.confirmRetry': {
+    'pt-BR': 'Confirme a revisão e selecione a etapa interrompida atual antes de repetir.',
+    en: 'Confirm your review and select the current interrupted stage before retrying.',
+    es: 'Confirma la revisión y selecciona la etapa interrumpida actual antes de repetir.',
+  },
+  'recovery.projectMissing': {
+    'pt-BR': 'O projeto da coordenação não está disponível.',
+    en: 'The coordinated project is unavailable.',
+    es: 'El proyecto de la coordinación no está disponible.',
+  },
+  'recovery.planChanged': {
+    'pt-BR': 'A rota ou o progresso mudou. Revise a coordenação antes de continuar.',
+    en: 'The route or progress changed. Review coordination before continuing.',
+    es: 'La ruta o el progreso cambió. Revisa la coordinación antes de continuar.',
+  },
+  'recovery.dependencies': {
+    'pt-BR': 'Aguardando aprovação humana das entregas dependentes.',
+    en: 'Awaiting human approval of dependencies.',
+    es: 'Esperando la aprobación humana de las dependencias.',
+  },
+  'recovery.serverRestarted': {
+    'pt-BR': 'O servidor foi reiniciado. Revise o último checkpoint antes de retomar.',
+    en: 'The server restarted. Review the last checkpoint before resuming.',
+    es: 'El servidor se reinició. Revisa el último checkpoint antes de retomar.',
+  },
+  'recovery.launchFailed': {
+    'pt-BR': 'Não foi possível iniciar o CLI. Revise o diagnóstico e a configuração.',
+    en: 'Could not start the CLI. Review diagnostics and configuration.',
+    es: 'No se pudo iniciar el CLI. Revisa el diagnóstico y la configuración.',
+  },
+  'recovery.stageFailed': {
+    'pt-BR': 'A etapa falhou. As etapas anteriores confirmadas foram preservadas.',
+    en: 'The stage failed. Previously confirmed stages were preserved.',
+    es: 'La etapa falló. Se conservaron las etapas confirmadas.',
+  },
+  'recovery.cancelled': {
+    'pt-BR': 'Coordenação encerrada pelo operador.',
+    en: 'Coordination ended by the operator.',
+    es: 'Coordinación finalizada por el operador.',
+  },
+  'recovery.deliveryReview': {
+    'pt-BR': '{feature} concluiu a rota e aguarda sua revisão humana.',
+    en: '{feature} completed its route and awaits your human review.',
+    es: '{feature} completó su ruta y espera tu revisión humana.',
+  },
+  'recovery.completed': {
+    'pt-BR': 'A coordenação concluiu as rotas previstas. As entregas aguardam revisão humana.',
+    en: 'Coordination completed its planned routes. Deliveries await human review.',
+    es: 'La coordinación completó las rutas previstas. Las entregas esperan revisión humana.',
+  },
+  'recovery.stageStarted': {
+    'pt-BR': '{agent} iniciou {feature}, etapa {step}.',
+    en: '{agent} started {feature}, stage {step}.',
+    es: '{agent} inició {feature}, etapa {step}.',
+  },
+  'recovery.previousProcessAlive': {
+    'pt-BR':
+      'O processo da tentativa anterior ainda pode estar ativo. Encerre-o antes de repetir esta etapa.',
+    en: 'The previous attempt process may still be active. Stop it before retrying this stage.',
+    es: 'El proceso del intento anterior puede seguir activo. Finalízalo antes de repetir esta etapa.',
+  },
+  'memory.title': {
+    'pt-BR': 'Memória do projeto',
+    en: 'Project memory',
+    es: 'Memoria del proyecto',
+  },
+  'memory.nav': { 'pt-BR': 'Memória', en: 'Memory', es: 'Memoria' },
+  'memory.description': {
+    'pt-BR': 'Decisões, restrições e aprendizados com origem, aprovação humana e histórico.',
+    en: 'Decisions, constraints and lessons with provenance, human approval and history.',
+    es: 'Decisiones, restricciones y aprendizajes con origen, aprobación humana e historial.',
+  },
+  'memory.state': { 'pt-BR': 'Estado', en: 'State', es: 'Estado' },
+  'memory.edit': { 'pt-BR': 'Editar registro', en: 'Edit entry', es: 'Editar registro' },
+  'memory.new': { 'pt-BR': 'Nova proposta', en: 'New proposal', es: 'Nueva propuesta' },
+  'memory.editNotice': {
+    'pt-BR':
+      'Salvar uma alteração retira a aprovação atual. O conteúdo só voltará ao contexto dos agentes após nova aprovação.',
+    en: 'Saving an edit withdraws the current approval. The content returns to agent context only after approval again.',
+    es: 'Guardar un cambio retira la aprobación actual. El contenido volverá al contexto de los agentes solo tras una nueva aprobación.',
+  },
+  'memory.entryTitle': {
+    'pt-BR': 'Título do registro',
+    en: 'Entry title',
+    es: 'Título del registro',
+  },
+  'memory.kind': { 'pt-BR': 'Categoria', en: 'Category', es: 'Categoría' },
+  'memory.source': { 'pt-BR': 'Origem', en: 'Source', es: 'Origen' },
+  'memory.sourceRef': {
+    'pt-BR': 'Registro de origem',
+    en: 'Source record',
+    es: 'Registro de origen',
+  },
+  'memory.selectSource': {
+    'pt-BR': 'Selecione a origem',
+    en: 'Select a source',
+    es: 'Selecciona el origen',
+  },
+  'memory.chatSourceNote': {
+    'pt-BR': 'Use o ID de uma mensagem deste projeto. A origem será validada e preservada.',
+    en: 'Use a message ID from this project. Its source will be validated and preserved.',
+    es: 'Usa el ID de un mensaje de este proyecto. Se validará y conservará el origen.',
+  },
+  'memory.content': { 'pt-BR': 'Conteúdo', en: 'Content', es: 'Contenido' },
+  'memory.saveProposal': {
+    'pt-BR': 'Salvar proposta',
+    en: 'Save proposal',
+    es: 'Guardar propuesta',
+  },
+  'memory.approvalNote': {
+    'pt-BR':
+      'Somente registros aprovados entram no contexto das próximas chamadas e consultas a subagentes. Propostas e registros arquivados ficam fora.',
+    en: 'Only approved entries enter the context of future calls and subagent consultations. Proposals and archived entries are excluded.',
+    es: 'Solo los registros aprobados entran en el contexto de futuras llamadas y consultas a subagentes. Se excluyen propuestas y registros archivados.',
+  },
+  'memory.version': { 'pt-BR': 'Versão', en: 'Version', es: 'Versión' },
+  'memory.approvedAt': { 'pt-BR': 'Aprovado em', en: 'Approved on', es: 'Aprobado el' },
+  'memory.localUser': { 'pt-BR': 'Operador local', en: 'Local operator', es: 'Operador local' },
+  'memory.manualSource': {
+    'pt-BR': 'Registro escrito pelo operador local.',
+    en: 'Entry written by the local operator.',
+    es: 'Registro escrito por el operador local.',
+  },
+  'memory.approve': {
+    'pt-BR': 'Aprovar e usar como contexto',
+    en: 'Approve and use as context',
+    es: 'Aprobar y usar como contexto',
+  },
+  'memory.archive': { 'pt-BR': 'Arquivar', en: 'Archive', es: 'Archivar' },
+  'memory.history': {
+    'pt-BR': 'Histórico de versões',
+    en: 'Version history',
+    es: 'Historial de versiones',
+  },
+  'memory.empty': {
+    'pt-BR': 'Nenhum registro nesta seleção',
+    en: 'No entries in this selection',
+    es: 'No hay registros en esta selección',
+  },
+  'memory.emptyDetail': {
+    'pt-BR': 'Registre uma decisão ou use uma entrega ou ADR como origem.',
+    en: 'Record a decision or use a delivery or ADR as its source.',
+    es: 'Registra una decisión o usa una entrega o ADR como origen.',
+  },
+  'memory.remember': {
+    'pt-BR': 'Propor registro na memória',
+    en: 'Propose memory entry',
+    es: 'Proponer registro en memoria',
+  },
+  'memory.projectMissing': {
+    'pt-BR': 'Projeto não encontrado.',
+    en: 'Project not found.',
+    es: 'Proyecto no encontrado.',
+  },
+  'memory.entryLimit': {
+    'pt-BR': 'Este projeto atingiu o limite de registros de memória.',
+    en: 'This project reached its memory entry limit.',
+    es: 'Este proyecto alcanzó el límite de registros de memoria.',
+  },
+  'memory.sourceMissing': {
+    'pt-BR': 'A origem precisa existir neste projeto.',
+    en: 'The source must exist in this project.',
+    es: 'El origen debe existir en este proyecto.',
+  },
+  'memory.notFound': {
+    'pt-BR': 'Registro não encontrado.',
+    en: 'Entry not found.',
+    es: 'Registro no encontrado.',
+  },
+  'memory.conflict': {
+    'pt-BR': 'Este registro mudou em outra aba. Atualize antes de editar ou aprovar.',
+    en: 'This entry changed in another tab. Refresh before editing or approving.',
+    es: 'Este registro cambió en otra pestaña. Actualiza antes de editar o aprobar.',
+  },
+  'memory.invalid': {
+    'pt-BR': 'Preencha título e conteúdo dentro dos limites e selecione uma categoria válida.',
+    en: 'Provide a title and content within the limits and select a valid category.',
+    es: 'Completa el título y contenido dentro de los límites y selecciona una categoría válida.',
+  },
+  'memory.archived': {
+    'pt-BR': 'Este registro está arquivado.',
+    en: 'This entry is archived.',
+    es: 'Este registro está archivado.',
+  },
+  'memory.confirmRequired': {
+    'pt-BR': 'A aprovação exige uma ação explícita do operador.',
+    en: 'Approval requires an explicit operator action.',
+    es: 'La aprobación requiere una acción explícita del operador.',
+  },
+  'memory.contextLimit': {
+    'pt-BR':
+      'O contexto aprovado excederia o limite de 24.000 caracteres. Arquive registros obsoletos antes de aprovar.',
+    en: 'Approved context would exceed 24,000 characters. Archive obsolete entries before approving.',
+    es: 'El contexto aprobado superaría los 24.000 caracteres. Archiva registros obsoletos antes de aprobar.',
+  },
+  'attention.kind.question': {
+    'pt-BR': 'Pergunta pendente',
+    en: 'Pending question',
+    es: 'Pregunta pendiente',
+  },
+  'attention.kind.approval': {
+    'pt-BR': 'Aprovação de plano',
+    en: 'Plan approval',
+    es: 'Aprobación de plan',
+  },
+  'attention.kind.review': { 'pt-BR': 'Revisão humana', en: 'Human review', es: 'Revisión humana' },
+  'attention.kind.permission': {
+    'pt-BR': 'Bloqueio de permissão',
+    en: 'Permission block',
+    es: 'Bloqueo de permisos',
+  },
+  'attention.kind.failure': {
+    'pt-BR': 'Falha de execução',
+    en: 'Run failure',
+    es: 'Fallo de ejecución',
+  },
+  'attention.kind.blocked': {
+    'pt-BR': 'Dependência bloqueada',
+    en: 'Blocked dependency',
+    es: 'Dependencia bloqueada',
+  },
+  'attention.kind.recovery': {
+    'pt-BR': 'Recuperação pendente',
+    en: 'Recovery pending',
+    es: 'Recuperación pendiente',
+  },
+  'attention.kind.memory': {
+    'pt-BR': 'Memória para aprovar',
+    en: 'Memory awaiting approval',
+    es: 'Memoria por aprobar',
+  },
+  'recovery.state.running': { 'pt-BR': 'Executando', en: 'Running', es: 'Ejecutando' },
+  'recovery.state.pausing': {
+    'pt-BR': 'Pausa após a etapa',
+    en: 'Pausing after stage',
+    es: 'Pausa tras la etapa',
+  },
+  'recovery.state.paused': { 'pt-BR': 'Pausada', en: 'Paused', es: 'Pausada' },
+  'recovery.state.interrupted': { 'pt-BR': 'Interrompida', en: 'Interrupted', es: 'Interrumpida' },
+  'recovery.state.blocked': { 'pt-BR': 'Bloqueada', en: 'Blocked', es: 'Bloqueada' },
+  'recovery.state.completed': {
+    'pt-BR': 'Rotas concluídas',
+    en: 'Routes completed',
+    es: 'Rutas completadas',
+  },
+  'recovery.state.cancelled': { 'pt-BR': 'Encerrada', en: 'Ended', es: 'Finalizada' },
+  'recovery.stage.pending': { 'pt-BR': 'Pendente', en: 'Pending', es: 'Pendiente' },
+  'recovery.stage.launching': {
+    'pt-BR': 'Preparando CLI',
+    en: 'Preparing CLI',
+    es: 'Preparando CLI',
+  },
+  'recovery.stage.running': { 'pt-BR': 'Em execução', en: 'Running', es: 'En ejecución' },
+  'recovery.stage.confirmed': {
+    'pt-BR': 'Confirmada pelo resultado do CLI',
+    en: 'Confirmed by CLI result',
+    es: 'Confirmada por el resultado del CLI',
+  },
+  'recovery.stage.failed': { 'pt-BR': 'Falhou', en: 'Failed', es: 'Falló' },
+  'recovery.stage.uncertain': {
+    'pt-BR': 'Resultado incerto',
+    en: 'Uncertain outcome',
+    es: 'Resultado incierto',
+  },
+  'recovery.audit.approved': {
+    'pt-BR': 'Plano aprovado',
+    en: 'Plan approved',
+    es: 'Plan aprobado',
+  },
+  'recovery.audit.confirmed': {
+    'pt-BR': 'Etapa confirmada',
+    en: 'Stage confirmed',
+    es: 'Etapa confirmada',
+  },
+  'recovery.audit.interrupted': {
+    'pt-BR': 'Interrupção registrada',
+    en: 'Interruption recorded',
+    es: 'Interrupción registrada',
+  },
+  'recovery.audit.pause': {
+    'pt-BR': 'Pausa solicitada',
+    en: 'Pause requested',
+    es: 'Pausa solicitada',
+  },
+  'recovery.audit.resume': {
+    'pt-BR': 'Retomada autorizada',
+    en: 'Resume authorized',
+    es: 'Reanudación autorizada',
+  },
+  'recovery.audit.retry': {
+    'pt-BR': 'Nova tentativa preparada',
+    en: 'Retry prepared',
+    es: 'Nuevo intento preparado',
+  },
+  'recovery.audit.cancel': {
+    'pt-BR': 'Encerramento solicitado',
+    en: 'End requested',
+    es: 'Finalización solicitada',
+  },
+  'memory.state.proposed': { 'pt-BR': 'Proposta', en: 'Proposed', es: 'Propuesta' },
+  'memory.state.approved': { 'pt-BR': 'Aprovado', en: 'Approved', es: 'Aprobado' },
+  'memory.state.archived': { 'pt-BR': 'Arquivado', en: 'Archived', es: 'Archivado' },
+  'memory.kind.decision': { 'pt-BR': 'Decisão', en: 'Decision', es: 'Decisión' },
+  'memory.kind.constraint': { 'pt-BR': 'Restrição', en: 'Constraint', es: 'Restricción' },
+  'memory.kind.lesson': { 'pt-BR': 'Aprendizado', en: 'Lesson', es: 'Aprendizaje' },
+  'memory.source.manual': { 'pt-BR': 'Registro manual', en: 'Manual entry', es: 'Registro manual' },
+  'memory.source.adr': {
+    'pt-BR': 'Decisão de arquitetura (ADR)',
+    en: 'Architecture decision (ADR)',
+    es: 'Decisión de arquitectura (ADR)',
+  },
+  'memory.source.run': {
+    'pt-BR': 'Resultado de execução',
+    en: 'Run result',
+    es: 'Resultado de ejecución',
+  },
+  'memory.source.chat': {
+    'pt-BR': 'Mensagem de conversa',
+    en: 'Chat message',
+    es: 'Mensaje de conversación',
+  },
+  'memory.audit.created': {
+    'pt-BR': 'Proposta criada',
+    en: 'Proposal created',
+    es: 'Propuesta creada',
+  },
+  'memory.audit.edit': {
+    'pt-BR': 'Conteúdo editado; aprovação retirada',
+    en: 'Content edited; approval withdrawn',
+    es: 'Contenido editado; aprobación retirada',
+  },
+  'memory.audit.approve': {
+    'pt-BR': 'Aprovado pelo operador',
+    en: 'Approved by operator',
+    es: 'Aprobado por el operador',
+  },
+  'memory.audit.archive': {
+    'pt-BR': 'Arquivado pelo operador',
+    en: 'Archived by operator',
+    es: 'Archivado por el operador',
+  },
+  'memory.search': {
+    'pt-BR': 'Buscar na memória',
+    en: 'Search project memory',
+    es: 'Buscar en la memoria',
+  },
+  'recovery.pauseRequested': {
+    'pt-BR': 'Pausa pedida: o agente termina a etapa atual antes de a coordenação parar.',
+    en: 'Pause requested: the agent finishes the current stage before coordination stops.',
+    es: 'Pausa solicitada: el agente termina la etapa actual antes de detener la coordinación.',
+  },
+  'recovery.pauseRecorded': {
+    'pt-BR': 'Coordenação pausada pelo operador.',
+    en: 'Coordination paused by the operator.',
+    es: 'Coordinación pausada por el operador.',
+  },
+  'recovery.resumeRecorded': {
+    'pt-BR': 'Retomada autorizada. A coordenação continua das etapas pendentes.',
+    en: 'Resume authorized. Coordination continues from pending stages.',
+    es: 'Reanudación autorizada. La coordinación continúa desde las etapas pendientes.',
+  },
+  'recovery.retryPrepared': {
+    'pt-BR': 'Nova tentativa preparada. Revise a etapa e retome quando estiver pronto.',
+    en: 'Retry prepared. Review the stage and resume when ready.',
+    es: 'Nuevo intento preparado. Revisa la etapa y retoma cuando estés listo.',
+  },
+  'workflow.cliCleanup': {
+    'pt-BR':
+      'O Antigravity confirmou o resultado, mas não encerrou em 5 segundos. O processo desta execução foi finalizado; o resultado nativo e o consumo foram preservados.',
+    en: 'Antigravity confirmed its result but did not exit within 5 seconds. This run process was terminated; the native result and usage were preserved.',
+    es: 'Antigravity confirmó el resultado pero no cerró en 5 segundos. Se finalizó el proceso de esta ejecución; se conservaron el resultado nativo y el consumo.',
+  },
+  'settings.native-auto': {
+    'pt-BR': 'Automático nativo (política do CLI)',
+    en: 'Native automatic (CLI policy)',
+    es: 'Automático nativo (política del CLI)',
+  },
+  'settings.antigravity-policy-note': {
+    'pt-BR':
+      'Somente leitura/plano limitam as ferramentas de edição. Automático usa a política nativa do CLI para decidir ações das ferramentas do agente; bloqueios ainda podem ocorrer. Não desativa globalmente as permissões.',
+    en: 'Read-only/plan restrict editing tools. Automatic uses the native CLI policy to decide actions within the agent tool list; blocks may still occur. It does not globally disable permissions.',
+    es: 'Solo lectura/plan limitan las herramientas de edición. Automático usa la política nativa del CLI para decidir acciones de las herramientas del agente; aún puede haber bloqueos. No desactiva globalmente los permisos.',
   },
 } as const satisfies Record<string, Record<Locale, string>>;
 export type LabelId = keyof typeof LABELS;

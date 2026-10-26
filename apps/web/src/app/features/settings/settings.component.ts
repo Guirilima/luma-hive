@@ -21,6 +21,32 @@ import { ModalComponent } from '../../shared/modal.component';
   standalone: true,
   imports: [UiLabelPipe, TranslatePipe, IconComponent, FormsModule, ModalComponent],
   templateUrl: './settings.component.html',
+  styles: [
+    `
+      .permission-provider {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(240px, 1fr);
+        gap: 24px;
+      }
+      .permission-provider .field,
+      .permission-provider select {
+        width: 100%;
+        min-width: 0;
+      }
+      .permission-provider .field select {
+        max-width: 100%;
+      }
+      .permission-profile p {
+        overflow-wrap: anywhere;
+      }
+      @media (max-width: 600px) {
+        .permission-provider {
+          grid-template-columns: minmax(0, 1fr);
+          gap: 12px;
+        }
+      }
+    `,
+  ],
 })
 export class SettingsComponent {
   readonly appearance = inject(AppearanceService);
@@ -31,7 +57,7 @@ export class SettingsComponent {
   readonly dialogs = inject(DialogService);
   readonly i18n = inject(I18nService);
   private readonly api = inject(ApiService);
-  readonly tabs = ['workspace', 'execution', ...PROVIDERS, 'config'];
+  readonly tabs = ['workspace', 'execution', 'permissions', ...PROVIDERS, 'config'];
   readonly providerKeys = PROVIDERS;
   readonly efforts = ['low', 'medium', 'high', 'xhigh', 'max', 'ultra'];
   readonly toggles = [
@@ -61,6 +87,7 @@ export class SettingsComponent {
         {
           workspace: 'WORKSPACE',
           execution: this.i18n.text('ui.execution'),
+          permissions: this.i18n.text('permissions.title'),
           config: this.i18n.text('ui.codex-configuration'),
         } as Record<string, string>
       )[key] || key.toUpperCase() + ' CLI'
@@ -73,6 +100,8 @@ export class SettingsComponent {
           'workspace-write': this.i18n.text('ui.allow-changes-in-the-project-folder'),
           'read-only': this.i18n.text('ui.read-only'),
           'accept-edits': this.i18n.text('ui.accept-edits'),
+          auto: this.i18n.text('settings.native-auto'),
+          unattended: this.i18n.text('permissions.unattended'),
           plan: this.i18n.text('ui.plan-without-editing'),
         } as Record<string, string>
       )[key] || key
@@ -129,8 +158,18 @@ export class SettingsComponent {
   readonly permissions = {
     codex: ['workspace-write', 'read-only'],
     devin: ['auto', 'accept-edits', 'smart', 'dangerous', 'read-only', 'plan'],
-    antigravity: ['accept-edits', 'read-only', 'plan'],
+    antigravity: ['accept-edits', 'auto', 'read-only', 'plan', 'unattended'],
   };
+  policyTools(agent: { tools: string[]; provider: Provider }): string[] {
+    return agent.tools.filter(
+      (tool) =>
+        !['read-only', 'plan'].includes(this.draft.providers[agent.provider].permission) ||
+        ['Read', 'Glob', 'Grep'].includes(tool),
+    );
+  }
+  editProfile(id: string): void {
+    this.dialogs.open('agent', id);
+  }
   constructor() {
     void this.versions();
   }
@@ -197,9 +236,10 @@ export class SettingsComponent {
         '--input-format stream-json',
         '--output-format stream-json',
         '--agent luma-main-<run-id>',
-        '--mode ' + (cfg.permission === 'plan' ? 'plan' : 'accept-edits'),
+        '--mode ' + (['auto', 'plan'].includes(cfg.permission) ? cfg.permission : 'accept-edits'),
         '--print-timeout ' + this.draft.timeoutSec + 's',
       );
+      if (cfg.permission === 'unattended') args.push('--dangerously-skip-permissions');
       if (selection.model) args.push('--model ' + quote(selection.model));
       if (selection.effort) args.push('--effort ' + selection.effort);
     }
@@ -271,13 +311,24 @@ export class SettingsComponent {
   }
   async save(): Promise<void> {
     if (this.execution.busy()) return;
+    if (
+      this.draft.providers.antigravity.permission === 'unattended' &&
+      this.store.settings()!.providers.antigravity.permission !== 'unattended' &&
+      !(await this.dialogs.ask(
+        this.i18n.text('permissions.confirmBody'),
+        this.i18n.text('permissions.confirmTitle'),
+        this.i18n.text('permissions.confirmAction'),
+        true,
+      ))
+    )
+      return;
     this.draft.addDirs = this.directories
       .split(/[\n,]+/)
       .map((s) => s.trim())
       .filter(Boolean);
     if (
       this.store.change((w) => {
-        w.settings = this.draft;
+        w.settings = structuredClone(this.draft);
       })
     ) {
       this.i18n.set(this.draft.locale);

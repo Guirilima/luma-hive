@@ -67,11 +67,19 @@ export class PixelRenderer implements MapRenderer {
   private fit(): { scale: number; x: number; y: number } {
     const compact = this.width < 901,
       focus = !!this.frame?.focused,
-      left = focus ? 20 : Math.max(24, this.frame?.inset ? this.frame.inset + 28 : 24),
+      left = focus
+        ? 20
+        : this.frame?.inset
+          ? this.frame.inset + 28
+          : this.width <= 560
+            ? 184
+            : compact
+              ? 254
+              : 334,
       right = !focus && !this.frame?.dismissed && !compact ? 320 : 56,
-      top = compact ? 80 : 64,
-      bottom = focus ? 70 : compact ? 210 : 220;
-    const w = Math.max(220, this.width - left - right),
+      top = focus ? 50 : this.width <= 560 ? 196 : this.width <= 1100 ? 164 : 128,
+      bottom = focus ? 70 : compact ? 142 : 96;
+    const w = Math.max(100, this.width - left - right),
       h = Math.max(160, this.height - top - bottom),
       scale = Math.min(w / 2009, h / 783) * this.zoomLevel;
     return {
